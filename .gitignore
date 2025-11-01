@@ -1,0 +1,29 @@
+# Claude/Cursor settings
+.claude/
+
+# Node modules (if you add any dependencies later)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build outputs (if you add build tools later)
+dist/
+build/
