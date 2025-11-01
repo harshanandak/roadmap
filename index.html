@@ -268,6 +268,70 @@
             flex-shrink: 0;
         }
 
+        /* Sync Status Indicator */
+        .sync-status {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: default;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .sync-status-success {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .sync-status-syncing {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .sync-status-offline {
+            background: rgba(148, 163, 184, 0.15);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .sync-status-error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        [data-theme="dark"] .sync-status-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        [data-theme="dark"] .sync-status-syncing {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        [data-theme="dark"] .sync-status-offline {
+            background: rgba(148, 163, 184, 0.2);
+            color: #cbd5e1;
+        }
+
+        [data-theme="dark"] .sync-status-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
         .header-search {
             padding: 6px 12px;
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -3842,6 +3906,7 @@
                 <button class="btn-secondary btn-compact" onclick="app.exportToCSV()" title="Export CSV">📥</button>
                 <button class="btn-secondary btn-compact" onclick="app.toggleAIActionPanel()" title="AI Actions Log">📝 <span id="aiActionCount" style="background:var(--info); color:var(--text-inverse); border-radius:10px; padding:0 6px; font-size:11px; margin-left:4px;">0</span></button>
                 <button class="btn-secondary btn-compact" onclick="app.toggleTheme()" title="Toggle dark mode">🌓</button>
+                <div id="syncStatus" class="sync-status sync-status-offline" title="Sync status">📦 Offline</div>
                 <div id="bulkActions" class="bulk-actions" role="region" aria-label="Bulk actions">
                     <span id="bulkCount" style="font-size:12px;">0</span>
                     <button class="btn-danger btn-compact" onclick="app.bulkDeleteSelected()" style="font-size:11px;">Delete</button>
@@ -4207,6 +4272,29 @@
             </div>
         </div>
 
+        <!-- Migration Modal -->
+        <div id="migrationOverlay" class="link-picker-overlay hidden"></div>
+        <div id="migrationModal" class="link-picker-modal hidden" style="max-width: 500px;">
+            <h3>🚀 Migrate to Cloud Sync</h3>
+            <div class="migration-content">
+                <p>You have <strong id="migrationCount">0</strong> features saved locally.</p>
+                <p>Would you like to migrate your data to the cloud for automatic sync across all your browsers and devices?</p>
+                <div style="margin: 15px 0; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; font-size: 13px;">
+                    <strong>Benefits:</strong>
+                    <ul style="margin: 8px 0 0 20px; padding: 0;">
+                        <li>Auto-sync across all browsers</li>
+                        <li>Access from any device</li>
+                        <li>Never lose your data</li>
+                        <li>Real-time updates</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="link-picker-actions" style="display: flex; gap: 8px;">
+                <button onclick="app.skipMigration()" style="background:var(--neutral-medium); color:var(--text-inverse);">Skip</button>
+                <button onclick="app.migrateToCloud()" style="background:var(--success); color:var(--text-inverse); flex: 1;">✓ Migrate to Cloud</button>
+            </div>
+        </div>
+
         <!-- Memory Suggestion Notification -->
         <div id="memoryNotification" class="memory-notification hidden" onclick="app.toggleMemorySuggestions()">
             <div class="memory-notification-collapsed">
@@ -4389,7 +4477,324 @@
         </div>
     </div>
 
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://xobyeusefijdvsqkzxvm.supabase.co';
+        const SUPABASE_ANON_KEY = 'REDACTED_SUPABASE_KEY';
+
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Supabase Service Module
+        const supabaseService = {
+            isConnected: false,
+            userId: null,
+            subscriptions: [],
+
+            // Initialize and get/create anonymous user ID
+            async init() {
+                try {
+                    // Get or create anonymous user ID
+                    this.userId = localStorage.getItem('anonymousUserId');
+                    if (!this.userId) {
+                        this.userId = 'anon_' + this.generateId();
+                        localStorage.setItem('anonymousUserId', this.userId);
+                        console.log('✅ Created anonymous user ID:', this.userId);
+                    } else {
+                        console.log('✅ Using existing anonymous user ID:', this.userId);
+                    }
+
+                    // Test connection
+                    const { error } = await supabase.from('features').select('count', { count: 'exact', head: true });
+                    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows, which is fine
+                        throw error;
+                    }
+
+                    this.isConnected = true;
+                    console.log('✅ Supabase connected successfully');
+                    return true;
+                } catch (error) {
+                    console.warn('⚠️ Supabase connection failed:', error.message);
+                    this.isConnected = false;
+                    return false;
+                }
+            },
+
+            // Generate unique ID
+            generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+            },
+
+            // Set user ID for RLS policies
+            async setUserId() {
+                try {
+                    await supabase.rpc('set_config', {
+                        setting: 'app.user_id',
+                        value: this.userId
+                    });
+                } catch (error) {
+                    // Fallback: use client-side filtering
+                    console.log('Using client-side filtering for user data');
+                }
+            },
+
+            // Load features from Supabase
+            async loadFeatures() {
+                if (!this.isConnected) return null;
+
+                try {
+                    await this.setUserId();
+
+                    // Load features
+                    const { data: features, error: featuresError } = await supabase
+                        .from('features')
+                        .select('*')
+                        .eq('user_id', this.userId)
+                        .order('created_at', { ascending: false });
+
+                    if (featuresError) throw featuresError;
+
+                    if (!features || features.length === 0) {
+                        console.log('ℹ️ No features found in cloud');
+                        return [];
+                    }
+
+                    // Load timeline items for all features
+                    const { data: timelineItems, error: itemsError } = await supabase
+                        .from('timeline_items')
+                        .select('*')
+                        .eq('user_id', this.userId);
+
+                    if (itemsError) throw itemsError;
+
+                    // Load linked items
+                    const { data: linkedItems, error: linksError } = await supabase
+                        .from('linked_items')
+                        .select('*')
+                        .eq('user_id', this.userId);
+
+                    if (linksError) throw linksError;
+
+                    // Combine data structure to match app format
+                    const combinedFeatures = features.map(feature => {
+                        // Get timeline items for this feature
+                        const items = timelineItems.filter(item => item.feature_id === feature.id);
+
+                        // Add linked items to each timeline item
+                        const itemsWithLinks = items.map(item => {
+                            const links = linkedItems
+                                .filter(link => link.source_item_id === item.id || link.target_item_id === item.id)
+                                .map(link => ({
+                                    linkedItemId: link.target_item_id === item.id ? link.source_item_id : link.target_item_id,
+                                    linkedFeatureId: '', // Will be populated by app
+                                    relationshipType: link.relationship_type,
+                                    reason: link.reason,
+                                    direction: link.source_item_id === item.id ? 'outgoing' : 'incoming'
+                                }));
+
+                            return {
+                                id: item.id,
+                                timeline: item.timeline,
+                                difficulty: item.difficulty,
+                                usp: item.usp,
+                                integrationType: item.integration_type,
+                                category: item.category || [],
+                                linkedItems: links.length > 0 ? links : undefined,
+                                createdAt: item.created_at
+                            };
+                        });
+
+                        return {
+                            id: feature.id,
+                            name: feature.name,
+                            type: feature.type,
+                            purpose: feature.purpose,
+                            aiGenerated: feature.ai_generated,
+                            aiCreated: feature.ai_created,
+                            aiModified: feature.ai_modified,
+                            timelineItems: itemsWithLinks,
+                            createdAt: feature.created_at,
+                            updatedAt: feature.updated_at
+                        };
+                    });
+
+                    console.log(`✅ Loaded ${combinedFeatures.length} features from Supabase`);
+                    return combinedFeatures;
+                } catch (error) {
+                    console.error('❌ Error loading from Supabase:', error);
+                    return null;
+                }
+            },
+
+            // Save all features to Supabase
+            async syncFeatures(features) {
+                if (!this.isConnected) return false;
+
+                try {
+                    await this.setUserId();
+
+                    // Delete existing data for this user (full sync)
+                    await supabase.from('features').delete().eq('user_id', this.userId);
+
+                    if (features.length === 0) {
+                        console.log('✅ Synced 0 features to Supabase');
+                        return true;
+                    }
+
+                    // Prepare features for insert
+                    const featuresData = features.map(f => ({
+                        id: f.id,
+                        user_id: this.userId,
+                        name: f.name,
+                        type: f.type,
+                        purpose: f.purpose,
+                        ai_generated: f.aiGenerated || null,
+                        ai_created: f.aiCreated || false,
+                        ai_modified: f.aiModified || false,
+                        created_at: f.createdAt || new Date().toISOString(),
+                        updated_at: f.updatedAt || new Date().toISOString()
+                    }));
+
+                    // Insert features
+                    const { error: featuresError } = await supabase
+                        .from('features')
+                        .insert(featuresData);
+
+                    if (featuresError) throw featuresError;
+
+                    // Prepare timeline items for insert
+                    const timelineItemsData = [];
+                    const linkedItemsData = [];
+
+                    features.forEach(feature => {
+                        if (feature.timelineItems && feature.timelineItems.length > 0) {
+                            feature.timelineItems.forEach(item => {
+                                timelineItemsData.push({
+                                    id: item.id,
+                                    feature_id: feature.id,
+                                    user_id: this.userId,
+                                    timeline: item.timeline,
+                                    difficulty: item.difficulty,
+                                    usp: item.usp || null,
+                                    integration_type: item.integrationType || null,
+                                    category: item.category || [],
+                                    created_at: item.createdAt || new Date().toISOString()
+                                });
+
+                                // Collect linked items
+                                if (item.linkedItems && item.linkedItems.length > 0) {
+                                    item.linkedItems.forEach(link => {
+                                        linkedItemsData.push({
+                                            user_id: this.userId,
+                                            source_item_id: link.direction === 'outgoing' ? item.id : link.linkedItemId,
+                                            target_item_id: link.direction === 'outgoing' ? link.linkedItemId : item.id,
+                                            relationship_type: link.relationshipType,
+                                            reason: link.reason || null,
+                                            direction: link.direction
+                                        });
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+                    // Insert timeline items
+                    if (timelineItemsData.length > 0) {
+                        const { error: itemsError } = await supabase
+                            .from('timeline_items')
+                            .insert(timelineItemsData);
+
+                        if (itemsError) throw itemsError;
+                    }
+
+                    // Insert linked items (deduplicate first)
+                    if (linkedItemsData.length > 0) {
+                        const uniqueLinks = linkedItemsData.filter((link, index, self) =>
+                            index === self.findIndex(l =>
+                                l.source_item_id === link.source_item_id &&
+                                l.target_item_id === link.target_item_id
+                            )
+                        );
+
+                        if (uniqueLinks.length > 0) {
+                            const { error: linksError } = await supabase
+                                .from('linked_items')
+                                .insert(uniqueLinks);
+
+                            if (linksError) throw linksError;
+                        }
+                    }
+
+                    console.log(`✅ Synced ${features.length} features to Supabase`);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error syncing to Supabase:', error);
+                    return false;
+                }
+            },
+
+            // Subscribe to real-time changes
+            subscribeToChanges(callback) {
+                if (!this.isConnected) return;
+
+                // Subscribe to features changes
+                const featuresChannel = supabase
+                    .channel('features-changes')
+                    .on('postgres_changes', {
+                        event: '*',
+                        schema: 'public',
+                        table: 'features',
+                        filter: `user_id=eq.${this.userId}`
+                    }, async (payload) => {
+                        console.log('🔄 Features changed:', payload);
+                        const features = await this.loadFeatures();
+                        if (features) callback(features);
+                    })
+                    .subscribe();
+
+                this.subscriptions.push(featuresChannel);
+
+                // Subscribe to timeline_items changes
+                const itemsChannel = supabase
+                    .channel('timeline-items-changes')
+                    .on('postgres_changes', {
+                        event: '*',
+                        schema: 'public',
+                        table: 'timeline_items',
+                        filter: `user_id=eq.${this.userId}`
+                    }, async (payload) => {
+                        console.log('🔄 Timeline items changed:', payload);
+                        const features = await this.loadFeatures();
+                        if (features) callback(features);
+                    })
+                    .subscribe();
+
+                this.subscriptions.push(itemsChannel);
+
+                console.log('✅ Subscribed to real-time updates');
+            },
+
+            // Unsubscribe from all changes
+            unsubscribeAll() {
+                this.subscriptions.forEach(sub => {
+                    supabase.removeChannel(sub);
+                });
+                this.subscriptions = [];
+                console.log('✅ Unsubscribed from all real-time updates');
+            },
+
+            // Get connection status
+            getStatus() {
+                return {
+                    connected: this.isConnected,
+                    userId: this.userId
+                };
+            }
+        };
+
         const app = {
             features: [],
             currentView: 'table',
@@ -4421,7 +4826,10 @@
             aiFeatureCreationMode: false,
             aiFeatureEnhancementMode: false,
 
-            init() {
+            async init() {
+                // Initialize Supabase connection first
+                await supabaseService.init();
+
                 // Test localStorage availability
                 if (!this.testLocalStorage()) {
                     this.showAlert({ title:'Storage disabled', message:'Browser storage is disabled or unavailable. Your data will NOT be saved. Check private mode, browser settings, or storage quota.', variant:'warning' });
@@ -4430,7 +4838,8 @@
                 // Check origin/path changes
                 this.checkOriginChange();
 
-                this.loadData();
+                // Load data (will try Supabase first, then localStorage)
+                await this.loadData();
                 this.loadApiKey();
                 this.loadModel();
                 this.loadTavilyApiKey();
@@ -4456,6 +4865,21 @@
 
                 // Handle URL hash routing for deep links
                 this.setupHashRouting();
+
+                // Setup real-time sync for cross-browser updates
+                if (supabaseService.isConnected) {
+                    supabaseService.subscribeToChanges((updatedFeatures) => {
+                        console.log('🔄 Real-time update received from another device/browser');
+                        this.features = updatedFeatures;
+                        this.renderTable();
+                        this.updateCounters();
+                        // Also save to localStorage as cache
+                        this.saveToLocalStorage();
+                    });
+                }
+
+                // Show sync status
+                this.updateSyncStatus();
             },
 
             setupHashRouting() {
@@ -4955,17 +5379,47 @@
                 ];
             },
 
-            loadData() {
+            async loadData() {
                 try {
-                    const stored = localStorage.getItem('roadmapFeatures');
-                    if (stored) {
-                        this.features = JSON.parse(stored);
-                        this.features.forEach(f => {
-                            if (f.tags) f.tags.forEach(t => this.allTags.add(t));
-                        });
-                        console.log(`✅ Loaded ${this.features.length} features from storage`);
-                    } else {
-                        console.log('ℹ️ No saved features found - starting fresh');
+                    let loadedFromCloud = false;
+
+                    // Try loading from Supabase first if connected
+                    if (supabaseService.isConnected) {
+                        console.log('🔄 Loading data from Supabase...');
+                        const cloudFeatures = await supabaseService.loadFeatures();
+
+                        if (cloudFeatures !== null) {
+                            this.features = cloudFeatures;
+                            this.features.forEach(f => {
+                                if (f.tags) f.tags.forEach(t => this.allTags.add(t));
+                            });
+                            console.log(`✅ Loaded ${this.features.length} features from Supabase`);
+                            loadedFromCloud = true;
+
+                            // Also save to localStorage as offline cache
+                            this.saveToLocalStorage();
+
+                            // Check if we need to show migration prompt
+                            this.checkMigrationNeeded();
+                        }
+                    }
+
+                    // Fallback to localStorage if Supabase not available or no data
+                    if (!loadedFromCloud) {
+                        console.log('📦 Loading data from localStorage...');
+                        const stored = localStorage.getItem('roadmapFeatures');
+                        if (stored) {
+                            this.features = JSON.parse(stored);
+                            this.features.forEach(f => {
+                                if (f.tags) f.tags.forEach(t => this.allTags.add(t));
+                            });
+                            console.log(`✅ Loaded ${this.features.length} features from localStorage`);
+
+                            // Check if we should migrate to cloud
+                            this.checkMigrationNeeded();
+                        } else {
+                            console.log('ℹ️ No saved features found - starting fresh');
+                        }
                     }
                 } catch (error) {
                     console.error('❌ Error loading features:', error);
@@ -4974,14 +5428,37 @@
                 }
             },
 
-            saveData() {
+            async saveData() {
+                // Save to localStorage first (for offline cache)
+                const localSaved = this.saveToLocalStorage();
+
+                // Also sync to Supabase if connected
+                if (supabaseService.isConnected) {
+                    this.updateSyncStatus('syncing');
+                    const cloudSaved = await supabaseService.syncFeatures(this.features);
+                    if (cloudSaved) {
+                        this.updateSyncStatus('synced');
+                        console.log('✅ Data synced to cloud');
+                    } else {
+                        this.updateSyncStatus('error');
+                        console.warn('⚠️ Cloud sync failed, data saved locally only');
+                    }
+                } else {
+                    this.updateSyncStatus('offline');
+                }
+
+                return localSaved;
+            },
+
+            // Separate method for localStorage-only saves
+            saveToLocalStorage() {
                 try {
                     const dataToSave = JSON.stringify(this.features);
                     localStorage.setItem('roadmapFeatures', dataToSave);
-                    console.log(`✅ Saved ${this.features.length} features to storage (${dataToSave.length} bytes)`);
+                    console.log(`✅ Saved ${this.features.length} features to localStorage (${dataToSave.length} bytes)`);
                     return true;
                 } catch (error) {
-                    console.error('❌ Error saving features:', error);
+                    console.error('❌ Error saving to localStorage:', error);
                     if (error.name === 'QuotaExceededError') {
                         this.showAlert({ title:'Storage quota exceeded', message:'Your browser has run out of storage space. Try deleting some features, clearing browser data, or exporting your data as CSV backup.', variant:'warning' });
                     } else {
@@ -4989,6 +5466,123 @@
                     }
                     return false;
                 }
+            },
+
+            // Update sync status indicator
+            updateSyncStatus(status = null) {
+                const statusEl = document.getElementById('syncStatus');
+                if (!statusEl) return;
+
+                if (status === null) {
+                    // Auto-detect status
+                    if (!supabaseService.isConnected) {
+                        status = 'offline';
+                    } else {
+                        status = 'synced';
+                    }
+                }
+
+                const statuses = {
+                    'synced': { text: '✓ Synced', class: 'sync-status-success', title: 'Data is synced to cloud' },
+                    'syncing': { text: '⟳ Syncing...', class: 'sync-status-syncing', title: 'Syncing data to cloud' },
+                    'offline': { text: '📦 Offline', class: 'sync-status-offline', title: 'Working offline - data saved locally' },
+                    'error': { text: '⚠ Sync Error', class: 'sync-status-error', title: 'Failed to sync to cloud' }
+                };
+
+                const statusInfo = statuses[status] || statuses['offline'];
+                statusEl.textContent = statusInfo.text;
+                statusEl.className = 'sync-status ' + statusInfo.class;
+                statusEl.title = statusInfo.title;
+            },
+
+            // Check if migration from localStorage to cloud is needed
+            checkMigrationNeeded() {
+                // Don't show migration if already migrated
+                if (localStorage.getItem('migrationCompleted') === 'true') {
+                    return;
+                }
+
+                // Check if we have localStorage data but no cloud data
+                const localData = localStorage.getItem('roadmapFeatures');
+                if (localData && supabaseService.isConnected) {
+                    const localFeatures = JSON.parse(localData);
+                    // If we have local data and Supabase is connected but returned empty, offer migration
+                    if (localFeatures.length > 0 && this.features.length === 0) {
+                        this.showMigrationModal(localFeatures);
+                    } else if (localFeatures.length > 0 && this.features.length > 0) {
+                        // Data already synced, mark as migrated
+                        localStorage.setItem('migrationCompleted', 'true');
+                    }
+                }
+            },
+
+            // Show migration modal
+            showMigrationModal(localFeatures) {
+                const modal = document.getElementById('migrationModal');
+                const overlay = document.getElementById('migrationOverlay');
+                const count = document.getElementById('migrationCount');
+
+                if (!modal || !overlay) {
+                    // Modal elements don't exist yet, will be created later
+                    return;
+                }
+
+                count.textContent = localFeatures.length;
+                modal.classList.remove('hidden');
+                overlay.classList.remove('hidden');
+            },
+
+            // Migrate data to cloud
+            async migrateToCloud() {
+                const localData = localStorage.getItem('roadmapFeatures');
+                if (!localData) {
+                    this.closeMigrationModal();
+                    return;
+                }
+
+                try {
+                    const localFeatures = JSON.parse(localData);
+                    console.log(`🔄 Migrating ${localFeatures.length} features to cloud...`);
+
+                    // Show progress
+                    const modal = document.getElementById('migrationModal');
+                    const content = modal.querySelector('.migration-content');
+                    content.innerHTML = '<p>⟳ Migrating your data to cloud...</p><p>Please wait...</p>';
+
+                    // Sync to Supabase
+                    const success = await supabaseService.syncFeatures(localFeatures);
+
+                    if (success) {
+                        this.features = localFeatures;
+                        localStorage.setItem('migrationCompleted', 'true');
+                        content.innerHTML = '<p>✅ Migration completed successfully!</p><p>Your data is now synced across all browsers and devices.</p>';
+                        setTimeout(() => {
+                            this.closeMigrationModal();
+                            this.renderTable();
+                            this.updateSyncStatus('synced');
+                        }, 2000);
+                    } else {
+                        content.innerHTML = '<p>❌ Migration failed. Please try again later.</p><button class="btn-primary" onclick="app.closeMigrationModal()">Close</button>';
+                    }
+                } catch (error) {
+                    console.error('❌ Migration error:', error);
+                    this.showAlert({ title:'Migration failed', message:'Failed to migrate data to cloud. Your data is still safe locally.', variant:'danger' });
+                    this.closeMigrationModal();
+                }
+            },
+
+            // Skip migration
+            skipMigration() {
+                localStorage.setItem('migrationCompleted', 'true');
+                this.closeMigrationModal();
+            },
+
+            // Close migration modal
+            closeMigrationModal() {
+                const modal = document.getElementById('migrationModal');
+                const overlay = document.getElementById('migrationOverlay');
+                if (modal) modal.classList.add('hidden');
+                if (overlay) overlay.classList.add('hidden');
             },
 
             loadApiKey() {

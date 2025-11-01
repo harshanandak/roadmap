@@ -12,7 +12,11 @@
       "Read(//c/Users/harsh/.claude/agents/**)",
       "Bash(rm:*)",
       "Read(//c/Users/harsh/**)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(scoop --version:*)",
+      "Bash(choco --version:*)",
+      "Bash(npx supabase:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
