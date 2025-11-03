@@ -5556,6 +5556,7 @@
             aiFeatureEnhancementMode: false,
 
             async init() {
+                console.log('🚀 App initialization started');
                 // Initialize Supabase connection first
                 await supabaseService.init();
 
@@ -12622,116 +12623,6 @@ Generate 3-4 milestones, 3-5 risks, and 2-4 prerequisites.`;
                             variant: 'danger'
                         });
                     }
-                };
-
-                input.click();
-            },
-                                        icon: '📊',
-                                        customInstructions: importedData.customInstructions || '',
-                                        aiMemory: importedData.memory || [],
-                                        createdAt: new Date().toISOString(),
-                                        updatedAt: new Date().toISOString()
-                                    };
-                                    this.workspaces = [defaultWorkspace];
-                                    this.currentWorkspaceId = defaultWorkspace.id;
-
-                                    // Assign workspace_id to all imported features
-                                    importedData.features.forEach(f => {
-                                        f.workspaceId = defaultWorkspace.id;
-                                    });
-
-                                    localStorage.setItem('roadmapWorkspaces', JSON.stringify(this.workspaces));
-                                    localStorage.setItem('currentWorkspaceId', this.currentWorkspaceId);
-                                }
-
-                                // Import features
-                                this.features = importedData.features || [];
-
-                                // Import AI data
-                                this.memory = importedData.memory || [];
-                                this.memorySuggestions = importedData.memorySuggestions || [];
-                                this.customInstructions = importedData.customInstructions || '';
-                                if (importedData.selectedModel) {
-                                    this.selectedModel = importedData.selectedModel;
-                                }
-
-                                // Import link data (v2.0)
-                                if (isV2) {
-                                    this.linkSuggestions = importedData.linkSuggestions || [];
-                                    this.rejectedLinks = importedData.rejectedLinks || [];
-                                    this.aiActionLog = importedData.aiActionLog || [];
-                                }
-
-                                // Rebuild tags
-                                this.allTags = new Set();
-                                this.features.forEach(f => {
-                                    if (f.tags) f.tags.forEach(t => this.allTags.add(t));
-                                    // Also collect categories from timeline items
-                                    if (f.timelineItems) {
-                                        f.timelineItems.forEach(item => {
-                                            if (item.category) {
-                                                item.category.forEach(c => this.allTags.add(c));
-                                            }
-                                        });
-                                    }
-                                });
-
-                                // Save to localStorage and Supabase
-                                this.saveData();
-                                this.saveMemory();
-                                this.saveMemorySuggestions();
-                                this.saveCustomInstructions(this.customInstructions);
-                                this.saveModel(this.selectedModel);
-                                this.saveLinkSuggestions();
-                                this.saveRejectedLinks();
-                                this.saveAIActionLog();
-
-                                // Update UI
-                                this.renderWorkspaceSelector();
-                                this.renderTable();
-                                this.updateSuggestionNotification();
-                                this.updateLinkNotification();
-                                this.updateCounters();
-                                this.updateActionLogCounter();
-
-                                // Update custom instructions textarea
-                                const textarea = document.getElementById('customInstructionsInput');
-                                if (textarea) textarea.value = this.customInstructions;
-
-                                // Update model select
-                                const modelSelect = document.getElementById('modelSelect');
-                                if (modelSelect) modelSelect.value = this.selectedModel;
-
-                                console.log('✅ Imported all data successfully');
-                                this.showAlert({
-                                    title:'Import complete',
-                                    message:`Restored ${this.workspaces.length} workspace(s), ${this.features.length} features, ${this.memory.length} memory items.`,
-                                    variant:'success'
-                                });
-                            }).catch((error) => {
-                                console.error('❌ Import error during processing:', error);
-                                this.showAlert({
-                                    title: 'Import failed during processing',
-                                    message: `An unexpected error occurred while importing: ${error.message}<br><br>Please try again or check the browser console for details.`,
-                                    variant: 'danger'
-                                });
-                            });
-
-                        } catch (error) {
-                            console.error('❌ Import error:', error);
-                            let errorMsg = error.message;
-                            if (error instanceof SyntaxError) {
-                                errorMsg = 'The file is not a valid JSON file. Please make sure you selected a backup file exported from this application.';
-                            }
-                            this.showAlert({
-                                title: 'Import failed',
-                                message: `${errorMsg}<br><br>If you're trying to import an old backup, make sure it contains at least a "features" array.`,
-                                variant: 'danger'
-                            });
-                        }
-                    };
-
-                    reader.readAsText(file);
                 };
 
                 input.click();
