@@ -4044,6 +4044,47 @@
             background: var(--primary-hover) !important;
         }
 
+        .workspace-welcome {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .workspace-welcome-header {
+            margin-bottom: 16px;
+        }
+
+        .workspace-welcome-content h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .workspace-welcome-content p {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .workspace-benefits {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .workspace-benefits span {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .workspace-item .workspace-edit {
             opacity: 0.6;
             font-size: 12px;
@@ -4774,6 +4815,9 @@
                     <button class="btn-secondary btn-compact" onclick="app.toggleAIActionPanel()" title="AI Actions Log">
                         <span class="btn-icon">📝</span>
                         <span id="aiActionCount" class="action-badge">0</span>
+                    </button>
+                    <button class="btn-secondary btn-compact" onclick="app.showApiSettings()" title="API Settings">
+                        <span class="btn-icon">🔑</span>
                     </button>
                     <button class="btn-secondary btn-compact" onclick="app.toggleTheme()" title="Toggle Theme">
                         <span class="btn-icon">🌓</span>
@@ -7209,11 +7253,24 @@
                 const currentWorkspace = this.getCurrentWorkspace();
                 if (!currentWorkspace) {
                     container.innerHTML = `
-                        <button class="btn-create-workspace" onclick="app.showWorkspaceModal()">
-                            <span class="workspace-icon">🏗️</span>
-                            <span class="workspace-text">Create Your First Workspace</span>
-                            <span class="workspace-arrow">→</span>
-                        </button>
+                        <div class="workspace-welcome">
+                            <div class="workspace-welcome-header">
+                                <button class="btn-create-workspace" onclick="app.showWorkspaceModal()">
+                                    <span class="workspace-icon">🏗️</span>
+                                    <span class="workspace-text">Create Your First Workspace</span>
+                                    <span class="workspace-arrow">→</span>
+                                </button>
+                            </div>
+                            <div class="workspace-welcome-content">
+                                <h3>Welcome to Platform Roadmap! 🎯</h3>
+                                <p>Create a workspace to start organizing your features and roadmaps.</p>
+                                <div class="workspace-benefits">
+                                    <span>📊 Organize features by project</span>
+                                    <span>🎨 Customize with colors & icons</span>
+                                    <span>📈 Track progress visually</span>
+                                </div>
+                            </div>
+                        </div>
                     `;
                     return;
                 }
@@ -7291,6 +7348,32 @@
                         };
                         document.addEventListener('click', closeDropdown);
                     }, 0);
+                }
+            },
+
+            // Show API settings
+            showApiSettings() {
+                // Show API key input section if hidden
+                const apiSection = document.getElementById('apiKeyInputSection');
+                if (apiSection) {
+                    apiSection.classList.remove('hidden');
+                    // Focus on the API key input
+                    const apiInput = document.getElementById('apiKeyInput');
+                    if (apiInput) {
+                        setTimeout(() => apiInput.focus(), 100);
+                    }
+                    // Show a notification
+                    this.showAlert({
+                        title: 'API Settings',
+                        message: 'Configure your API keys in the chat area below.',
+                        variant: 'info'
+                    });
+                } else {
+                    this.showAlert({
+                        title: 'API Settings',
+                        message: 'Open the chat panel to access API settings.',
+                        variant: 'info'
+                    });
                 }
             },
 
