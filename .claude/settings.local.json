@@ -11,7 +11,10 @@
       "Bash(scoop --version:*)",
       "Bash(winget --version:*)",
       "Bash(npx supabase:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(cat:*)",
+      "Bash(git remote add:*)",
+      "Bash(git config:*)"
     ],
     "deny": [],
     "ask": []
