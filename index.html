@@ -4038,8 +4038,8 @@
         .workspace-modal .form-control {
             width: 100%;
             padding: 8px 12px;
-            background: var(--input-bg);
-            border: 1px solid var(--border-color);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 6px;
             color: var(--text-primary);
             font-size: 14px;
@@ -4049,7 +4049,7 @@
         .workspace-modal .form-control:focus {
             outline: none;
             border-color: var(--primary);
-            background: var(--card-bg);
+            background: var(--bg-elevated);
         }
 
         .workspace-modal textarea.form-control {
@@ -4241,13 +4241,14 @@
         }
 
         .modal-content {
-            background: var(--card-bg);
+            background: var(--bg-elevated);
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             max-width: 90%;
             max-height: 90vh;
             overflow: auto;
             animation: modalFadeIn 0.2s ease;
+            padding: 24px;
         }
 
         @keyframes modalFadeIn {
@@ -12345,18 +12346,19 @@ Generate 3-4 milestones, 3-5 risks, and 2-4 prerequisites.`;
                         try {
                             const importedData = JSON.parse(event.target.result);
 
-                            // Validate data structure
-                            if (!importedData.version || !importedData.features) {
-                                throw new Error('Invalid backup file format');
+                            // Validate data structure - only features is required
+                            if (!importedData.features || !Array.isArray(importedData.features)) {
+                                throw new Error('Invalid backup file: Missing or invalid "features" array. Please make sure you selected a valid roadmap backup file.');
                             }
 
                             // Check version for backward compatibility
+                            // If no version field, treat as v1.0 (legacy format before workspace feature)
                             const isV2 = importedData.version === '2.0';
                             const workspaceCount = isV2 ? (importedData.workspaces?.length || 0) : 0;
 
                             // Confirm before overwriting
                             const confirmMsg = `This will restore:<br>` +
-                                (isV2 ? `- ${workspaceCount} workspace(s)<br>` : '') +
+                                (isV2 ? `- ${workspaceCount} workspace(s)<br>` : `- Legacy format detected - a new workspace will be created<br>`) +
                                 `- ${importedData.features.length} features<br>` +
                                 `- ${importedData.memory?.length || 0} memory items<br>` +
                                 `- ${importedData.linkSuggestions?.length || 0} link suggestions<br>` +
@@ -12475,7 +12477,15 @@ Generate 3-4 milestones, 3-5 risks, and 2-4 prerequisites.`;
 
                         } catch (error) {
                             console.error('❌ Import error:', error);
-                            this.showAlert({ title:'Import failed', message:`Error: ${error.message}. Make sure you selected a valid backup file.`, variant:'danger' });
+                            let errorMsg = error.message;
+                            if (error instanceof SyntaxError) {
+                                errorMsg = 'The file is not a valid JSON file. Please make sure you selected a backup file exported from this application.';
+                            }
+                            this.showAlert({
+                                title: 'Import failed',
+                                message: `${errorMsg}<br><br>If you're trying to import an old backup, make sure it contains at least a "features" array.`,
+                                variant: 'danger'
+                            });
                         }
                     };
 
