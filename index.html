@@ -3888,12 +3888,473 @@
                 gap: 12px;
             }
         }
+
+        /* ========== WORKSPACE STYLES ========== */
+
+        /* Header Left - Workspace Container */
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .workspace-selector-container {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Workspace Button */
+        .btn-workspace {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-workspace:hover {
+            background: var(--hover-color);
+            border-color: var(--primary);
+        }
+
+        .workspace-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .workspace-name {
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .workspace-arrow {
+            font-size: 10px;
+            opacity: 0.6;
+            transition: transform 0.2s;
+        }
+
+        .btn-workspace:hover .workspace-arrow {
+            transform: translateY(2px);
+        }
+
+        /* Workspace Dropdown */
+        .workspace-dropdown {
+            position: relative;
+        }
+
+        .workspace-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            min-width: 280px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            padding: 8px;
+        }
+
+        .workspace-dropdown-menu.hidden {
+            display: none;
+        }
+
+        .workspace-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            color: var(--text-primary);
+        }
+
+        .workspace-item:hover {
+            background: var(--hover-color);
+        }
+
+        .workspace-item.active {
+            background: var(--primary-alpha);
+            color: var(--primary);
+        }
+
+        .workspace-item .workspace-icon {
+            font-size: 20px;
+        }
+
+        .workspace-item .workspace-name {
+            flex: 1;
+            font-weight: 400;
+        }
+
+        .workspace-item.active .workspace-name {
+            font-weight: 600;
+        }
+
+        .workspace-check {
+            color: var(--success);
+            font-size: 16px;
+        }
+
+        .workspace-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 8px 0;
+        }
+
+        /* Workspace Modal */
+        .workspace-modal {
+            max-width: 500px;
+        }
+
+        .workspace-modal .form-group {
+            margin-bottom: 16px;
+        }
+
+        .workspace-modal label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .workspace-modal .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .workspace-modal .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--card-bg);
+        }
+
+        .workspace-modal textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .color-picker input[type="color"] {
+            width: 60px;
+            height: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .form-hint {
+            display: block;
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Workspace Manage Modal */
+        .workspace-manage-modal {
+            max-width: 700px;
+        }
+
+        .workspace-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .workspace-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .workspace-list-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .workspace-list-item.active {
+            background: var(--primary-alpha);
+            border-color: var(--primary);
+        }
+
+        .workspace-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .workspace-icon-lg {
+            font-size: 32px;
+            line-height: 1;
+        }
+
+        .workspace-details {
+            flex: 1;
+        }
+
+        .workspace-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .workspace-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .workspace-stats {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .workspace-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .workspace-badge-current {
+            padding: 4px 10px;
+            background: var(--success-alpha);
+            color: var(--success);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Workspace Welcome Screen */
+        .workspace-welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .workspace-welcome-icon {
+            font-size: 80px;
+            margin-bottom: 24px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .workspace-welcome h2 {
+            font-size: 28px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .workspace-welcome p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            max-width: 500px;
+        }
+
+        .workspace-welcome-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 32px !important;
+        }
+
+        .btn-lg {
+            padding: 12px 32px;
+            font-size: 16px;
+        }
+
+        /* Button Sizes */
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            border: 1px solid var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            border-color: #bd2130;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            max-height: 90vh;
+            overflow: auto;
+            animation: modalFadeIn 0.2s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 28px;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Responsive Workspace Styles */
+        @media (max-width: 768px) {
+            .header-left {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .workspace-name {
+                max-width: 150px;
+            }
+
+            .workspace-dropdown-menu {
+                min-width: 240px;
+            }
+
+            .workspace-list-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .workspace-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .workspace-welcome {
+                padding: 20px;
+            }
+
+            .workspace-welcome h2 {
+                font-size: 22px;
+            }
+
+            .workspace-welcome-icon {
+                font-size: 60px;
+            }
+        }
+
+        /* ========== END WORKSPACE STYLES ========== */
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 Platform Roadmap</h1>
+            <div class="header-left">
+                <h1>🚀 Platform Roadmap</h1>
+                <div id="workspaceSelector" class="workspace-selector-container"></div>
+            </div>
             <div class="header-main-actions">
                 <input type="text" id="searchInput" class="header-search focus-ring" placeholder="🔍 Search..." oninput="app.debouncedApplyFilters()" title="Ctrl/Cmd+K">
                 <button class="btn-primary btn-compact" onclick="app.showAddModal()" title="Add Feature (N)">+ Add</button>
@@ -4607,6 +5068,7 @@
                             name: feature.name,
                             type: feature.type,
                             purpose: feature.purpose,
+                            workspaceId: feature.workspace_id,
                             aiGenerated: feature.ai_generated,
                             aiCreated: feature.ai_created,
                             aiModified: feature.ai_modified,
@@ -4643,6 +5105,7 @@
                     const featuresData = features.map(f => ({
                         id: f.id,
                         user_id: this.userId,
+                        workspace_id: f.workspaceId || null,
                         name: f.name,
                         type: f.type,
                         purpose: f.purpose,
@@ -4671,6 +5134,7 @@
                                     id: item.id,
                                     feature_id: feature.id,
                                     user_id: this.userId,
+                                    workspace_id: feature.workspaceId || null,
                                     timeline: item.timeline,
                                     difficulty: item.difficulty,
                                     usp: item.usp || null,
@@ -4684,6 +5148,7 @@
                                     item.linkedItems.forEach(link => {
                                         linkedItemsData.push({
                                             user_id: this.userId,
+                                            workspace_id: feature.workspaceId || null,
                                             source_item_id: link.direction === 'outgoing' ? item.id : link.linkedItemId,
                                             target_item_id: link.direction === 'outgoing' ? link.linkedItemId : item.id,
                                             relationship_type: link.relationshipType,
@@ -4781,6 +5246,219 @@
                 console.log('✅ Unsubscribed from all real-time updates');
             },
 
+            // Load all workspaces
+            async loadWorkspaces() {
+                if (!this.isConnected) return null;
+
+                try {
+                    await this.setUserId();
+
+                    const { data: workspaces, error } = await supabase
+                        .from('workspaces')
+                        .select('*')
+                        .eq('user_id', this.userId)
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+
+                    console.log(`✅ Loaded ${workspaces?.length || 0} workspaces from Supabase`);
+                    return workspaces || [];
+                } catch (error) {
+                    console.error('❌ Error loading workspaces:', error);
+                    return null;
+                }
+            },
+
+            // Create a new workspace
+            async createWorkspace(workspace) {
+                if (!this.isConnected) return false;
+
+                try {
+                    await this.setUserId();
+
+                    const workspaceData = {
+                        id: workspace.id,
+                        user_id: this.userId,
+                        name: workspace.name,
+                        description: workspace.description || null,
+                        color: workspace.color || '#3b82f6',
+                        icon: workspace.icon || '📊',
+                        custom_instructions: workspace.customInstructions || null,
+                        ai_memory: workspace.aiMemory || [],
+                        created_at: workspace.createdAt || new Date().toISOString(),
+                        updated_at: workspace.updatedAt || new Date().toISOString()
+                    };
+
+                    const { error } = await supabase
+                        .from('workspaces')
+                        .insert([workspaceData]);
+
+                    if (error) throw error;
+
+                    console.log('✅ Created workspace:', workspace.name);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error creating workspace:', error);
+                    return false;
+                }
+            },
+
+            // Update a workspace
+            async updateWorkspace(workspaceId, updates) {
+                if (!this.isConnected) return false;
+
+                try {
+                    await this.setUserId();
+
+                    const updateData = {
+                        name: updates.name,
+                        description: updates.description,
+                        color: updates.color,
+                        icon: updates.icon,
+                        custom_instructions: updates.customInstructions,
+                        ai_memory: updates.aiMemory,
+                        updated_at: new Date().toISOString()
+                    };
+
+                    const { error } = await supabase
+                        .from('workspaces')
+                        .update(updateData)
+                        .eq('id', workspaceId)
+                        .eq('user_id', this.userId);
+
+                    if (error) throw error;
+
+                    console.log('✅ Updated workspace:', workspaceId);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error updating workspace:', error);
+                    return false;
+                }
+            },
+
+            // Delete a workspace (cascade deletes features)
+            async deleteWorkspace(workspaceId) {
+                if (!this.isConnected) return false;
+
+                try {
+                    await this.setUserId();
+
+                    // Delete all features in this workspace (cascade will handle timeline_items and linked_items)
+                    await supabase
+                        .from('features')
+                        .delete()
+                        .eq('workspace_id', workspaceId)
+                        .eq('user_id', this.userId);
+
+                    // Delete the workspace
+                    const { error } = await supabase
+                        .from('workspaces')
+                        .delete()
+                        .eq('id', workspaceId)
+                        .eq('user_id', this.userId);
+
+                    if (error) throw error;
+
+                    console.log('✅ Deleted workspace:', workspaceId);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error deleting workspace:', error);
+                    return false;
+                }
+            },
+
+            // Load features for a specific workspace
+            async loadWorkspaceFeatures(workspaceId) {
+                if (!this.isConnected) return null;
+
+                try {
+                    await this.setUserId();
+
+                    // Load features for this workspace
+                    const { data: features, error: featuresError } = await supabase
+                        .from('features')
+                        .select('*')
+                        .eq('user_id', this.userId)
+                        .eq('workspace_id', workspaceId)
+                        .order('created_at', { ascending: false });
+
+                    if (featuresError) throw featuresError;
+
+                    if (!features || features.length === 0) {
+                        console.log('ℹ️ No features found in workspace');
+                        return [];
+                    }
+
+                    // Load timeline items for all features in workspace
+                    const { data: timelineItems, error: itemsError } = await supabase
+                        .from('timeline_items')
+                        .select('*')
+                        .eq('user_id', this.userId)
+                        .eq('workspace_id', workspaceId);
+
+                    if (itemsError) throw itemsError;
+
+                    // Load linked items for workspace
+                    const { data: linkedItems, error: linksError } = await supabase
+                        .from('linked_items')
+                        .select('*')
+                        .eq('user_id', this.userId)
+                        .eq('workspace_id', workspaceId);
+
+                    if (linksError) throw linksError;
+
+                    // Combine data structure to match app format
+                    const combinedFeatures = features.map(feature => {
+                        // Get timeline items for this feature
+                        const items = timelineItems.filter(item => item.feature_id === feature.id);
+
+                        // Add linked items to each timeline item
+                        const itemsWithLinks = items.map(item => {
+                            const links = linkedItems
+                                .filter(link => link.source_item_id === item.id || link.target_item_id === item.id)
+                                .map(link => ({
+                                    linkedItemId: link.target_item_id === item.id ? link.source_item_id : link.target_item_id,
+                                    linkedFeatureId: '', // Will be populated by app
+                                    relationshipType: link.relationship_type,
+                                    reason: link.reason,
+                                    direction: link.source_item_id === item.id ? 'outgoing' : 'incoming'
+                                }));
+
+                            return {
+                                id: item.id,
+                                timeline: item.timeline,
+                                difficulty: item.difficulty,
+                                usp: item.usp,
+                                integrationType: item.integration_type,
+                                category: item.category || [],
+                                linkedItems: links.length > 0 ? links : undefined,
+                                createdAt: item.created_at
+                            };
+                        });
+
+                        return {
+                            id: feature.id,
+                            name: feature.name,
+                            type: feature.type,
+                            purpose: feature.purpose,
+                            workspaceId: feature.workspace_id,
+                            aiGenerated: feature.ai_generated,
+                            aiCreated: feature.ai_created,
+                            aiModified: feature.ai_modified,
+                            timelineItems: itemsWithLinks,
+                            createdAt: feature.created_at,
+                            updatedAt: feature.updated_at
+                        };
+                    });
+
+                    console.log(`✅ Loaded ${combinedFeatures.length} features from workspace`);
+                    return combinedFeatures;
+                } catch (error) {
+                    console.error('❌ Error loading workspace features:', error);
+                    return null;
+                }
+            },
+
             // Get connection status
             getStatus() {
                 return {
@@ -4792,6 +5470,8 @@
 
         const app = {
             features: [],
+            workspaces: [],
+            currentWorkspaceId: null,
             currentView: 'table',
             currentFeatureId: null,
             currentTab: 'overview',
@@ -4833,17 +5513,61 @@
                 // Check origin/path changes
                 this.checkOriginChange();
 
-                // Load data (will try Supabase first, then localStorage)
-                await this.loadData();
+                // Load workspaces first
+                await this.loadWorkspaces();
+
+                // Check if we have workspaces
+                if (this.workspaces.length === 0) {
+                    // No workspaces - show welcome screen
+                    console.log('ℹ️ No workspaces found - showing welcome screen');
+                    this.loadApiKey();
+                    this.loadModel();
+                    this.loadTavilyApiKey();
+                    this.renderWorkspaceSelector();
+                    this.showWorkspaceWelcome();
+                    this.updateSyncStatus();
+                    return;
+                }
+
+                // Load last used workspace or first workspace
+                const lastWorkspaceId = localStorage.getItem('currentWorkspaceId');
+                if (lastWorkspaceId && this.workspaces.find(w => w.id === lastWorkspaceId)) {
+                    this.currentWorkspaceId = lastWorkspaceId;
+                } else {
+                    this.currentWorkspaceId = this.workspaces[0].id;
+                    localStorage.setItem('currentWorkspaceId', this.currentWorkspaceId);
+                }
+
+                // Load features for current workspace
+                if (supabaseService.isConnected) {
+                    const workspaceFeatures = await supabaseService.loadWorkspaceFeatures(this.currentWorkspaceId);
+                    if (workspaceFeatures !== null) {
+                        this.features = workspaceFeatures;
+                    }
+                } else {
+                    // Load all features from localStorage and filter by workspace
+                    const stored = localStorage.getItem('roadmapFeatures');
+                    if (stored) {
+                        const allFeatures = JSON.parse(stored);
+                        this.features = allFeatures.filter(f => f.workspaceId === this.currentWorkspaceId);
+                    }
+                }
+
+                // Load workspace-specific AI settings
+                const currentWorkspace = this.getCurrentWorkspace();
+                if (currentWorkspace) {
+                    this.customInstructions = currentWorkspace.customInstructions || '';
+                    this.memory = currentWorkspace.aiMemory || [];
+                }
+
                 this.loadApiKey();
                 this.loadModel();
                 this.loadTavilyApiKey();
-                this.loadCustomInstructions();
-                this.loadMemory();
                 this.loadMemorySuggestions();
                 this.loadLinkSuggestions();
                 this.loadRejectedLinks();
                 this.loadAIActionLog();
+                this.renderWorkspaceSelector();
                 this.renderTable();
                 this.setupTagInput();
                 this.updateSuggestionNotification();
@@ -4865,7 +5589,8 @@
                 if (supabaseService.isConnected) {
                     supabaseService.subscribeToChanges((updatedFeatures) => {
                         console.log('🔄 Real-time update received from another device/browser');
-                        this.features = updatedFeatures;
+                        // Only update if features belong to current workspace
+                        this.features = updatedFeatures.filter(f => f.workspaceId === this.currentWorkspaceId);
                         this.renderTable();
                         this.updateCounters();
                         // Also save to localStorage as cache
@@ -5579,6 +6304,485 @@
                 if (modal) modal.classList.add('hidden');
                 if (overlay) overlay.classList.add('hidden');
             },
+
+            // ========== WORKSPACE MANAGEMENT ==========
+
+            // Load workspaces from Supabase or localStorage
+            async loadWorkspaces() {
+                try {
+                    // Try loading from Supabase first
+                    if (supabaseService.isConnected) {
+                        const cloudWorkspaces = await supabaseService.loadWorkspaces();
+                        if (cloudWorkspaces !== null) {
+                            // Convert database format to app format
+                            this.workspaces = cloudWorkspaces.map(w => ({
+                                id: w.id,
+                                name: w.name,
+                                description: w.description || '',
+                                color: w.color || '#3b82f6',
+                                icon: w.icon || '📊',
+                                customInstructions: w.custom_instructions || '',
+                                aiMemory: w.ai_memory || [],
+                                createdAt: w.created_at,
+                                updatedAt: w.updated_at
+                            }));
+                            console.log(`✅ Loaded ${this.workspaces.length} workspaces`);
+
+                            // Save to localStorage as cache
+                            localStorage.setItem('roadmapWorkspaces', JSON.stringify(this.workspaces));
+                            return;
+                        }
+                    }
+
+                    // Fallback to localStorage
+                    const stored = localStorage.getItem('roadmapWorkspaces');
+                    if (stored) {
+                        this.workspaces = JSON.parse(stored);
+                        console.log(`✅ Loaded ${this.workspaces.length} workspaces from localStorage`);
+                    } else {
+                        this.workspaces = [];
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading workspaces:', error);
+                    this.workspaces = [];
+                }
+            },
+
+            // Get current workspace object
+            getCurrentWorkspace() {
+                return this.workspaces.find(w => w.id === this.currentWorkspaceId) || null;
+            },
+
+            // Create a new workspace
+            async createWorkspace(name, description, color, icon) {
+                const workspace = {
+                    id: Date.now().toString(),
+                    name: name,
+                    description: description || '',
+                    color: color || '#3b82f6',
+                    icon: icon || '📊',
+                    customInstructions: '',
+                    aiMemory: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                this.workspaces.push(workspace);
+
+                // Save to localStorage
+                localStorage.setItem('roadmapWorkspaces', JSON.stringify(this.workspaces));
+
+                // Save to Supabase
+                if (supabaseService.isConnected) {
+                    await supabaseService.createWorkspace(workspace);
+                }
+
+                console.log('✅ Created workspace:', workspace.name);
+                return workspace;
+            },
+
+            // Update a workspace
+            async updateWorkspace(workspaceId, updates) {
+                const workspace = this.workspaces.find(w => w.id === workspaceId);
+                if (!workspace) {
+                    console.error('❌ Workspace not found:', workspaceId);
+                    return false;
+                }
+
+                // Update properties
+                if (updates.name !== undefined) workspace.name = updates.name;
+                if (updates.description !== undefined) workspace.description = updates.description;
+                if (updates.color !== undefined) workspace.color = updates.color;
+                if (updates.icon !== undefined) workspace.icon = updates.icon;
+                if (updates.customInstructions !== undefined) workspace.customInstructions = updates.customInstructions;
+                if (updates.aiMemory !== undefined) workspace.aiMemory = updates.aiMemory;
+                workspace.updatedAt = new Date().toISOString();
+
+                // Save to localStorage
+                localStorage.setItem('roadmapWorkspaces', JSON.stringify(this.workspaces));
+
+                // Save to Supabase
+                if (supabaseService.isConnected) {
+                    await supabaseService.updateWorkspace(workspaceId, workspace);
+                }
+
+                console.log('✅ Updated workspace:', workspace.name);
+
+                // Update UI if this is the current workspace
+                if (workspaceId === this.currentWorkspaceId) {
+                    this.renderWorkspaceSelector();
+                }
+
+                return true;
+            },
+
+            // Delete a workspace
+            async deleteWorkspace(workspaceId) {
+                const workspace = this.workspaces.find(w => w.id === workspaceId);
+                if (!workspace) {
+                    console.error('❌ Workspace not found:', workspaceId);
+                    return false;
+                }
+
+                // Count features in this workspace
+                const featureCount = this.features.filter(f => f.workspaceId === workspaceId).length;
+
+                // Confirm deletion
+                const confirmed = confirm(`Delete workspace "${workspace.name}"?\n\nThis will permanently delete ${featureCount} feature(s) in this workspace.\n\nThis action cannot be undone.`);
+                if (!confirmed) return false;
+
+                // Delete from Supabase first
+                if (supabaseService.isConnected) {
+                    await supabaseService.deleteWorkspace(workspaceId);
+                }
+
+                // Remove from local array
+                this.workspaces = this.workspaces.filter(w => w.id !== workspaceId);
+
+                // Remove all features in this workspace
+                this.features = this.features.filter(f => f.workspaceId !== workspaceId);
+
+                // Save to localStorage
+                localStorage.setItem('roadmapWorkspaces', JSON.stringify(this.workspaces));
+                this.saveToLocalStorage();
+
+                console.log('✅ Deleted workspace:', workspace.name);
+
+                // Switch to another workspace or show welcome screen
+                if (workspaceId === this.currentWorkspaceId) {
+                    if (this.workspaces.length > 0) {
+                        await this.switchWorkspace(this.workspaces[0].id);
+                    } else {
+                        this.currentWorkspaceId = null;
+                        this.showWorkspaceWelcome();
+                    }
+                }
+
+                return true;
+            },
+
+            // Switch to a different workspace
+            async switchWorkspace(workspaceId) {
+                const workspace = this.workspaces.find(w => w.id === workspaceId);
+                if (!workspace) {
+                    console.error('❌ Workspace not found:', workspaceId);
+                    return;
+                }
+
+                console.log('🔄 Switching to workspace:', workspace.name);
+
+                // Save current workspace ID
+                this.currentWorkspaceId = workspaceId;
+                localStorage.setItem('currentWorkspaceId', workspaceId);
+
+                // Load features for this workspace
+                if (supabaseService.isConnected) {
+                    const workspaceFeatures = await supabaseService.loadWorkspaceFeatures(workspaceId);
+                    if (workspaceFeatures !== null) {
+                        this.features = workspaceFeatures;
+                    } else {
+                        // Filter from cached features
+                        this.features = this.features.filter(f => f.workspaceId === workspaceId);
+                    }
+                } else {
+                    // Filter from localStorage
+                    this.features = this.features.filter(f => f.workspaceId === workspaceId);
+                }
+
+                // Load workspace-specific AI settings
+                this.customInstructions = workspace.customInstructions || '';
+                this.memory = workspace.aiMemory || [];
+
+                // Clear AI conversation when switching workspaces
+                this.conversationHistory = [];
+                this.messageCount = 0;
+                this.lastAnalysisCount = 0;
+
+                // Update UI
+                this.renderTable();
+                this.renderWorkspaceSelector();
+                this.updateCounters();
+
+                // Clear any selection
+                this.selectedFeatureIds.clear();
+
+                // Return to table view if in detail view
+                if (this.currentView === 'detail') {
+                    this.currentView = 'table';
+                    window.location.hash = '';
+                }
+
+                console.log(`✅ Switched to workspace: ${workspace.name} (${this.features.length} features)`);
+            },
+
+            // Render workspace selector in header
+            renderWorkspaceSelector() {
+                const container = document.getElementById('workspaceSelector');
+                if (!container) return;
+
+                const currentWorkspace = this.getCurrentWorkspace();
+                if (!currentWorkspace) {
+                    container.innerHTML = '<button class="btn-workspace" onclick="app.showWorkspaceModal()">+ Create Workspace</button>';
+                    return;
+                }
+
+                // Create dropdown button with current workspace
+                container.innerHTML = `
+                    <div class="workspace-dropdown">
+                        <button class="btn-workspace" onclick="app.toggleWorkspaceDropdown()" id="workspaceDropdownBtn">
+                            <span class="workspace-icon" style="color: ${currentWorkspace.color}">${currentWorkspace.icon}</span>
+                            <span class="workspace-name">${this.escapeHtml(currentWorkspace.name)}</span>
+                            <span class="workspace-arrow">▼</span>
+                        </button>
+                        <div class="workspace-dropdown-menu hidden" id="workspaceDropdownMenu">
+                            ${this.workspaces.map(w => `
+                                <button class="workspace-item ${w.id === this.currentWorkspaceId ? 'active' : ''}"
+                                        onclick="app.selectWorkspaceFromDropdown('${w.id}')">
+                                    <span class="workspace-icon" style="color: ${w.color}">${w.icon}</span>
+                                    <span class="workspace-name">${this.escapeHtml(w.name)}</span>
+                                    ${w.id === this.currentWorkspaceId ? '<span class="workspace-check">✓</span>' : ''}
+                                </button>
+                            `).join('')}
+                            <div class="workspace-divider"></div>
+                            <button class="workspace-item" onclick="app.showWorkspaceModal()">
+                                <span class="workspace-icon">➕</span>
+                                <span class="workspace-name">New Workspace</span>
+                            </button>
+                            <button class="workspace-item" onclick="app.showWorkspaceManageModal()">
+                                <span class="workspace-icon">⚙️</span>
+                                <span class="workspace-name">Manage Workspaces</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            // Toggle workspace dropdown
+            toggleWorkspaceDropdown() {
+                const menu = document.getElementById('workspaceDropdownMenu');
+                if (!menu) return;
+
+                menu.classList.toggle('hidden');
+
+                // Close dropdown when clicking outside
+                if (!menu.classList.contains('hidden')) {
+                    setTimeout(() => {
+                        const closeDropdown = (e) => {
+                            if (!e.target.closest('.workspace-dropdown')) {
+                                menu.classList.add('hidden');
+                                document.removeEventListener('click', closeDropdown);
+                            }
+                        };
+                        document.addEventListener('click', closeDropdown);
+                    }, 0);
+                }
+            },
+
+            // Select workspace from dropdown
+            async selectWorkspaceFromDropdown(workspaceId) {
+                const menu = document.getElementById('workspaceDropdownMenu');
+                if (menu) menu.classList.add('hidden');
+
+                if (workspaceId !== this.currentWorkspaceId) {
+                    await this.switchWorkspace(workspaceId);
+                }
+            },
+
+            // Show workspace welcome screen (no workspaces exist)
+            showWorkspaceWelcome() {
+                const container = document.getElementById('tableContainer');
+                if (!container) return;
+
+                container.innerHTML = `
+                    <div class="workspace-welcome">
+                        <div class="workspace-welcome-icon">📊</div>
+                        <h2>Welcome to Your Roadmap Manager</h2>
+                        <p>Create your first workspace to start organizing your roadmaps and features.</p>
+                        <p class="workspace-welcome-subtitle">Workspaces help you manage multiple projects independently.</p>
+                        <button class="btn-primary btn-lg" onclick="app.showWorkspaceModal()">
+                            ➕ Create Your First Workspace
+                        </button>
+                    </div>
+                `;
+            },
+
+            // Show workspace creation/edit modal
+            showWorkspaceModal(workspaceId = null) {
+                const isEdit = workspaceId !== null;
+                const workspace = isEdit ? this.workspaces.find(w => w.id === workspaceId) : null;
+
+                const modal = document.createElement('div');
+                modal.id = 'workspaceModalOverlay';
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-content workspace-modal">
+                        <div class="modal-header">
+                            <h3>${isEdit ? 'Edit Workspace' : 'Create New Workspace'}</h3>
+                            <button class="modal-close" onclick="app.closeWorkspaceModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="workspaceName">Workspace Name *</label>
+                                <input type="text" id="workspaceName" class="form-control"
+                                       placeholder="e.g., Product Roadmap 2024"
+                                       value="${isEdit ? this.escapeHtml(workspace.name) : ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="workspaceDescription">Description</label>
+                                <textarea id="workspaceDescription" class="form-control" rows="3"
+                                          placeholder="Optional description for this workspace">${isEdit ? this.escapeHtml(workspace.description) : ''}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="workspaceColor">Color</label>
+                                <div class="color-picker">
+                                    <input type="color" id="workspaceColor" value="${isEdit ? workspace.color : '#3b82f6'}">
+                                    <span class="color-preview" id="colorPreview"></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="workspaceIcon">Icon (Emoji)</label>
+                                <input type="text" id="workspaceIcon" class="form-control"
+                                       placeholder="📊" maxlength="2"
+                                       value="${isEdit ? workspace.icon : '📊'}">
+                                <small class="form-hint">Choose an emoji to represent this workspace</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" onclick="app.closeWorkspaceModal()">Cancel</button>
+                            <button class="btn-primary" onclick="app.saveWorkspaceFromModal(${isEdit ? `'${workspaceId}'` : 'null'})">
+                                ${isEdit ? 'Save Changes' : 'Create Workspace'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+                document.getElementById('workspaceName').focus();
+            },
+
+            // Save workspace from modal
+            async saveWorkspaceFromModal(workspaceId) {
+                const name = document.getElementById('workspaceName').value.trim();
+                const description = document.getElementById('workspaceDescription').value.trim();
+                const color = document.getElementById('workspaceColor').value;
+                const icon = document.getElementById('workspaceIcon').value.trim() || '📊';
+
+                if (!name) {
+                    this.showAlert({ title: 'Validation Error', message: 'Workspace name is required', variant: 'warning' });
+                    return;
+                }
+
+                if (workspaceId) {
+                    // Update existing workspace
+                    await this.updateWorkspace(workspaceId, { name, description, color, icon });
+                    this.showAlert({ title: 'Success', message: 'Workspace updated successfully', variant: 'success' });
+                } else {
+                    // Create new workspace
+                    const workspace = await this.createWorkspace(name, description, color, icon);
+
+                    // Switch to the new workspace
+                    await this.switchWorkspace(workspace.id);
+
+                    this.showAlert({ title: 'Success', message: 'Workspace created successfully', variant: 'success' });
+                }
+
+                this.closeWorkspaceModal();
+            },
+
+            // Close workspace modal
+            closeWorkspaceModal() {
+                const modal = document.getElementById('workspaceModalOverlay');
+                if (modal) modal.remove();
+            },
+
+            // Show workspace management modal
+            showWorkspaceManageModal() {
+                // Close dropdown first
+                const dropdown = document.getElementById('workspaceDropdownMenu');
+                if (dropdown) dropdown.classList.add('hidden');
+
+                const modal = document.createElement('div');
+                modal.id = 'workspaceManageOverlay';
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-content workspace-manage-modal">
+                        <div class="modal-header">
+                            <h3>Manage Workspaces</h3>
+                            <button class="modal-close" onclick="app.closeWorkspaceManageModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="workspace-list">
+                                ${this.workspaces.map(w => {
+                                    const featureCount = this.features.filter(f => f.workspaceId === w.id).length;
+                                    return `
+                                        <div class="workspace-list-item ${w.id === this.currentWorkspaceId ? 'active' : ''}">
+                                            <div class="workspace-info">
+                                                <span class="workspace-icon-lg" style="color: ${w.color}">${w.icon}</span>
+                                                <div class="workspace-details">
+                                                    <div class="workspace-title">${this.escapeHtml(w.name)}</div>
+                                                    <div class="workspace-meta">
+                                                        ${w.description ? `<div>${this.escapeHtml(w.description)}</div>` : ''}
+                                                        <div class="workspace-stats">${featureCount} feature${featureCount !== 1 ? 's' : ''}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="workspace-actions">
+                                                ${w.id === this.currentWorkspaceId ? '<span class="workspace-badge-current">Current</span>' : `<button class="btn-sm btn-secondary" onclick="app.selectWorkspaceFromManage('${w.id}')">Switch</button>`}
+                                                <button class="btn-sm btn-secondary" onclick="app.editWorkspaceFromManage('${w.id}')">Edit</button>
+                                                <button class="btn-sm btn-danger" onclick="app.deleteWorkspaceFromManage('${w.id}')">Delete</button>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-primary" onclick="app.showWorkspaceModalFromManage()">+ New Workspace</button>
+                            <button class="btn-secondary" onclick="app.closeWorkspaceManageModal()">Close</button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+            },
+
+            // Select workspace from manage modal
+            async selectWorkspaceFromManage(workspaceId) {
+                await this.switchWorkspace(workspaceId);
+                this.closeWorkspaceManageModal();
+            },
+
+            // Edit workspace from manage modal
+            editWorkspaceFromManage(workspaceId) {
+                this.closeWorkspaceManageModal();
+                this.showWorkspaceModal(workspaceId);
+            },
+
+            // Delete workspace from manage modal
+            async deleteWorkspaceFromManage(workspaceId) {
+                const deleted = await this.deleteWorkspace(workspaceId);
+                if (deleted) {
+                    this.closeWorkspaceManageModal();
+                    // Reopen if there are still workspaces
+                    if (this.workspaces.length > 0) {
+                        setTimeout(() => this.showWorkspaceManageModal(), 300);
+                    }
+                }
+            },
+
+            // Show workspace modal from manage modal
+            showWorkspaceModalFromManage() {
+                this.closeWorkspaceManageModal();
+                this.showWorkspaceModal();
+            },
+
+            // Close workspace manage modal
+            closeWorkspaceManageModal() {
+                const modal = document.getElementById('workspaceManageOverlay');
+                if (modal) modal.remove();
+            },
+
+            // ========== END WORKSPACE MANAGEMENT ==========
 
             loadApiKey() {
                 const stored = localStorage.getItem('openrouterApiKey');
@@ -8474,6 +9678,7 @@ If no relationships found, return: []`;
                         name: document.getElementById('featureName').value,
                         type: document.getElementById('featureType').value,
                         purpose: document.getElementById('featurePurpose').value,
+                        workspaceId: this.currentWorkspaceId,
                         timelineItems: JSON.parse(JSON.stringify(this.currentTimelineItems)),
                         summary: summaries,
                         createdAt: this.editingId ?

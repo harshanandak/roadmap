@@ -6,7 +6,12 @@
       "Bash(vercel --prod)",
       "Bash(vercel ls:*)",
       "Bash(vercel inspect:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(supabase --version:*)",
+      "Bash(scoop --version:*)",
+      "Bash(winget --version:*)",
+      "Bash(npx supabase:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
