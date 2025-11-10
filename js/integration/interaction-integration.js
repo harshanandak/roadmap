@@ -791,9 +791,9 @@ const interactionIntegration = {
                 }
             });
         });
-        
-        // Add skip links
-        this.addSkipLinks();
+
+        // Add skip links - DISABLED: keyboard-navigation.js already adds them
+        // this.addSkipLinks();
     },
 
     /**
