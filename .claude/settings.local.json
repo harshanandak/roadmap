@@ -7,7 +7,10 @@
       "Bash(done)",
       "Bash(npx supabase db push)",
       "Bash(git add:*)",
-      "Bash(.gitignore)"
+      "Bash(.gitignore)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npx vercel:*)"
     ],
     "deny": [],
     "ask": []

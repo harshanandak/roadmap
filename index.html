@@ -18,128 +18,58 @@
     <link rel="stylesheet" href="css/components/mobile-navigation.css">
 
     <!-- Enhanced Interface CSS - Disabled: Causes style conflicts -->
-    <!-- <link rel="stylesheet" href="css/enhanced-complete.css"> -->
+    <!-- -->
 </head>
 <body>
-    <div class="container enhanced-container">
-        <div class="header">
-            <div class="header-left">
-                <h1>🚀 Platform Roadmap</h1>
-                <div id="workspaceSelector" class="workspace-selector-container"></div>
-            </div>
-
-            <div class="header-center">
-                <input type="text" id="searchInput" class="header-search focus-ring enhanced-input" placeholder="🔍 Search features..." oninput="app.debouncedApplyFilters()" title="Ctrl/Cmd+K">
-            </div>
-
-            <div class="header-right">
-                <!-- Primary Actions -->
-                <div class="primary-actions">
-                    <button class="btn-primary enhanced-button" onclick="app.showAddModal()" title="Add Feature (N)">
-                        <span class="btn-icon">➕</span>
-                        <span class="btn-text">Add</span>
-                    </button>
-                    <button class="btn-ai-create enhanced-button" onclick="app.showAIAssistedFeatureCreation()" title="Create with AI Assistant">
-                        <span class="btn-icon">✨</span>
-                        <span class="btn-text">AI</span>
-                    </button>
+    <div class="app-shell">
+        <div class="app-container">
+            <header class="header">
+                <div class="header-left">
+                    <h1>Platform Roadmap</h1>
+                    <div id="workspaceSelector" class="workspace-selector-container"></div>
                 </div>
-
-                <div class="header-divider"></div>
-
-                <!-- Data Management -->
-                <div class="data-actions">
-                    <button class="btn-secondary enhanced-button" onclick="app.exportAllData()" title="Export all data as JSON backup">
-                        <span class="btn-icon">💾</span>
-                        <span class="btn-text-desktop">Export</span>
-                    </button>
-                    <button class="btn-secondary enhanced-button" onclick="app.importAllData()" title="Import data from backup file">
-                        <span class="btn-icon">📂</span>
-                        <span class="btn-text-desktop">Import</span>
-                    </button>
+                <div class="header-center">
+                    <input 
+                        type="search" 
+                        id="searchInput" 
+                        class="header-search" 
+                        placeholder="Search features..."
+                        oninput="featureTable.applyFilters(app)"
+                    />
                 </div>
-
-                <div class="header-divider"></div>
-
-                <!-- Quick Tools -->
-                <div class="quick-actions">
-                    <button class="btn-secondary btn-compact" onclick="app.toggleAIActionPanel()" title="AI Actions Log">
-                        <span class="btn-icon">📝</span>
-                        <span id="aiActionCount" class="action-badge">0</span>
-                    </button>
-                    <button class="btn-secondary btn-compact" onclick="app.analyzeBatchLinks(event)" title="AI Link Detection">
-                        <span class="btn-icon">🔗</span>
-                    </button>
-                </div>
-
-                <!-- More Actions Dropdown -->
-                <div class="more-dropdown">
-                    <button class="btn-secondary btn-compact more-btn" onclick="app.toggleMoreDropdown()" title="More Actions">
-                        <span class="btn-icon">⋯</span>
-                    </button>
-                    <div class="more-dropdown-menu hidden" id="moreDropdownMenu">
-                        <div class="dropdown-section">
-                            <div class="dropdown-section-title">🏗️ Workspace</div>
-                            <button class="dropdown-item" onclick="app.showWorkspaceModal(); app.toggleMoreDropdown();">
-                                <span class="item-icon">➕</span>
-                                <span class="item-text">New Workspace</span>
-                            </button>
-                            <button class="dropdown-item" onclick="document.querySelector('.workspace-selector-container button')?.click(); app.toggleMoreDropdown();">
-                                <span class="item-icon">⚙️</span>
-                                <span class="item-text">Manage Workspaces</span>
-                            </button>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-section">
-                            <div class="dropdown-section-title">📊 Export Options</div>
-                            <button class="dropdown-item" onclick="app.exportToCSV(); app.toggleMoreDropdown();">
-                                <span class="item-icon">📥</span>
-                                <span class="item-text">Export to CSV</span>
-                            </button>
-                            <button class="dropdown-item" onclick="app.exportSelectedToCSV(); app.toggleMoreDropdown();">
-                                <span class="item-icon">📤</span>
-                                <span class="item-text">Export Selected CSV</span>
-                            </button>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-section">
-                            <div class="dropdown-section-title">⚙️ Settings</div>
-                            <button class="dropdown-item" onclick="app.showApiSettings(); app.toggleMoreDropdown();">
-                                <span class="item-icon">🔑</span>
-                                <span class="item-text">API Settings</span>
-                            </button>
-                            <button class="dropdown-item" onclick="app.toggleTheme(); app.toggleMoreDropdown();">
-                                <span class="item-icon">🌓</span>
-                                <span class="item-text">Toggle Theme</span>
-                            </button>
+                <div class="header-right">
+                    <div class="primary-actions">
+                        <button class="btn btn-primary" onclick="app.showAddModal()">
+                            <span class="btn-icon">＋</span>
+                            <span>Add</span>
+                        </button>
+                        <button class="btn btn-outline" onclick="app.showAIMenu(event)">
+                            <span class="btn-icon">✨</span>
+                            <span>AI</span>
+                        </button>
+                    </div>
+                    <div class="data-actions">
+                        <button class="btn btn-ghost" onclick="featureTable.exportToCSV(app)">
+                            <span class="btn-icon">⇣</span>
+                            <span>Export</span>
+                        </button>
+                        <button class="btn btn-ghost" onclick="app.showImportModal()">
+                            <span class="btn-icon">⇡</span>
+                            <span>Import</span>
+                        </button>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="btn btn-icon-only" onclick="app.toggleKanbanView()" title="Toggle board view">▤</button>
+                        <button class="btn btn-icon-only" onclick="app.openSettings()" title="Settings">⚙</button>
+                        <div id="syncStatus" class="sync-status sync-status-offline">
+                            <span>●</span><span>Offline</span>
                         </div>
                     </div>
                 </div>
+            </header>
 
-                <!-- Status & Bulk Actions -->
-                <div id="syncStatus" class="sync-status sync-status-offline" title="Sync status">📦</div>
-                <div id="bulkActions" class="bulk-actions hidden" role="region" aria-label="Bulk actions">
-                    <span id="bulkCount" class="bulk-count">0</span>
-                    <button class="btn-danger btn-compact" onclick="app.bulkDeleteSelected()" title="Delete selected">🗑️</button>
-                    <button class="btn-primary btn-compact" onclick="app.exportSelectedToCSV()" title="Export selected">📤</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Link Suggestion Notification -->
-        <div id="linkNotification" class="link-notification hidden" onclick="app.toggleLinkSuggestions()">
-            <div class="link-notification-collapsed">
-                <span>🔗 <span id="linkSuggestionCount">0</span> new link suggestions</span>
-                <span class="link-notification-badge">Click to review</span>
-            </div>
-            <div class="link-notification-expanded" id="linkSuggestionsList" onclick="event.stopPropagation()">
-                <!-- Link suggestions will be rendered here -->
-            </div>
-        </div>
-
-        <div class="content">
-            <!-- Table View -->
-            <div id="tableView" class="table-container">
+            <main class="content">
+                <div id="tableView" class="table-view"> class="table-container">
                 <!-- Workspace Creation Banner -->
                 <div class="workspace-banner" id="workspaceBanner">
                     <div class="workspace-banner-content">
