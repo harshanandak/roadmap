@@ -1,5 +1,6 @@
 # Claude/Cursor settings
 .claude/
+cursor-mcp-config.json
 
 # Node modules (if you add any dependencies later)
 node_modules/
