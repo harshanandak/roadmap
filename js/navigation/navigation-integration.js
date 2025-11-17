@@ -429,6 +429,15 @@ const navigationIntegration = {
     },
 
     /**
+     * Handle throttled event
+     */
+    handleThrottledEvent(eventType, event) {
+        // Implement throttled event handling logic
+        // This prevents high-frequency events from overwhelming the system
+        // Can be extended to dispatch custom events or update state
+    },
+
+    /**
      * Setup state management
      */
     setupStateManagement() {
@@ -484,11 +493,12 @@ const navigationIntegration = {
         // Implement state change handling logic
         if (event && event.detail) {
             const { source, state } = event.detail;
-            console.log(`[NavigationIntegration] State changed from ${source}:`, state);
 
-            // Update shared state
+            // Only log if we have valid data (avoid spam)
             if (source && state) {
-                this.updateSharedState(source, state);
+                console.log(`[NavigationIntegration] State changed from ${source}:`, state);
+                // Don't call updateSharedState here to avoid loop
+                // The state is already updated by the source
             }
         }
     },

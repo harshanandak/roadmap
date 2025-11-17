@@ -754,6 +754,12 @@ const keyboardNavigation = {
      * Setup command palette
      */
     setupCommandPalette() {
+        // Check if command palette already exists
+        if (document.getElementById('commandPalette')) {
+            console.log('⌨️ Command palette already exists, skipping creation');
+            return;
+        }
+
         // Create command palette element
         const commandPalette = document.createElement('div');
         commandPalette.className = 'command-palette';
@@ -777,9 +783,9 @@ const keyboardNavigation = {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(commandPalette);
-        
+
         // Setup command palette events
         this.setupCommandPaletteEvents(commandPalette);
     },
@@ -1038,6 +1044,12 @@ const keyboardNavigation = {
      * Setup skip links
      */
     setupSkipLinks() {
+        // Check if skip links already exist
+        if (document.querySelector('.skip-links')) {
+            console.log('⌨️ Skip links already exist, skipping creation');
+            return;
+        }
+
         // Create skip links container
         const skipLinks = document.createElement('div');
         skipLinks.className = 'skip-links';
@@ -1048,7 +1060,7 @@ const keyboardNavigation = {
             <a href="#navigation" class="skip-link ${this.config.skipLinkClass}">Skip to navigation</a>
             <a href="#search" class="skip-link ${this.config.skipLinkClass}">Skip to search</a>
         `;
-        
+
         // Insert at beginning of body
         document.body.insertBefore(skipLinks, document.body.firstChild);
     },
@@ -1558,7 +1570,23 @@ const keyboardNavigation = {
     handleCompositionEnd(e) {
         // Implementation for IME composition end
     },
-
+    /**
+     * Handle focus in
+     */
+    handleFocusIn(e) {
+        if (e.target) {
+            this.state.lastFocusedElement = e.target;
+        }
+    },
+    
+    /**
+     * Handle focus out
+     */
+    handleFocusOut(e) {
+        if (this.state.debugMode) {
+            console.log('[KeyboardNav] Focus lost from:', e.target);
+        }
+    },
     /**
      * Handle escape key
      */

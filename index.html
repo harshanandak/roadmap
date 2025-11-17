@@ -60,6 +60,7 @@
                     </div>
                     <div class="quick-actions">
                         <button class="btn btn-icon-only" onclick="app.toggleKanbanView()" title="Toggle board view">▤</button>
+                        <button class="btn btn-icon-only" onclick="app.toggleTheme()" title="Toggle dark mode">🌓</button>
                         <button class="btn btn-icon-only" onclick="app.openSettings()" title="Settings">⚙</button>
                         <div id="syncStatus" class="sync-status sync-status-offline">
                             <span>●</span><span>Offline</span>
@@ -935,6 +936,8 @@
     <script src="js/state-management/state-reducers.js"></script>
     <script src="js/state-management/state-actions.js"></script>
     <script src="js/state-management/state-middleware.js"></script>
+    <script src="js/state-management/state-persistence.js"></script>
+    <script src="js/state-management/component-state-integration.js"></script>
     <script src="js/state-management/state-management-integration.js"></script>
 
     <!-- Enhanced Interface JavaScript - Navigation System -->
@@ -1100,29 +1103,52 @@
                     try {
                         const workspaceFeatures = await supabaseService.loadWorkspaceFeatures(this.currentWorkspaceId);
                         if (workspaceFeatures !== null && workspaceFeatures.length > 0) {
-                            // If cloud has more features or different features, update local data
-                            if (workspaceFeatures.length > this.features.length) {
-                                // Merge features - prefer cloud data but keep local additions
-                                const mergedFeatures = [...workspaceFeatures];
+                            // Smart merge: prefer features with more complete data (more timeline items)
+                            const mergedFeatures = [];
+                            const processedIds = new Set();
 
-                                // Add any local features that aren't in cloud
-                                this.features.forEach(localFeature => {
-                                    if (!workspaceFeatures.find(cf => cf.id === localFeature.id)) {
+                            // First, merge features that exist in both sources
+                            this.features.forEach(localFeature => {
+                                const cloudFeature = workspaceFeatures.find(cf => cf.id === localFeature.id);
+
+                                if (cloudFeature) {
+                                    // Feature exists in both - compare timeline items and choose the one with more data
+                                    const localTimelineCount = localFeature.timelineItems?.length || 0;
+                                    const cloudTimelineCount = cloudFeature.timelineItems?.length || 0;
+
+                                    // Prefer the version with more timeline items
+                                    if (localTimelineCount >= cloudTimelineCount) {
                                         mergedFeatures.push(localFeature);
+                                        console.log(`  → Keeping local version of "${localFeature.name}" (${localTimelineCount} timeline items)`);
+                                    } else {
+                                        mergedFeatures.push(cloudFeature);
+                                        console.log(`  → Using cloud version of "${cloudFeature.name}" (${cloudTimelineCount} timeline items)`);
                                     }
-                                });
+                                    processedIds.add(localFeature.id);
+                                } else {
+                                    // Feature only exists locally
+                                    mergedFeatures.push(localFeature);
+                                    processedIds.add(localFeature.id);
+                                }
+                            });
 
-                                this.features = mergedFeatures;
-                                console.log(`✅ Synced ${workspaceFeatures.length} features from cloud`);
+                            // Add any cloud features that weren't in local storage
+                            workspaceFeatures.forEach(cloudFeature => {
+                                if (!processedIds.has(cloudFeature.id)) {
+                                    mergedFeatures.push(cloudFeature);
+                                }
+                            });
 
-                                // Update localStorage with merged data
-                                const allStored = JSON.parse(localStorage.getItem('roadmapFeatures') || '[]');
-                                const updatedStored = allStored.filter(f => f.workspaceId !== this.currentWorkspaceId);
-                                updatedStored.push(...this.features);
-                                localStorage.setItem('roadmapFeatures', JSON.stringify(updatedStored));
-                            } else {
-                                console.log(`✅ Local features (${this.features.length}) are up to date`);
-                            }
+                            this.features = mergedFeatures;
+                            console.log(`✅ Merged ${mergedFeatures.length} features (${this.features.length} local, ${workspaceFeatures.length} cloud)`);
+
+                            // Update localStorage with merged data
+                            const allStored = JSON.parse(localStorage.getItem('roadmapFeatures') || '[]');
+                            const updatedStored = allStored.filter(f => f.workspaceId !== this.currentWorkspaceId);
+                            updatedStored.push(...this.features);
+                            localStorage.setItem('roadmapFeatures', JSON.stringify(updatedStored));
+                        } else {
+                            console.log(`✅ Local features (${this.features.length}) are up to date`);
                         }
                     } catch (syncError) {
                         console.warn('⚠️ Could not sync features with cloud:', syncError.message);
@@ -5646,6 +5672,11 @@ If no relationships found, return: []`;
                 const input = document.getElementById('tagInput');
                 const suggestions = document.getElementById('tagSuggestions');
 
+                // Check if elements exist (they may not if modal hasn't been shown yet)
+                if (!input || !suggestions) {
+                    return; // Elements will be set up when modal is shown
+                }
+
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -6883,6 +6914,11 @@ Let's start! Ask me questions about the feature I want to add.`;
                 this.exportData();
             },
 
+            showImportModal() {
+                // Alias for importAllData for consistency with button onclick
+                this.importAllData();
+            },
+
             importAllData() {
                 const input = document.createElement('input');
                 input.type = 'file';
@@ -7449,6 +7485,9 @@ Current Feature Being Enhanced:
                 detailViewCrud.renderTags(this, tags);
             }
         };
+
+        // Make app globally accessible
+        window.app = app;
 
         // Initialize app when DOM is ready
         document.addEventListener('DOMContentLoaded', async () => {

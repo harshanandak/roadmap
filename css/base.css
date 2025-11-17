@@ -31,18 +31,18 @@ body {
 
 .app-shell {
     min-height: 100vh;
-    padding: 16px;
+    padding: 0;
     display: flex;
     justify-content: center;
 }
 
 .app-container {
     width: 100%;
-    max-width: 1440px;
+    max-width: 100%;
     background: var(--bg-primary, #ffffff);
-    border-radius: 20px;
-    box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
-    padding: 14px 14px 16px;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -55,9 +55,10 @@ body {
     align-items: center;
     gap: 10px;
     padding: 8px 10px;
-    border-radius: 14px;
+    border-radius: 0;
     background: var(--bg-primary);
-    border: 1px solid var(--border-subtle, #e5e7eb);
+    border: none;
+    border-bottom: 1px solid var(--border-subtle, #e5e7eb);
 }
 
 .header-left,
@@ -168,12 +169,12 @@ body {
 .table-container {
     margin-top: 2px;
     background: var(--bg-primary);
-    border-radius: 14px;
-    border: 1px solid var(--border-subtle, #e5e7eb);
+    border-radius: 0;
+    border: none;
     padding: 8px 8px 10px;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+    box-shadow: none;
     overflow: auto;
-    max-height: calc(100vh - 150px);
+    max-height: calc(100vh - 120px);
 }
 
 /* Table baseline */
@@ -520,18 +521,18 @@ body {
 
 .app-shell {
     min-height: 100vh;
-    padding: 16px;
+    padding: 0;
     display: flex;
     justify-content: center;
 }
 
 .app-container {
     width: 100%;
-    max-width: 1440px;
+    max-width: 100%;
     background: var(--bg-primary, #ffffff);
-    border-radius: 20px;
-    box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
-    padding: 14px 14px 16px;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -544,9 +545,10 @@ body {
     align-items: center;
     gap: 10px;
     padding: 8px 10px;
-    border-radius: 14px;
+    border-radius: 0;
     background: var(--bg-primary);
-    border: 1px solid var(--border-subtle, #e5e7eb);
+    border: none;
+    border-bottom: 1px solid var(--border-subtle, #e5e7eb);
 }
 
 .header-left,
@@ -657,12 +659,12 @@ body {
 .table-container {
     margin-top: 2px;
     background: var(--bg-primary);
-    border-radius: 14px;
-    border: 1px solid var(--border-subtle, #e5e7eb);
+    border-radius: 0;
+    border: none;
     padding: 8px 8px 10px;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+    box-shadow: none;
     overflow: auto;
-    max-height: calc(100vh - 150px);
+    max-height: calc(100vh - 120px);
 }
 
 /* Table baseline */

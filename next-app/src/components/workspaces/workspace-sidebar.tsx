@@ -73,16 +73,32 @@ export function WorkspaceSidebar({
   const searchParams = useSearchParams();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['work-items']);
+  const [sidebarBehavior, setSidebarBehavior] = useState<'expanded' | 'collapsed' | 'hover'>('expanded');
+  const [isHovering, setIsHovering] = useState(false);
 
   const activeView = currentView || searchParams?.get('view') || 'dashboard';
 
-  // Load collapsed state from localStorage
+  // Load sidebar behavior and collapsed state from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('workspace-sidebar-collapsed');
-    if (saved) {
-      setCollapsed(JSON.parse(saved));
+    const behavior = localStorage.getItem('workspace-sidebar-behavior') as 'expanded' | 'collapsed' | 'hover';
+    const savedCollapsed = localStorage.getItem('workspace-sidebar-collapsed');
+
+    if (behavior) {
+      setSidebarBehavior(behavior);
+
+      // Set initial collapsed state based on behavior
+      if (behavior === 'collapsed' || behavior === 'hover') {
+        setCollapsed(true);
+      } else if (behavior === 'expanded') {
+        setCollapsed(false);
+      }
+    } else if (savedCollapsed) {
+      setCollapsed(JSON.parse(savedCollapsed));
     }
   }, []);
+
+  // Determine if sidebar should be expanded based on hover behavior
+  const shouldBeExpanded = sidebarBehavior === 'hover' ? isHovering : !collapsed;
 
   // Save collapsed state to localStorage
   const toggleCollapsed = () => {
@@ -206,6 +222,20 @@ export function WorkspaceSidebar({
         },
       ],
     },
+    {
+      id: 'workspace',
+      name: 'Workspace',
+      icon: Settings,
+      items: [
+        {
+          id: 'settings',
+          name: 'Settings',
+          view: 'settings',
+          icon: Settings,
+          enabled: true,
+        },
+      ],
+    },
   ];
 
   const navigateToView = (view: string) => {
@@ -218,8 +248,10 @@ export function WorkspaceSidebar({
     <div
       className={cn(
         'flex h-full flex-col border-r bg-white transition-all duration-300',
-        collapsed ? 'w-16' : 'w-64'
+        shouldBeExpanded ? 'w-64' : 'w-16'
       )}
+      onMouseEnter={() => sidebarBehavior === 'hover' && setIsHovering(true)}
+      onMouseLeave={() => sidebarBehavior === 'hover' && setIsHovering(false)}
     >
       {/* Header with Workspace Switcher */}
       <div className="flex h-16 items-center gap-2 border-b px-4">
@@ -229,19 +261,9 @@ export function WorkspaceSidebar({
             currentWorkspaceName={workspaceName}
             teamPlan={teamPlan}
             workspaces={workspaces}
-            collapsed={collapsed}
+            collapsed={!shouldBeExpanded}
           />
         </div>
-        {!collapsed && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleCollapsed}
-            className="shrink-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-        )}
       </div>
 
       {/* Navigation */}
@@ -254,7 +276,7 @@ export function WorkspaceSidebar({
             return (
               <div key={section.id} className="space-y-1">
                 {/* Section Header */}
-                {!collapsed && section.id !== 'overview' && (
+                {shouldBeExpanded && section.id !== 'overview' && (
                   <button
                     onClick={() => toggleSection(section.id)}
                     className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-slate-100"
@@ -273,8 +295,8 @@ export function WorkspaceSidebar({
                 )}
 
                 {/* Section Items */}
-                {(isExpanded || collapsed || section.id === 'overview') && (
-                  <div className={cn(!collapsed && section.id !== 'overview' && 'ml-2')}>
+                {(isExpanded || !shouldBeExpanded || section.id === 'overview') && (
+                  <div className={cn(shouldBeExpanded && section.id !== 'overview' && 'ml-2')}>
                     {section.items.map((item) => {
                       const ItemIcon = item.icon;
                       const active = isActive(item.view);
@@ -298,7 +320,7 @@ export function WorkspaceSidebar({
                           )}
                         >
                           <ItemIcon className="h-4 w-4 shrink-0" />
-                          {!collapsed && (
+                          {shouldBeExpanded && (
                             <>
                               <span className="flex-1 truncate text-left">{item.name}</span>
                               {item.comingSoon && (
@@ -325,21 +347,29 @@ export function WorkspaceSidebar({
         </nav>
       </ScrollArea>
 
-      {/* Settings Footer */}
-      <div className="border-t p-2">
-        <button
-          onClick={() => navigateToView('settings')}
-          className={cn(
-            'w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-            activeView === 'settings'
-              ? 'bg-blue-50 font-medium text-blue-600'
-              : 'text-slate-700 hover:bg-slate-100'
-          )}
-        >
-          <Settings className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Settings</span>}
-        </button>
-      </div>
+      {/* Sidebar Toggle Footer */}
+      {sidebarBehavior !== 'hover' && (
+        <div className="border-t p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleCollapsed}
+            className="w-full flex items-center justify-center gap-2 text-muted-foreground hover:text-slate-700"
+          >
+            {collapsed ? (
+              <>
+                <ChevronRight className="h-4 w-4" />
+                {shouldBeExpanded && <span className="text-xs">Expand</span>}
+              </>
+            ) : (
+              <>
+                <ChevronLeft className="h-4 w-4" />
+                {shouldBeExpanded && <span className="text-xs">Collapse</span>}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

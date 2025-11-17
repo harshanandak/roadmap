@@ -16,7 +16,7 @@
 /* ========== HAMBURGER MENU BUTTON ========== */
 
 .mobile-menu-toggle {
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     width: var(--touch-target-min);
@@ -28,6 +28,10 @@
     position: relative;
     z-index: var(--z-header, 1000);
     -webkit-tap-highlight-color: transparent;
+    /* Add border to make it more visible on desktop */
+    border-radius: var(--radius-md, 0.375rem);
+    order: -1;
+    margin-right: var(--space-2);
 }
 
 .mobile-menu-toggle:hover {
@@ -324,8 +328,7 @@
         flex-wrap: nowrap;
     }
 
-    .mobile-menu-toggle {
-        display: flex;
+.mobile-menu-toggle {
         order: -1;
         margin-right: var(--space-2);
     }
@@ -574,5 +577,42 @@
     .mobile-nav-item:hover,
     .mobile-nav-item:focus {
         outline: 2px solid var(--text-primary);
+    }
+}
+
+/* ========== DESKTOP OPTIMIZATIONS FOR MOBILE NAVIGATION ========== */
+
+@media (min-width: 769px) {
+    .mobile-nav-panel {
+        width: 320px;
+        max-width: 40vw;
+    }
+    
+    .mobile-nav-body {
+        padding: var(--space-5);
+    }
+    
+    .mobile-nav-section {
+        margin-bottom: var(--space-8);
+    }
+    
+    .mobile-nav-item {
+        padding: var(--space-4) var(--space-5);
+        min-height: 48px;
+    }
+    
+    /* Make menu icons more visible on desktop */
+    .mobile-menu-toggle {
+        background: var(--surface-tertiary, rgba(0, 0, 0, 0.03));
+        transition: all 0.2s ease;
+    }
+    
+    .mobile-menu-toggle:hover {
+        background: var(--surface-hover, rgba(0, 0, 0, 0.08));
+        transform: scale(1.05);
+    }
+    
+    .mobile-menu-toggle.active {
+        background: var(--primary-light, rgba(102, 126, 234, 0.1));
     }
 }

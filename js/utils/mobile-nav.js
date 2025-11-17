@@ -10,7 +10,9 @@ const mobileNav = {
     config: {
         breakpoint: 768,
         swipeThreshold: 50,
-        swipeVelocity: 0.3
+        swipeVelocity: 0.3,
+        // Allow menu on desktop
+        enableOnDesktop: true
     },
 
     /**
@@ -38,23 +40,24 @@ const mobileNav = {
         window.addEventListener('resize', () => this.checkViewport());
     },
 
-    /**
+/**
      * Check if we're on mobile viewport
      */
     checkViewport() {
         const wasMobile = this.state.isMobile;
         this.state.isMobile = window.innerWidth <= this.config.breakpoint;
 
-        // Close menu if switching to desktop
-        if (wasMobile && !this.state.isMobile && this.state.isOpen) {
-            this.closeMenu();
-        }
+        // Don't automatically close menu when switching to desktop
+        // Users want to access the menu options on desktop too
+        console.log(`[MobileNav] Viewport checked. isMobile: ${this.state.isMobile}, wasMobile: ${wasMobile}`);
     },
 
     /**
      * Create mobile navigation elements
      */
     createMobileNavigation() {
+        console.log('[MobileNav] Creating mobile navigation...');
+
         // Create hamburger button
         const hamburgerButton = document.createElement('button');
         hamburgerButton.className = 'mobile-menu-toggle';
@@ -72,7 +75,14 @@ const mobileNav = {
         // Insert into header
         const header = document.querySelector('.header');
         if (header) {
+            console.log('[MobileNav] Header found, inserting hamburger button');
             header.insertBefore(hamburgerButton, header.firstChild);
+            console.log('[MobileNav] Hamburger button inserted successfully');
+        } else {
+            console.error('[MobileNav] Header element not found! Cannot insert hamburger button.');
+            // Fallback: try inserting at the beginning of body
+            console.log('[MobileNav] Attempting fallback: inserting at body start');
+            document.body.insertBefore(hamburgerButton, document.body.firstChild);
         }
 
         // Create navigation panel
@@ -223,10 +233,15 @@ const mobileNav = {
      * Setup event listeners
      */
     setupEventListeners() {
+        console.log('[MobileNav] Setting up event listeners...');
+
         // Hamburger toggle
         const toggleButton = document.getElementById('mobileMenuToggle');
         if (toggleButton) {
+            console.log('[MobileNav] Hamburger button found, adding click listener');
             toggleButton.addEventListener('click', () => this.toggleMenu());
+        } else {
+            console.error('[MobileNav] Hamburger button not found! Click event not attached.');
         }
 
         // Close button
@@ -251,19 +266,31 @@ const mobileNav = {
         const searchInput = document.getElementById('mobileSearchInput');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
-                if (typeof app !== 'undefined' && app.applyFilters) {
+                if (window.app && window.app.applyFilters) {
                     // Update main search input
                     const mainSearch = document.getElementById('searchInput');
                     if (mainSearch) {
                         mainSearch.value = e.target.value;
                     }
-                    app.applyFilters();
+                    window.app.applyFilters();
                 }
             });
         }
 
         // Touch gestures
         this.setupTouchGestures();
+
+        // Mouse click outside to close (for desktop)
+        document.addEventListener('click', (e) => {
+            if (this.state.isOpen && !this.state.isMobile) {
+                const panel = document.getElementById('mobileNavPanel');
+                const toggle = document.getElementById('mobileMenuToggle');
+                
+                if (panel && !panel.contains(e.target) && toggle && !toggle.contains(e.target)) {
+                    this.closeMenu();
+                }
+            }
+        });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -280,6 +307,12 @@ const mobileNav = {
     setupTouchGestures() {
         const panel = document.getElementById('mobileNavPanel');
         if (!panel) return;
+
+        // Only setup touch gestures on mobile/touch devices
+        if (!('ontouchstart' in window)) {
+            console.log('[MobileNav] Touch gestures disabled - desktop detected');
+            return;
+        }
 
         // Swipe to close
         panel.addEventListener('touchstart', (e) => {
@@ -337,6 +370,7 @@ const mobileNav = {
      * Toggle menu open/closed
      */
     toggleMenu() {
+        console.log('[MobileNav] Toggle menu called, current state:', this.state.isOpen);
         if (this.state.isOpen) {
             this.closeMenu();
         } else {
@@ -344,7 +378,7 @@ const mobileNav = {
         }
     },
 
-    /**
+/**
      * Open menu
      */
     openMenu() {
@@ -355,20 +389,30 @@ const mobileNav = {
         const toggle = document.getElementById('mobileMenuToggle');
 
         if (panel) panel.classList.add('open');
-        if (overlay) overlay.classList.add('visible');
+        if (overlay) {
+            // On desktop, make the overlay more subtle
+            if (this.state.isMobile) {
+                overlay.classList.add('visible');
+            } else {
+                overlay.classList.add('visible');
+                overlay.style.background = 'rgba(0, 0, 0, 0.2)'; // Lighter overlay for desktop
+            }
+        }
         if (toggle) {
             toggle.classList.add('active');
             toggle.setAttribute('aria-expanded', 'true');
         }
 
-        // Prevent body scroll
-        document.body.style.overflow = 'hidden';
+        // Prevent body scroll on mobile, but allow it on desktop
+        if (this.state.isMobile) {
+            document.body.style.overflow = 'hidden';
+        }
 
         // Update workspace display
         this.updateMobileWorkspaceDisplay();
     },
 
-    /**
+/**
      * Close menu
      */
     closeMenu() {
@@ -382,7 +426,10 @@ const mobileNav = {
             panel.classList.remove('open');
             panel.style.transform = ''; // Reset any transform from gestures
         }
-        if (overlay) overlay.classList.remove('visible');
+        if (overlay) {
+            overlay.classList.remove('visible');
+            overlay.style.background = ''; // Reset overlay style
+        }
         if (toggle) {
             toggle.classList.remove('active');
             toggle.setAttribute('aria-expanded', 'false');
@@ -414,12 +461,12 @@ const mobileNav = {
      * Update mobile workspace display
      */
     updateMobileWorkspaceDisplay() {
-        if (typeof app === 'undefined') return;
+        if (!window.app) return;
 
-        const currentWorkspace = app.workspaces.find(w => w.id === app.currentWorkspaceId);
+        const currentWorkspace = window.app.workspaces.find(w => w.id === window.app.currentWorkspaceId);
         if (!currentWorkspace) return;
 
-        const featureCount = app.features.filter(f => f.workspaceId === app.currentWorkspaceId).length;
+        const featureCount = window.app.features.filter(f => f.workspaceId === window.app.currentWorkspaceId).length;
 
         const container = document.querySelector('.mobile-workspace-current');
         if (container) {
@@ -440,68 +487,182 @@ const mobileNav = {
      * Navigation actions
      */
     navigateTo(view) {
+        console.log(`[MobileNav] Navigate to: ${view}`);
         this.closeMenu();
-        // Implement view switching logic here
-        console.log(`Navigate to: ${view}`);
+
+        switch(view) {
+            case 'table-view':
+                console.log('[MobileNav] Switching to table view');
+                if (window.app && window.app.showTableView) {
+                    window.app.showTableView();
+                } else {
+                    console.warn('[MobileNav] app.showTableView not available');
+                    alert('Table view is the default view');
+                }
+                break;
+
+            case 'graph-view':
+                console.log('[MobileNav] Opening graph view modal');
+                // Graph view would typically be a modal or separate view
+                alert('Graph view coming soon! This will show your features as an interactive network diagram.');
+                break;
+
+            case 'insights':
+                console.log('[MobileNav] Opening insights panel');
+                // Insights panel would typically be a modal or separate view
+                alert('Insights panel coming soon! This will analyze your roadmap and provide recommendations.');
+                break;
+
+            default:
+                console.warn(`[MobileNav] Unknown view: ${view}`);
+        }
     },
 
     createFeature() {
+        console.log('[MobileNav] Creating new feature');
         this.closeMenu();
-        if (typeof detailView !== 'undefined') {
-            detailView.createNewFeature();
+
+        if (window.detailView && window.detailView.createNewFeature) {
+            window.detailView.createNewFeature();
+        } else if (window.app && window.app.showDetailView) {
+            // Alternative: show detail view for new feature
+            window.app.showDetailView(null);
+        } else {
+            console.error('[MobileNav] detailView.createNewFeature not available');
+            alert('Unable to create feature. Please try from the main interface.');
         }
     },
 
     showFilters() {
+        console.log('[MobileNav] Showing filters');
         this.closeMenu();
-        // Show filter panel
-        console.log('Show filters');
+
+        // Try to click the filter button in the main interface
+        const filterButton = document.querySelector('[aria-label="Filter features"]') ||
+                           document.querySelector('.filter-btn') ||
+                           document.querySelector('#filterButton');
+
+        if (filterButton) {
+            console.log('[MobileNav] Clicking filter button');
+            filterButton.click();
+        } else {
+            console.warn('[MobileNav] Filter button not found');
+            alert('Filter panel not available in mobile view yet.');
+        }
     },
 
     showSort() {
+        console.log('[MobileNav] Showing sort options');
         this.closeMenu();
-        // Show sort options
-        console.log('Show sort options');
+
+        // Try to click the sort button in the main interface
+        const sortButton = document.querySelector('[aria-label="Sort features"]') ||
+                         document.querySelector('.sort-btn') ||
+                         document.querySelector('#sortButton');
+
+        if (sortButton) {
+            console.log('[MobileNav] Clicking sort button');
+            sortButton.click();
+        } else {
+            console.warn('[MobileNav] Sort button not found');
+            alert('Sort options not available in mobile view yet.');
+        }
     },
 
     exportData() {
+        console.log('[MobileNav] Exporting data');
         this.closeMenu();
-        if (typeof app !== 'undefined') {
-            app.exportAllData();
+
+        if (window.app && window.app.exportAllData) {
+            window.app.exportAllData();
+        } else {
+            console.error('[MobileNav] app.exportAllData not available');
+            alert('Export function not available');
         }
     },
 
     importData() {
+        console.log('[MobileNav] Importing data');
         this.closeMenu();
-        if (typeof app !== 'undefined') {
-            app.importAllData();
+
+        if (window.app && window.app.importAllData) {
+            window.app.importAllData();
+        } else {
+            console.error('[MobileNav] app.importAllData not available');
+            alert('Import function not available');
         }
     },
 
     showSettings() {
+        console.log('[MobileNav] Opening settings');
         this.closeMenu();
-        if (typeof settingsManager !== 'undefined') {
-            settingsManager.openApiSettings();
+
+        // Try clicking the settings/API settings button
+        const settingsBtn = document.querySelector('[aria-label="API Settings"]') ||
+                          document.querySelector('.settings-btn') ||
+                          document.getElementById('settingsBtn');
+
+        if (settingsBtn) {
+            console.log('[MobileNav] Clicking settings button');
+            settingsBtn.click();
+        } else {
+            console.error('[MobileNav] Settings button not found');
+            alert('Settings not available');
         }
     },
 
     showWorkspaceMenu() {
+        console.log('[MobileNav] Opening workspace menu');
         this.closeMenu();
-        if (typeof workspaceManager !== 'undefined') {
-            workspaceManager.openManageModal();
+
+        // Try clicking the workspace manager button
+        const workspaceBtn = document.querySelector('[aria-label="Manage Workspaces"]') ||
+                           document.querySelector('[aria-label="Manage workspaces"]') ||
+                           document.getElementById('manageWorkspacesBtn');
+
+        if (workspaceBtn) {
+            console.log('[MobileNav] Clicking workspace menu button');
+            workspaceBtn.click();
+        } else {
+            console.error('[MobileNav] Workspace menu button not found');
+            alert('Workspace menu not available');
         }
     },
 
     openChat() {
+        console.log('[MobileNav] Opening AI chat');
         this.closeMenu();
-        // Open AI chat panel
-        console.log('Open AI chat');
+
+        // Try to find and click the AI chat button in the main interface
+        const chatButton = document.querySelector('[aria-label="Open AI chat"]') ||
+                         document.querySelector('.ai-chat-btn') ||
+                         document.querySelector('#aiChatButton');
+
+        if (chatButton) {
+            console.log('[MobileNav] Clicking AI chat button');
+            chatButton.click();
+        } else {
+            console.warn('[MobileNav] AI chat button not found');
+            alert('AI chat coming soon!');
+        }
     },
 
     showAIOpportunities() {
+        console.log('[MobileNav] Showing AI opportunities');
         this.closeMenu();
-        // Show AI enhancement opportunities
-        console.log('Show AI opportunities');
+
+        // Try to find and click the AI suggestions button in the main interface
+        const aiButton = document.querySelector('[aria-label="AI suggestions"]') ||
+                       document.querySelector('.ai-suggestions-btn') ||
+                       document.querySelector('#aiSuggestionsButton');
+
+        if (aiButton) {
+            console.log('[MobileNav] Clicking AI suggestions button');
+            aiButton.click();
+        } else {
+            console.warn('[MobileNav] AI suggestions button not found');
+            alert('AI suggestions coming soon!');
+        }
     }
 };
 

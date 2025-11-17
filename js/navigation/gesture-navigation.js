@@ -888,7 +888,7 @@ const gestureNavigation = {
      */
     startLongPressTimer() {
         this.state.longPressTimer = setTimeout(() => {
-            this.recognizedGestures.set('longPress', {
+            this.state.recognizedGestures.set('longPress', {
                 type: 'longPress',
                 confidence: 0.9
             });

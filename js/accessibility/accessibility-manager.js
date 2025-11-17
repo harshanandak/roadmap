@@ -176,19 +176,16 @@ class AccessibilityManager {
      */
     initializeFocusManagement() {
         this.log('Initializing focus management...');
-        
+
         // Add focus-visible class to keyboard-focused elements
         const focusableElements = document.querySelectorAll(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
-        
+
         focusableElements.forEach(element => {
             element.addEventListener('focus', this.handleElementFocus.bind(this));
             element.addEventListener('blur', this.handleElementBlur.bind(this));
         });
-        
-        // Initialize skip links
-        this.initializeSkipLinks();
     }
     
     /**
@@ -239,19 +236,16 @@ class AccessibilityManager {
      */
     initializeSkipLinks() {
         this.log('Initializing skip links...');
-        
-        // Find existing skip links
+
+        // Find existing skip links (created by keyboard-navigation.js)
         this.state.skipLinks = Array.from(document.querySelectorAll(`.${this.options.skipLinkClass}`));
-        
-        // Create skip links if they don't exist
-        if (this.state.skipLinks.length === 0) {
-            this.createSkipLinks();
-        }
-        
-        // Set up skip link functionality
+
+        // Set up skip link functionality for existing links
         this.state.skipLinks.forEach(skipLink => {
             skipLink.addEventListener('click', this.handleSkipLinkClick.bind(this));
         });
+
+        this.log(`Found ${this.state.skipLinks.length} skip links`);
     }
     
     /**
@@ -473,28 +467,6 @@ class AccessibilityManager {
         if (target.hasAttribute('data-activate')) {
             this.handleCustomActivation(event);
         }
-    }
-    
-    /**
-     * Create skip links
-     */
-    createSkipLinks() {
-        const skipLinks = [
-            { href: '#main', text: 'Skip to main content' },
-            { href: '#navigation', text: 'Skip to navigation' },
-            { href: '#search', text: 'Skip to search' }
-        ];
-        
-        skipLinks.forEach(skipLink => {
-            const link = document.createElement('a');
-            link.href = skipLink.href;
-            link.textContent = skipLink.text;
-            link.className = this.options.skipLinkClass;
-            
-            // Add to beginning of body
-            document.body.insertBefore(link, document.body.firstChild);
-            this.state.skipLinks.push(link);
-        });
     }
     
     /**

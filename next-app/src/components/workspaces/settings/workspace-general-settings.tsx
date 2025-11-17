@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
-import { Loader2, Trash2 } from 'lucide-react'
+import { Loader2, Trash2, Sidebar, Check } from 'lucide-react'
 
 const PHASES = [
   { value: 'research', label: 'Research', description: 'Discovery and validation' },
@@ -43,6 +43,8 @@ interface WorkspaceGeneralSettingsProps {
   }
 }
 
+type SidebarBehavior = 'expanded' | 'collapsed' | 'hover'
+
 export function WorkspaceGeneralSettings({ workspace }: WorkspaceGeneralSettingsProps) {
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState(workspace.name)
@@ -50,9 +52,19 @@ export function WorkspaceGeneralSettings({ workspace }: WorkspaceGeneralSettings
   const [phase, setPhase] = useState(workspace.phase)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [sidebarBehavior, setSidebarBehavior] = useState<SidebarBehavior>('expanded')
+  const [sidebarSaved, setSidebarSaved] = useState(false)
 
   const router = useRouter()
   const supabase = createClient()
+
+  // Load sidebar behavior preference from localStorage
+  useEffect(() => {
+    const savedBehavior = localStorage.getItem('workspace-sidebar-behavior') as SidebarBehavior
+    if (savedBehavior) {
+      setSidebarBehavior(savedBehavior)
+    }
+  }, [])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -82,6 +94,24 @@ export function WorkspaceGeneralSettings({ workspace }: WorkspaceGeneralSettings
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSidebarBehaviorChange = (behavior: SidebarBehavior) => {
+    setSidebarBehavior(behavior)
+    localStorage.setItem('workspace-sidebar-behavior', behavior)
+
+    // Also update the collapsed state if needed
+    if (behavior === 'collapsed') {
+      localStorage.setItem('workspace-sidebar-collapsed', 'true')
+    } else if (behavior === 'expanded') {
+      localStorage.setItem('workspace-sidebar-collapsed', 'false')
+    }
+
+    setSidebarSaved(true)
+    setTimeout(() => setSidebarSaved(false), 2000)
+
+    // Reload to apply changes
+    window.location.reload()
   }
 
   const handleDelete = async () => {
@@ -180,6 +210,98 @@ export function WorkspaceGeneralSettings({ workspace }: WorkspaceGeneralSettings
               )}
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Sidebar Preferences Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Sidebar Preferences</CardTitle>
+          <CardDescription>
+            Control how the sidebar behaves across all workspaces
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <Label>Sidebar Behavior</Label>
+            <div className="space-y-2">
+              {/* Expanded Option */}
+              <button
+                type="button"
+                onClick={() => handleSidebarBehaviorChange('expanded')}
+                className={`w-full flex items-start gap-3 rounded-lg border-2 p-4 text-left transition-colors ${
+                  sidebarBehavior === 'expanded'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex h-5 w-5 items-center justify-center shrink-0 mt-0.5">
+                  {sidebarBehavior === 'expanded' && (
+                    <Check className="h-4 w-4 text-blue-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Expanded</div>
+                  <p className="text-sm text-muted-foreground">
+                    Sidebar stays open by default
+                  </p>
+                </div>
+              </button>
+
+              {/* Collapsed Option */}
+              <button
+                type="button"
+                onClick={() => handleSidebarBehaviorChange('collapsed')}
+                className={`w-full flex items-start gap-3 rounded-lg border-2 p-4 text-left transition-colors ${
+                  sidebarBehavior === 'collapsed'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex h-5 w-5 items-center justify-center shrink-0 mt-0.5">
+                  {sidebarBehavior === 'collapsed' && (
+                    <Check className="h-4 w-4 text-blue-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Collapsed</div>
+                  <p className="text-sm text-muted-foreground">
+                    Sidebar stays minimized by default
+                  </p>
+                </div>
+              </button>
+
+              {/* Expand on Hover Option */}
+              <button
+                type="button"
+                onClick={() => handleSidebarBehaviorChange('hover')}
+                className={`w-full flex items-start gap-3 rounded-lg border-2 p-4 text-left transition-colors ${
+                  sidebarBehavior === 'hover'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex h-5 w-5 items-center justify-center shrink-0 mt-0.5">
+                  {sidebarBehavior === 'hover' && (
+                    <Check className="h-4 w-4 text-blue-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Expand on Hover</div>
+                  <p className="text-sm text-muted-foreground">
+                    Sidebar expands temporarily when you hover over it
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {sidebarSaved && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <Check className="h-4 w-4" />
+                <span>Preference saved - page will reload</span>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

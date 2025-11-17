@@ -237,16 +237,27 @@ class StateManagementIntegration {
      */
     async initializeComponentIntegration() {
         console.log('[StateManagementIntegration] Initializing component integration...');
-        
-        this.componentIntegration = new ComponentStateIntegration(this.stateStore, {
-            autoSubscribe: this.options.autoSubscribeComponents,
-            enableOptimisticUpdates: true,
-            enableComponentIsolation: true,
-            enableStateSharing: true,
-            enablePerformanceMonitoring: this.options.enablePerformanceOptimization
-        });
-        
-        console.log('[StateManagementIntegration] Component integration initialized');
+
+        // Check if ComponentStateIntegration is available
+        if (typeof ComponentStateIntegration === 'undefined') {
+            console.warn('[StateManagementIntegration] ComponentStateIntegration not available, skipping component integration');
+            return;
+        }
+
+        try {
+            this.componentIntegration = new ComponentStateIntegration(this.stateStore, {
+                autoSubscribe: this.options.autoSubscribeComponents,
+                enableOptimisticUpdates: true,
+                enableComponentIsolation: true,
+                enableStateSharing: true,
+                enablePerformanceMonitoring: this.options.enablePerformanceOptimization
+            });
+
+            console.log('[StateManagementIntegration] Component integration initialized');
+        } catch (error) {
+            console.error('[StateManagementIntegration] Failed to initialize component integration:', error);
+            // Continue initialization without component integration
+        }
     }
 
     /**
@@ -254,16 +265,27 @@ class StateManagementIntegration {
      */
     async initializeAdvancedFeatures() {
         console.log('[StateManagementIntegration] Initializing advanced features...');
-        
-        this.advancedFeatures = new AdvancedStateFeatures(this.stateStore, {
-            enableHistory: this.options.enableHistory,
-            enableAnalytics: this.options.enableAnalytics,
-            enableMonitoring: this.options.enableMonitoring,
-            enablePerformanceTracking: this.options.enablePerformanceOptimization,
-            enableMemoryTracking: this.options.enableMemoryOptimization
-        });
-        
-        console.log('[StateManagementIntegration] Advanced features initialized');
+
+        // Check if AdvancedStateFeatures is available
+        if (typeof AdvancedStateFeatures === 'undefined') {
+            console.warn('[StateManagementIntegration] AdvancedStateFeatures not available, skipping advanced features');
+            return;
+        }
+
+        try {
+            this.advancedFeatures = new AdvancedStateFeatures(this.stateStore, {
+                enableHistory: this.options.enableHistory,
+                enableAnalytics: this.options.enableAnalytics,
+                enableMonitoring: this.options.enableMonitoring,
+                enablePerformanceTracking: this.options.enablePerformanceOptimization,
+                enableMemoryTracking: this.options.enableMemoryOptimization
+            });
+
+            console.log('[StateManagementIntegration] Advanced features initialized');
+        } catch (error) {
+            console.error('[StateManagementIntegration] Failed to initialize advanced features:', error);
+            // Continue initialization without advanced features
+        }
     }
 
     /**

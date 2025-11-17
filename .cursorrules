@@ -4,11 +4,16 @@
 Platform Roadmap Manager - A multi-workspace roadmap planning application with AI-powered features, real-time Supabase sync, and Vercel deployment.
 
 **Tech Stack**:
-- Frontend: Vanilla HTML/CSS/JavaScript (ES6+)
-- Database: Supabase (PostgreSQL)
-- Storage: Dual (Supabase primary, localStorage cache)
+- Framework: Next.js 15 + TypeScript (App Router, Server Components)
+- Database: Supabase (PostgreSQL + Real-time + Auth)
+- UI: shadcn/ui + Tailwind CSS + Lucide React
+- Mind Mapping: ReactFlow
+- Charts: Recharts
+- Testing: Playwright (E2E) + Jest (Unit)
+- Payments: Stripe
+- Email: Resend
 - Deployment: Vercel
-- MCP Servers: 7 active (Supabase, Vercel, Playwright, Puppeteer, Browser Tools, 21st Magic, MCP-UI)
+- MCP Servers: 5 active (Supabase, Playwright, Parallel-search, Parallel-Task, Vercel)
 
 **Live URL**: https://platform-test-cyan.vercel.app
 
@@ -47,25 +52,35 @@ Platform Roadmap Manager - A multi-workspace roadmap planning application with A
 
 ## Coding Standards
 
-### JavaScript Style
-```javascript
-// ✅ GOOD: Modern ES6+, descriptive names
-const createWorkspace = async (name, description) => {
-    const workspace = {
-        id: Date.now().toString(),  // Timestamp ID
-        name,
-        description,
-        color: '#3B82F6',
-        icon: '📊',
-        createdAt: new Date().toISOString()
-    };
-    return workspace;
+### TypeScript Style
+```typescript
+// ✅ GOOD: Strict typing, interfaces, modern syntax
+interface CreateWorkspaceParams {
+  name: string;
+  description: string;
+  teamId: string;
+}
+
+const createWorkspace = async ({ name, description, teamId }: CreateWorkspaceParams): Promise<Workspace> => {
+  const workspace: Workspace = {
+    id: Date.now().toString(),  // Timestamp ID
+    teamId,
+    name,
+    description,
+    phase: 'research',
+    color: '#3B82F6',
+    icon: '📊',
+    enabledModules: ['research', 'mind_map', 'features'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  return workspace;
 };
 
-// ❌ BAD: var, unclear names, UUID
-var ws = function(n, d) {
-    var w = { id: generateUUID(), nm: n, dsc: d };
-    return w;
+// ❌ BAD: any types, unclear parameter objects, UUID
+const createWorkspace = async (data: any) => {
+  const w: any = { id: generateUUID(), ...data };
+  return w;
 };
 ```
 
@@ -96,98 +111,133 @@ const loadFeatures = async () => {
 };
 ```
 
-### HTML Components
-```html
-<!-- ✅ GOOD: Semantic, accessible, data attributes -->
-<div class="workspace-card" data-workspace-id="1234567890">
-    <div class="workspace-icon" aria-label="Workspace icon">📊</div>
-    <h3 class="workspace-name">Product Roadmap</h3>
-    <p class="workspace-description">Q1 2025 planning</p>
-    <button class="btn-edit" aria-label="Edit workspace">Edit</button>
-</div>
+### React/Next.js Components
+```tsx
+// ✅ GOOD: TypeScript, shadcn/ui, accessible
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-<!-- ❌ BAD: Generic, inline styles, no accessibility -->
-<div id="ws123" style="padding:10px">
-    <span>📊</span>
-    <div>Product Roadmap</div>
-    <a onclick="edit()">Edit</a>
-</div>
+interface WorkspaceCardProps {
+  workspace: Workspace;
+  onEdit: (id: string) => void;
+}
+
+export function WorkspaceCard({ workspace, onEdit }: WorkspaceCardProps) {
+  return (
+    <Card className="workspace-card" data-workspace-id={workspace.id}>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <span className="text-2xl" role="img" aria-label="Workspace icon">
+            {workspace.icon}
+          </span>
+          <CardTitle>{workspace.name}</CardTitle>
+        </div>
+        <CardDescription>{workspace.description}</CardDescription>
+      </CardHeader>
+      <CardFooter>
+        <Button onClick={() => onEdit(workspace.id)} aria-label="Edit workspace">
+          Edit
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+// ❌ BAD: No types, inline styles, poor accessibility
+const WorkspaceCard = ({ workspace, onEdit }) => (
+  <div style={{ padding: '10px' }} onClick={onEdit}>
+    <span>{workspace.icon}</span>
+    <div>{workspace.name}</div>
+  </div>
+);
 ```
 
 ---
 
-## MCP Server Usage
+## MCP Server Usage (Optimized for Next.js 15 + TypeScript)
 
-### When to Use Each MCP
+### Active MCPs (5 Total - Enhanced Automation & Search)
 
-**Supabase MCP** - Use for:
-- Database migrations (`CREATE TABLE`, `ALTER TABLE`)
-- Complex queries (joins, aggregations)
-- Schema inspection
-- Database debugging
-- Running SQL scripts
+**Supabase MCP** (Essential) - Use for:
+- Multi-tenant schema design (`teams`, `workspaces`, `features`, `mind_maps`)
+- Database migrations with RLS policies
+- Complex queries (joins, aggregations, transactions)
+- Real-time subscriptions setup
+- PostgreSQL functions and triggers
+- Schema inspection and type generation
+- Running SQL scripts for data migrations
 
-**Vercel MCP** - Use for:
-- Production deployments
-- Checking deployment status
-- Environment variable management
-- Deployment logs
-- Build troubleshooting
-
-**Playwright MCP** - Use for:
-- E2E testing workflows
+**Playwright MCP** (Testing) - Use for:
+- E2E testing Next.js pages and API routes
+- User authentication flow tests
+- Feature CRUD operation tests
+- Mind map canvas interaction tests
+- Stripe payment flow tests (test mode)
 - Screenshot capture for documentation
-- Form testing
-- Navigation testing
-- Multi-page flows
+- CI/CD integration (GitHub Actions)
 
-**Puppeteer MCP** - Use for:
-- PDF generation
-- Alternative browser automation
-- Performance profiling
-- Web scraping (if needed)
+**Parallel-search MCP** (AI Research) - Use for:
+- Multi-source web search (Tavily, Perplexity, Exa, Brave)
+- Competitive analysis and market research
+- AI-powered content discovery and trend analysis
+- Knowledge base population with web sources
+- Semantic search across multiple engines
+- Real-time information gathering for AI features
 
-**Autonomous Browser Tools** - Use for:
-- Live debugging (with Chrome DevTools open)
-- Network request inspection
-- Console log monitoring
-- Real-time DOM inspection
-- Supabase API call debugging
+**Parallel-Task MCP** (Automation) - Use for:
+- Multi-agent task orchestration and workflows
+- Parallel execution of complex development tasks
+- Task dependency management and coordination
+- Automated testing and deployment pipelines
+- Multi-step workflow automation (migration + build + deploy)
+- CI/CD pipeline integration and orchestration
 
-**21st.dev Magic MCP** - Use for:
-- Generating modern UI components (React/Vue/Svelte)
-- Finding component patterns
-- Creating responsive layouts
-- Accessibility-first components
+**Vercel MCP** (Deployment) - Use for:
+- Production and preview deployments
+- Environment variable management (Supabase keys, Stripe keys, OpenRouter API)
+- Build logs and error debugging
+- Performance monitoring and analytics
+- Custom domain configuration and SSL
+- Deployment orchestration with Parallel-Task MCP
 
-**MCP-UI Components** - Use for:
-- Project-specific HTML/CSS components
-- Modals, cards, buttons
-- Forms and tables
-- Custom components matching existing styles
+### Removed MCPs (Context Savings)
+
+- ❌ **Puppeteer** - Redundant with Playwright
+- ❌ **Browser Tools** - Use Chrome DevTools instead
+- ❌ **21st Magic** - Using shadcn/ui, not generating components
+- ❌ **MCP-UI** - Not needed for Next.js + shadcn/ui
+- ❌ **Exa** - Redundant with Parallel-search MCP (which includes Exa + Tavily + Perplexity + Brave)
 
 ### MCP Usage Examples
 
 ```plaintext
-// Database Migration
-"Create a migration to add a 'priority' column to features table with values: low, medium, high"
-→ Supabase MCP creates migration, applies it, updates schema
+// Multi-Tenant Schema
+"Create migrations for mind_maps, mind_map_nodes, and mind_map_edges tables with team_id and RLS policies"
+→ Supabase MCP creates migrations, applies RLS policies
+
+// Real-time Setup
+"Set up Supabase Realtime subscriptions for workspace changes with proper filtering by team_id"
+→ Supabase MCP configures real-time, provides TypeScript client code
 
 // Deployment
-"Deploy the latest changes to production and show the deployment URL"
-→ Vercel MCP builds, deploys, returns URL
+"Deploy to production and verify environment variables are set correctly"
+→ Vercel MCP builds, deploys, checks env vars
 
-// UI Component
-"Generate a workspace selector dropdown with colored icons using our brand colors"
-→ 21st Magic MCP returns modern, accessible component
+// E2E Testing
+"Create Playwright tests for authentication flow, team creation, and feature CRUD"
+→ Playwright MCP generates test suite with proper selectors
 
-// Testing
-"Test the workspace creation flow with Playwright"
-→ Playwright MCP runs E2E test, captures screenshots
+// Performance Query
+"Optimize the query for loading features with timeline_items and linked_items"
+→ Supabase MCP analyzes query, suggests indexes, provides optimized SQL
 
-// Debugging
-"Check the network requests being made when I create a feature"
-→ Autonomous Browser Tools shows Supabase POST requests with payloads
+// AI Research
+"Search for best practices in product roadmap management and mind mapping UX patterns"
+→ Parallel-search MCP queries multiple engines, aggregates results
+
+// Task Automation
+"Orchestrate workflow: apply migration → build Next.js app → run tests → deploy to Vercel"
+→ Parallel-Task MCP coordinates multi-step workflow with proper dependencies
 ```
 
 ---
@@ -441,15 +491,18 @@ const syncWithRetry = async (data, maxRetries = 3) => {
 
 ### When Using MCPs
 - **Prefer MCP tools** over manual file editing for database/deployment tasks
-- **Use Supabase MCP** for all SQL operations (don't write manual queries to files)
-- **Use Vercel MCP** for deployments (don't write bash scripts)
-- **Use 21st Magic** for UI components (don't reinvent common patterns)
+- **Use Supabase MCP** for all SQL operations, migrations, and RLS policies
+- **Use Vercel MCP** for deployments, environment variables, and monitoring
+- **Use Playwright MCP** for E2E testing and user flow validation
+- **Use shadcn/ui** for UI components (not external generation tools)
 
 ### Code Generation Preferences
-- **Modern JavaScript**: ES6+ features (arrow functions, destructuring, async/await)
-- **No jQuery**: Use vanilla JavaScript or modern frameworks only
-- **Accessibility-first**: Include ARIA labels, semantic HTML
-- **Mobile-responsive**: Use flexbox/grid, avoid fixed widths
+- **TypeScript Strict Mode**: Always use explicit types, avoid `any`, prefer `unknown`
+- **Next.js 15 Best Practices**: App Router, Server Components (RSC), Server Actions
+- **shadcn/ui Components**: Use pre-built components from shadcn/ui library
+- **Tailwind CSS**: Utility-first styling, avoid custom CSS files
+- **Accessibility-first**: ARIA labels, semantic HTML, keyboard navigation
+- **Mobile-responsive**: Mobile-first design with Tailwind breakpoints
 
 ### Documentation
 - **Comment complex logic**: Especially AI-related algorithms

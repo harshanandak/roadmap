@@ -1,700 +1,436 @@
-# 🚀 Platform Roadmap Manager
+# 🚀 Product Lifecycle Management Platform
 
-A simple, lightweight, single-file web application for managing your platform features and roadmap with AI-powered assistance.
+**Last Updated**: 2025-11-14
+**Status**: 🏗️ **In Development** (Week 3-4 / 8-week timeline)
+**Live Preview**: [https://platform-test-cyan.vercel.app](https://platform-test-cyan.vercel.app)
 
-## ✨ Features
+A comprehensive AI-first platform for managing the complete product lifecycle - from research and ideation to execution and analytics.
 
-- **📊 Table View** - Sortable, filterable table with vertical timeline/difficulty display
-- **📅 Timeline Breakdown** - Break down features into multiple phases (MVP/SHORT/LONG) with detailed planning for each
-- **🤖 AI-Powered Summaries** - Automatically combines timeline item details into concise summaries
-- **🤖 AI Chat Assistant** - Ask questions and get insights about your roadmap using OpenRouter API
-- **✨ AI Editing Capabilities** - AI can directly create, update, and manage features with your approval
-- **🏷️ Smart Categories** - Add categories at timeline-item-level for organization
-- **📥 Export to CSV** - Download your roadmap data (one row per timeline item for Excel analysis)
-- **💾 Backup & Restore** - Export/import complete data backups (features, memory, settings)
-- **💾 Auto-Save** - All data saved locally in your browser (no server needed)
-- **⚠️ Smart Warnings** - Alerts for storage issues, path changes, and data persistence
-- **🎨 Beautiful UI** - Modern, responsive design
+---
 
-## ✨ NEW: Enhanced Cutting-Edge Interface
+## ✨ Overview
 
-The application now features a **production-ready cutting-edge interface** with contemporary design and exceptional user experience:
+Transform your product development process with an integrated platform that covers:
 
-### 🎨 Visual Enhancements
-- **Contemporary Minimal Design** - Clean aesthetics with sophisticated color palette
-- **60fps Animations** - Hardware-accelerated smooth transitions
-- **Micro-Interactions** - Delightful hover effects and feedback on all interactive elements
-- **Advanced Shadows** - Depth perception with colored shadows and gradients
+1. **🧠 Research & Ideate** - AI-powered mind mapping, web search, knowledge base
+2. **📋 Plan & Structure** - Features, timeline, dependencies, critical path analysis
+3. **👥 Review & Gather Feedback** - Stakeholder input (invite-based, public links, iframe embeds)
+4. **🚀 Execute Collaboratively** - Team assignment, task tracking, real-time collaboration
+5. **🧪 Test & Iterate** - User feedback collection and analysis
+6. **📊 Measure Success** - Analytics, expected vs actual performance tracking
 
-### ⌨️ Power User Features
-- **Comprehensive Keyboard Navigation** - Press `?` to see all shortcuts
-  - Tab/Shift+Tab for navigation
-  - Enter to activate, Esc to close
-  - Ctrl/⌘+K for search
-  - N for new feature, A for AI
-- **Keyboard Shortcuts Overlay** - Interactive reference guide (press `?`)
-- **Gesture Support** - Touch-optimized interactions for mobile
+---
 
-### ♿ Accessibility Excellence
-- **WCAG 2.1 AA Compliant** - Meets international accessibility standards
-- **Screen Reader Support** - Semantic HTML structure
-- **High Contrast Mode** - For visual impairments
-- **Reduced Motion** - Respects user preferences
-- **Touch-Friendly** - 44px minimum target sizes
+## 🏗️ Tech Stack
 
-### 🏗️ Architecture Enhancements
-- **Redux-like State Management** - Centralized state with time-travel debugging
-- **Real-Time Sync** - WebSocket-based synchronization (optional)
-- **Progressive Disclosure** - Smart UI that reduces cognitive load
-- **Responsive Design** - Seamless scaling across all devices
+```
+Framework:    Next.js 15 + TypeScript (App Router, Server Components)
+Database:     Supabase (PostgreSQL + Real-time + Auth + RLS)
+UI:           shadcn/ui + Tailwind CSS + Lucide React
+Mind Mapping: ReactFlow (custom nodes, AI-powered)
+Charts:       Recharts (10+ chart types)
+Testing:      Playwright (E2E) + Jest (Unit)
+Payments:     Stripe (Checkout + Webhooks)
+Email:        Resend (Invitations, notifications)
+AI:           OpenRouter (Claude Haiku, Perplexity, Grok)
+Deployment:   Vercel (Serverless functions)
+```
 
-### 📚 Documentation & Resources
-- **[Interactive Showcase](showcase-enhanced-interface.html)** - Try all features live
-- **[Quick Reference](QUICK_REFERENCE.md)** - Print-friendly cheat sheet
-- **[Getting Started](GETTING_STARTED.md)** - 30-second quick start
-- **[Customization Guide](CUSTOMIZATION_GUIDE.md)** - Change colors, fonts, animations
-- **[Technical Docs](ENHANCED_INTERFACE_INTEGRATION.md)** - Complete integration details
+---
 
-### 🧪 Validated & Tested
-- **43/43 tests passing** - Run `node test-enhanced-integration.cjs` to verify
-- **Production-ready** - Battle-tested and optimized
-- **Complete documentation** - Comprehensive guides and examples
+## 📦 Project Structure
 
-**Try it now:** Open [showcase-enhanced-interface.html](showcase-enhanced-interface.html) to see all features in action!
+```
+platform-test/
+├── next-app/                    # Next.js 15 application
+│   ├── app/                     # App Router pages
+│   │   ├── (auth)/             # Authentication pages
+│   │   ├── (dashboard)/        # Main application pages
+│   │   └── api/                # API routes
+│   ├── components/             # React components
+│   │   └── ui/                 # shadcn/ui components
+│   ├── lib/                    # Utilities and configurations
+│   │   └── supabase/           # Supabase client and types
+│   └── hooks/                  # React Query hooks
+│
+├── supabase/                   # Supabase configuration
+│   └── migrations/             # Database migrations (24 total)
+│
+├── docs/                       # Documentation
+│   ├── IMPLEMENTATION_PLAN.md  # 8-week roadmap
+│   ├── RECOMMENDED_AGENTS.md   # Claude agents by phase
+│   ├── MIND_MAP_ENHANCEMENTS.md # Postponed features
+│   └── MCP_OPTIMIZATION_SUMMARY.md # MCP configuration
+│
+├── CLAUDE.md                   # Project guidelines (700 lines)
+├── .cursorrules                # Cursor AI behavior (570 lines)
+└── cursor-mcp-config.json      # MCP server configuration
+```
+
+---
+
+## 🎯 Current Implementation Status
+
+### ✅ Completed (Weeks 1-3, ~25%)
+
+**Foundation (Week 1-2):**
+- ✅ Next.js 15 + TypeScript setup with App Router
+- ✅ Supabase integration (Auth + SSR + Database)
+- ✅ Authentication pages (login, signup, onboarding)
+- ✅ Team and workspace structure
+- ✅ Multi-tenant database schema (24 migrations)
+- ✅ shadcn/ui component library integration
+
+**Mind Mapping (Week 3 - Partial):**
+- ✅ Mind maps list view + CRUD operations
+- ✅ Database tables (mind_maps, mind_map_nodes, mind_map_edges)
+- ✅ API routes for mind map operations
+- ⏳ ReactFlow canvas implementation (verify)
+- ⏳ AI integration for node suggestions
+- ⏳ Template system
+- ⏳ Convert to features workflow
+
+**Features & Dependencies (Week 4 - Partial):**
+- ✅ Database schema (features, timeline_items, linked_items, feature_connections)
+- ✅ API routes for dependencies
+- ⏳ Frontend UI for feature management
+- ⏳ ReactFlow dependency graph
+- ⏳ Critical path analysis
+
+### ⏳ In Progress (Week 4-5)
+
+- Feature planning dashboard
+- Dependency visualization with ReactFlow
+- 4 link types (dependency, blocks, complements, relates)
+
+### 📋 Planned (Weeks 5-8)
+
+**Week 5: Review System**
+- Public review links
+- Invite-based feedback
+- Resend email integration
+- iframe embeds (Pro tier)
+
+**Week 6: Timeline & Execution**
+- Gantt chart visualization
+- Team assignment and task tracking
+- Real-time collaboration (Pro tier)
+- Live cursors and presence
+
+**Week 7: AI Integration & Analytics**
+- OpenRouter AI chat panel
+- Agentic mode (20+ tools)
+- Custom dashboard builder (Pro tier)
+- Pre-built analytics dashboards
+
+**Week 8: Billing, Testing & Launch**
+- Stripe integration (Checkout + Webhooks)
+- Feature gates (5 users Free, unlimited Pro)
+- Playwright E2E tests
+- Jest unit tests
+- Production deployment
+- Security audit
+
+---
 
 ## 🚀 Quick Start
 
-### Step 1: Open the App
-Simply double-click `index.html` or open it in your web browser.
+### Prerequisites
 
-**⚠️ IMPORTANT:** Always open the file from the same location! Different file paths = different storage = lost data. See "Data Persistence" section below for details.
+- Node.js 18+ and npm
+- Supabase account ([supabase.com](https://supabase.com))
+- Vercel account (optional, for deployment)
 
-### Step 2: Get Your OpenRouter API Key
-1. Go to [OpenRouter](https://openrouter.ai/)
-2. Sign up for a free account
-3. Navigate to [Keys](https://openrouter.ai/keys)
-4. Create a new API key
-5. Copy the key
+### Installation
 
-### Step 3: Add Your API Key
-1. Click the 💬 chat button in the bottom-right corner
-2. Paste your OpenRouter API key in the input field
-3. Start chatting with the AI assistant!
-
-## 🔌 MCP Servers Setup (Optional)
-
-This project uses **Model Context Protocol (MCP)** servers to enhance AI capabilities. The following servers are configured:
-
-### 🌐 Autonomous Frontend Browser Tools (Installed)
-**Purpose:** Gives AI real-time context about your running application - console logs, network requests, DOM state, and screenshots.
-
-**What it does:**
-- Inspect live application state
-- Monitor console logs and errors
-- Track network requests (perfect for debugging Supabase API calls)
-- Take screenshots for visual debugging
-- AI can see what developers see in DevTools
-
-**Chrome Extension Setup Required:**
-
-1. **Install the npm package:**
+1. **Clone the repository**
    ```bash
-   npm install -g @winds-ai/autonomous-frontend-browser-tools
+   cd "c:\Users\harsh\Downloads\Platform Test"
    ```
 
-2. **Download Chrome Extension:**
-   - Visit: [Autonomous Browser Tools on npm](https://www.npmjs.com/package/@winds-ai/autonomous-frontend-browser-tools)
-   - Download the extension files
-   - Or clone from GitHub: `git clone https://github.com/winds-ai/autonomous-frontend-browser-tools`
+2. **Install dependencies**
+   ```bash
+   cd next-app
+   npm install
+   ```
 
-3. **Install Extension in Chrome:**
-   - Open Chrome and navigate to `chrome://extensions/`
-   - Enable **Developer mode** (toggle in top-right)
-   - Click **"Load unpacked"**
-   - Select the `chrome-extension/` folder from the package
-   - Extension should appear with the Autonomous Browser Tools icon
+3. **Set up Supabase**
+   - Create a new project at [supabase.com](https://supabase.com)
+   - Copy your project URL and anon key
+   - Create `.env.local`:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your-project-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   ```
 
-4. **Usage:**
-   - Open your app in Chrome (`index.html`)
-   - Open DevTools (F12)
-   - The extension will automatically connect to the MCP server
-   - Now AI can inspect your running application!
+4. **Apply database migrations**
+   ```bash
+   cd ..
+   npx supabase db push
+   ```
 
-**Perfect for:**
-- Debugging Supabase sync issues
-- Analyzing network performance
-- Troubleshooting JavaScript errors
-- Visual inspection of UI changes
+5. **Run development server**
+   ```bash
+   cd next-app
+   npm run dev
+   ```
 
----
-
-### 🎨 MCP-UI Server (Installed ✅)
-**Purpose:** Generate reusable HTML/CSS components from natural language descriptions.
-
-**What it does:**
-- Framework-agnostic raw HTML/CSS generation
-- Pre-built component templates (modals, cards, buttons, forms, tables)
-- Vanilla JavaScript compatible (no React/Vue required)
-- Copy-paste ready components with inline CSS
-
-**Installation Complete!**
-
-The MCP-UI server is already configured and running. You can now generate components by asking:
-
-**Example prompts:**
-```
-"Generate a modal with title 'Settings' and a form inside"
-"Create a card component for displaying features"
-"Generate a primary button with text 'Save Changes'"
-"Create a form with name, email, and password fields"
-"Generate a table showing my roadmap features"
-```
-
-**Available Component Types:**
-- **Modals** - Dialog boxes with customizable content
-- **Cards** - Content cards with titles, descriptions, and optional images
-- **Buttons** - Styled buttons (primary, secondary, success, danger variants)
-- **Forms** - Multi-field forms with validation
-- **Tables** - Data tables with headers and sortable columns
-- **Custom HTML** - General-purpose HTML/CSS generation
-
-**Test Page:**
-Open [mcp-ui-test.html](mcp-ui-test.html) to see component examples and test the server.
-
-**How to Use:**
-1. Ask the AI to generate a component (e.g., "Create a modal for user login")
-2. The MCP-UI server generates the HTML/CSS
-3. Copy the code into your project
-4. Customize as needed
+6. **Open the app**
+   - Navigate to [http://localhost:3000](http://localhost:3000)
+   - Sign up for a new account
+   - Create your first workspace
 
 ---
 
-### ✨ 21st.dev Magic MCP (Installed ✅)
-**Purpose:** AI-powered UI component generation (like v0.dev in your IDE).
+## 🔧 MCP Servers (Optional)
 
-**What it does:**
-- Natural language to component generation
-- Modern UI scaffolding with React, Vue, Svelte, and more
-- Access to large pre-built component library
-- SVGL integration for brand assets
-- Professional design patterns and layouts
+This project uses **Model Context Protocol (MCP)** servers for enhanced AI capabilities:
 
-**Installation Complete!**
+### Active MCP Servers (3)
 
-The Magic MCP server is now configured and running. You can generate advanced UI components by asking:
+1. **Supabase MCP** - Documentation search, schema introspection, migrations, RLS
+2. **Playwright MCP** - E2E testing, browser automation, screenshots
+3. **Parallel-search MCP** - Multi-source web search and research
 
-**Example prompts:**
-```
-"Create a modern dashboard layout with sidebar"
-"Generate a pricing card component with three tiers"
-"Build a contact form with validation"
-"Create an animated hero section"
-"Generate a responsive navigation bar"
-```
+**Configuration**: See [cursor-mcp-config.json](cursor-mcp-config.json)
 
-**Features:**
-- **Component Library** - Access to thousands of pre-built components
-- **Modern Frameworks** - React, Vue, Svelte, Solid, and more
-- **Responsive Design** - Mobile-first, adaptive layouts
-- **Brand Assets** - SVGL icons and logos
-- **Best Practices** - Industry-standard patterns and accessibility
-
-**Note:** While primarily designed for React/modern frameworks, you can adapt generated components to vanilla HTML/CSS or use them as inspiration for your project.
+**Optimization**: Token usage reduced from 28.8k → 5k (83% reduction). See [MCP_OPTIMIZATION_SUMMARY.md](MCP_OPTIMIZATION_SUMMARY.md) for details.
 
 ---
 
-### Other Configured MCP Servers
+## 📚 Documentation
 
-This project also has the following MCP servers configured:
+### Essential Reading
 
-- **🗄️ Supabase MCP** - Database operations and project management
-- **🚀 Vercel MCP** - Deployment and environment management
-- **🎭 Playwright MCP** - Browser automation and testing (Microsoft Official)
-- **🎪 Puppeteer MCP** - Alternative browser automation
+| Document | Purpose | Lines |
+|----------|---------|-------|
+| [CLAUDE.md](CLAUDE.md) | Project guidelines, tech stack, quick reference | 700 |
+| [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | 8-week roadmap, architecture, database schema | 2,419 |
+| [RECOMMENDED_AGENTS.md](RECOMMENDED_AGENTS.md) | Claude agents mapped to implementation phases | 614 |
+| [MCP_OPTIMIZATION_SUMMARY.md](MCP_OPTIMIZATION_SUMMARY.md) | MCP configuration and context optimization | 370 |
+| [MIND_MAP_ENHANCEMENTS.md](MIND_MAP_ENHANCEMENTS.md) | Postponed features (23 enhancements) | 1,672 |
+| [.cursorrules](.cursorrules) | Cursor AI behavior and coding standards | 570 |
 
-**Total MCP Servers:** 7 configured and connected ✅
+### Additional Documentation (Coming Soon)
 
-To see all configured MCP servers:
-```bash
-claude mcp list
+- **PROGRESS.md** - Weekly implementation tracker with completion percentages
+- **CHANGELOG.md** - Migration history and feature tracking
+- **NEXT_STEPS.md** - Immediate actions and priorities
+- **ARCHITECTURE.md** - System architecture diagrams (Mermaid)
+- **API_REFERENCE.md** - API routes documentation
+
+---
+
+## 🎯 Key Features (10 Modules)
+
+| Module | Phase | Priority | Status |
+|--------|-------|----------|--------|
+| **Mind Mapping** 🧠 | Week 3 | **CRITICAL** | ⏳ 30% |
+| **Feature Planning** 📋 | Week 4 | High | ⏳ 20% |
+| **Dependency Management** 🔗 | Week 4 | High | ⏳ 15% |
+| **Review & Feedback** 👥 | Week 5 | Medium | ❌ Not Started |
+| **Project Execution** 🚀 | Week 6 | Medium | ❌ Not Started |
+| **Collaboration** 🤝 | Week 6 | Medium | ❌ Not Started |
+| **Timeline Visualization** 📅 | Week 6 | High | ❌ Not Started |
+| **Research & Discovery** 🔍 | Week 7 | High | ❌ Not Started |
+| **Analytics & Metrics** 📊 | Week 7 | Medium | ❌ Not Started |
+| **AI Assistant** 🤖 | Week 7 | High | ❌ Not Started |
+
+---
+
+## 💰 Pricing Model
+
+**Free Tier:**
+- Unlimited workspaces
+- Basic features
+- 5 team members max
+- 500 AI messages/month
+
+**Pro Tier ($40/team/month + $5/user):**
+- Everything in Free
+- Unlimited team members (5 included)
+- External review system (iframe embeds)
+- Real-time collaboration (live cursors)
+- Custom analytics dashboards
+- Agentic AI mode (1,000 msgs/user/month)
+
+---
+
+## 🔒 Multi-Tenant Architecture
+
+### Data Isolation
+- All tables include `team_id` for data separation
+- Row-Level Security (RLS) policies enforce access control
+- Workspace = Project (each workspace is a separate product/project)
+
+### ID Format
+- **Timestamp-based TEXT IDs**: `Date.now().toString()`
+- ❌ **NEVER use UUID** (documented in CLAUDE.md)
+
+### Database Schema
+
+**Core Tables:**
+```
+users           - User accounts (Supabase Auth)
+teams           - Organizations/teams
+team_members    - Team membership and roles
+subscriptions   - Stripe billing data
+workspaces      - Projects with phase and modules
 ```
 
-## 📖 How to Use
-
-### Adding Features
-
-1. Click **"+ Add Feature"** button
-2. Fill in the **feature-level information**:
-   - **Name** - Name of the feature or service
-   - **Type** - Feature or Service
-   - **Purpose** - What is the purpose of this feature/service?
-3. Add **Timeline Breakdown Items** (at least one required):
-   - Click **"+ Add Timeline Item"** to add timeline phases (MVP, SHORT, LONG)
-   - For each timeline item, fill in:
-     - **Timeline** - MVP (must have), SHORT (short term), or LONG (long term)
-     - **Difficulty** - Easy, Medium, or Hard
-     - **USP** - What makes this feature unique in this phase
-     - **Integration Type** - How you'll execute this feature in this phase
-     - **Categories** - Phase-specific categories (e.g., "backend" for MVP, "frontend" for SHORT)
-   - You can add multiple timeline items to break down a feature into phases
-   - Click **"Remove"** to delete a timeline item (minimum 1 required)
-4. Click **"Save Feature"** - AI will automatically generate summaries of your timeline items
-
-### Table View Features
-
-The table displays all feature information in a single, comprehensive view:
-
-**Columns:**
-- **Name** - Feature or service name
-- **Type** - Feature or Service badge
-- **Timeline** - Vertical list of timeline phases (MVP, SHORT, LONG)
-- **Difficulty** - Vertical list of difficulty levels (aligned with timelines)
-- **Purpose** - Feature-level purpose description
-- **USP** - AI-generated summary combining all timeline USPs
-- **Integration Type** - AI-generated summary of integration approaches
-- **Category** - All unique categories from timeline items
-- **Actions** - Edit/Delete buttons
-
-**Features:**
-- **Search** - Type in the search box to filter features (searches across all fields)
-- **Filter** - Use dropdown filters for timeline and difficulty
-- **Sort** - Click column headers to sort (click again to reverse)
-- **Vertical Display** - Timeline and difficulty badges stack vertically for clear phase mapping
-- **Edit** - Click "Edit" button to modify feature and regenerate AI summaries
-- **Delete** - Click "Delete" button to remove a feature
-
-### AI Chat Assistant with Editing Powers
-
-The AI assistant can now directly modify your roadmap with your approval!
-
-**Setup:**
-1. Enter your OpenRouter API key
-2. Select an AI model from the dropdown:
-   - **DeepSeek V3.1 Terminus** - 671B params, extremely cost-effective (default)
-   - **Claude Haiku 4.5** - Anthropic's fastest model
-   - **GPT-4o Mini** - OpenAI's efficient model
-   - **Kimi K2** - 1T params with 256K context window
-   - **Grok 4 Fast** - xAI's model with 2M context window
-3. Once configured, you'll see "🟢 API Connected" - click "Settings" to change
-4. Start chatting!
-
-**Memory & Context Management:**
-- **🧠 Memory Button** - Click to open Memory & Context panel
-- **Custom Instructions** - Define the AI's role, context, and tone (e.g., "You are a Product Development Assistant for our integration platform")
-- **Memory Items** - Store important information that persists across conversations:
-  - Add items manually using the input field
-  - **Auto-Analysis** - Every 5 messages, AI automatically analyzes your conversation for valuable knowledge points
-  - View and manage all memory items
-  - Memory is preserved when starting new conversations
-- **Smart Suggestions** - Automatic memory suggestions appear as notification bar:
-  - Shows "🧠 X new memory suggestions" when available
-  - Click to expand and review suggested knowledge points
-  - ✓ Approve to add to permanent memory
-  - ✗ Reject to dismiss suggestion
-  - "Approve All" / "Reject All" for bulk actions
-  - **How it works:** Every 5 messages, the AI analyzes your conversation to identify important knowledge points (preferences, decisions, requirements, tech stack details, etc.). When you approve suggestions, they're added to permanent memory and included in every future AI conversation for context.
-- **Memory Context Indicator** - See how many memory items are included in your current conversation context (displayed above the chat input)
-- **Visual Feedback** - Toast notifications show when analysis starts and completes
-- **Conversation Tracking** - Monitor message count and context usage
-- **Context Warning** - Get notified when conversation becomes long (20+ messages)
-- **🔄 New Conversation** - Start fresh while preserving memory and custom instructions
-
-**Chat Features:**
-- **Auto-expanding input** - Text area grows as you type (up to 200px)
-- **Compact send button** - Takes minimal space, aligned to bottom
-- **Enter to send** - Press Enter to send your message
-- **Shift+Enter** - Press Shift+Enter to add a new line without sending
-- **Formatted responses** - AI responses support:
-  - **Bold text** with `**text**`
-  - *Italic text* with `*text*`
-  - `Code snippets` with backticks
-  - Bullet points and numbered lists
-  - Proper line spacing and paragraphs
-  - Headers and sections
-  - **Tables** - Markdown tables render as styled HTML tables with headers
-
-**How Auto-Analysis Works:**
-Every 5 messages, the AI automatically:
-1. Analyzes the last 5 messages in your conversation
-2. Identifies 2-3 valuable knowledge points (preferences, decisions, requirements, tech stack, architectural choices, etc.)
-3. Shows a toast notification when analysis starts and completes
-4. Displays suggestions in a notification bar at the top of the chat
-5. You review and approve/reject each suggestion
-6. Approved items are added to permanent memory
-7. Memory is included in every AI conversation's context (shown in the memory context indicator above chat input)
-8. Memory persists across conversations (even after starting new chats) - the AI remembers important information from previous conversations
-
-**Example Questions:**
+**Feature Tables:**
 ```
-"What MVP features do I have?"
-"Show me all Easy difficulty features"
-"Suggest a USP for my authentication feature"
-"What should I prioritize next?"
-"Summarize all SHORT term features"
-"Which features have the 'security' tag?"
-"How many features are in progress?"
-"Show me a comparison table of my features by difficulty"
+features        - Top-level roadmap items
+timeline_items  - MVP/SHORT/LONG breakdowns
+linked_items    - Dependencies and relationships
+feature_connections - Dependency graph data
 ```
 
-**Table Rendering:**
-When the AI provides data in table format like:
+**Mind Mapping Tables:**
 ```
-| Feature | Priority | Status |
-|---------|----------|--------|
-| Auth    | High     | Done   |
-| API     | Medium   | WIP    |
-```
-It will render as a styled HTML table with headers, borders, and hover effects!
-
-**✨ NEW: AI Editing Capabilities:**
-
-The AI can now directly modify your roadmap! Just ask in natural language and the AI will propose changes for your approval:
-
-**What AI Can Do:**
-1. **Update Features** - Modify feature names, types, or purposes
-   - *"Rename 'User Auth' to 'Authentication System'"*
-   - *"Change the purpose of my Payment feature"*
-
-2. **Update Timeline Items** - Change difficulty, categories, USPs, or integration types
-   - *"Make the MVP phase of Authentication easier"*
-   - *"Add 'security' category to all authentication timeline items"*
-
-3. **Create New Features** - Add completely new features with timeline items
-   - *"Create a new 'Email Notifications' feature with MVP and SHORT phases"*
-   - *"Add a reporting dashboard feature"*
-
-4. **Create Links** - Establish dependencies or complementary relationships
-   - *"Make User Profiles depend on Authentication"*
-   - *"Link Payment Gateway with Order Management as complements"*
-
-5. **Add Timeline Items** - Extend existing features with new phases
-   - *"Add a LONG term phase to the API Gateway feature"*
-
-6. **Delete Timeline Items** - Remove unnecessary phases (use cautiously!)
-   - *"Remove the LONG phase from Basic Authentication"*
-
-**How It Works:**
-1. Ask the AI to make a change in natural language
-2. AI analyzes your request and proposes a specific action
-3. Approval dialog shows you exactly what will change (before/after diff)
-4. Click "✓ Approve" to apply or "Reject" to cancel
-5. Changes are immediately reflected in your roadmap
-6. All actions are logged for transparency
-
-**Example Conversations:**
-```
-You: "Create a new feature called 'Real-time Chat' with an MVP phase"
-AI: [Proposes new feature with timeline items]
-[Approval dialog appears showing full details]
-You: Approve ✓
-AI: "✅ I've successfully created the new feature. It's now live in your roadmap."
-
-You: "Make the Payment Integration feature easier"
-AI: [Proposes changing difficulty from Hard to Medium]
-[Shows before/after comparison]
-You: Approve ✓
-AI: "✅ Updated the timeline item successfully."
+mind_maps       - Canvas data (ReactFlow JSON)
+mind_map_nodes  - Individual nodes (5 types)
+mind_map_edges  - Connections between nodes
 ```
 
-**Safety Features:**
-- ✅ All changes require your explicit approval
-- ✅ Clear before/after previews
-- ✅ Full action logging and audit trail
-- ✅ AI-modified features show badges
-- ✅ Can be disabled in settings (coming soon)
-
-**Visual Indicators:**
-- 🟣 **AI Created** badge - Features created by AI
-- 🔵 **AI Modified** badge - Features updated by AI
-
-**AI Commands (Read-Only):**
-- Ask about your features
-- Get suggestions for USPs or integration types
-- Analyze your roadmap
-- Get recommendations on what to build next
-
-### Export Data
-
-Click **"📥 Export CSV"** to download your roadmap as a CSV file. The export creates one row per timeline item, making it perfect for Excel analysis, sharing with your team, or importing into other tools!
-
-## 🛠️ Features Overview
-
-### Feature-Level Fields
-| Field | Description |
-|---------|-------------|
-| **Name** | The name of your feature or service |
-| **Type** | Feature or Service |
-| **Purpose** | The purpose or goal of this feature/service |
-
-### Timeline Breakdown Items
-Each feature must have at least one timeline item. Multiple items allow you to break down implementation phases:
-
-| Field | Description |
-|---------|-------------|
-| **Timeline** | MVP (critical), SHORT (near term), LONG (future) |
-| **Difficulty** | Easy, Medium, or Hard to implement in this phase |
-| **USP** | Unique Selling Point - what makes it special in this phase |
-| **Integration Type** | How you plan to execute/integrate this in this phase |
-| **Categories** | Phase-specific categories (e.g., "backend", "frontend", "mobile") |
-
-### AI-Generated Summaries
-When you save a feature with multiple timeline items, AI automatically generates:
-- **Combined USP** - Coherent summary showing how USPs progress across phases
-- **Combined Integration Type** - Summary of all integration approaches
-
-**Example:** A "User Authentication" feature might have:
-- MVP timeline item: Basic login/signup (Easy, Backend, API)
-- SHORT timeline item: Social login integration (Medium, Backend + Frontend, OAuth)
-- LONG timeline item: Biometric authentication (Hard, Mobile, Biometric SDK)
-
-AI Summary might produce:
-- **USP**: "Starts with basic authentication, evolves to include social login, and advances to biometric security"
-- **Integration**: "API-based auth expanding to OAuth integration and biometric SDKs"
-
-## 💡 Tips
-
-1. **Break Down Features by Timeline** - Use timeline breakdown to plan features in phases (MVP → SHORT → LONG) with specific details for each phase
-2. **AI Summaries** - AI automatically generates concise summaries when you save features with multiple timeline items
-3. **Vertical Layout** - Timeline and difficulty badges stack vertically in the table for clear visual mapping
-4. **Categories Only in Timeline Items** - Add categories to individual timeline items (e.g., "backend" for MVP, "frontend" for SHORT) - they automatically appear in the main feature row
-5. **Leverage AI** - Ask the AI assistant to help you write USPs, prioritize features, or suggest timeline breakdowns
-6. **Export Often** - Regularly export your data as a backup - CSV exports one row per timeline item for easy Excel analysis
-7. **Filter Smartly** - Timeline and difficulty filters show features if ANY timeline item matches
-8. **Search Everything** - Search box searches across all fields including timeline item details and AI-generated summaries
-9. **API Key Required for Summaries** - Configure your OpenRouter API key to enable AI summarization (works with chat assistant)
-10. **Formatted AI Responses** - AI responses automatically format with bullet points, bold text, code blocks, tables, and proper spacing
-11. **Ask for Tables** - Request the AI to show data in table format (e.g., "Show me a comparison table of features")
-12. **Use Custom Instructions** - Set up custom instructions to define how the AI should behave (your role, project context, style)
-13. **Build Memory Over Time** - Add important decisions, preferences, and context to memory for future conversations
-14. **Review Auto-Suggestions** - Check memory suggestions every 5 messages to build your AI's permanent memory
-15. **Memory Context Indicator** - Watch the indicator above chat input to see how many memory items are included in your conversation context
-16. **Start New When Needed** - Use the 🔄 button to start fresh conversations while keeping your memory intact
-
-## 🔒 Privacy & Data
-
-- **All data is stored locally** in your browser's localStorage
-- **No server or database** required
-- **Your API key** is stored locally and never shared
-- **Export your data** anytime to keep backups
-
-## 💾 Data Persistence & Backup
-
-### Important: File Path Matters!
-
-When using `file://` protocol (opening HTML directly), **each file path gets separate storage**:
-
+**Review & Feedback Tables (Planned):**
 ```
-✅ GOOD: Always open from same location
-C:\Users\harsh\Downloads\Platform Test\index.html
-
-❌ BAD: Opening from different paths loses data
-C:\Users\harsh\Desktop\index.html  ← Different storage!
-C:\Users\harsh\Documents\index.html  ← Different storage!
+review_links    - Public/invite/iframe links
+feedback        - Reviewer submissions
 ```
 
-### Backup & Restore Feature
-
-**💾 Backup All** - Export everything to JSON file:
-- All features
-- Memory items
-- Memory suggestions
-- Custom instructions
-- AI model preferences
-
-**📂 Import Backup** - Restore from JSON backup:
-- Select your backup file
-- Confirms before overwriting current data
-- Restores everything instantly
-
-### When to Use Backup/Restore
-
-1. **Before moving the file** - Export before changing location
-2. **Regular backups** - Export weekly to avoid data loss
-3. **Switching browsers** - Export from one, import to another
-4. **After warnings** - If you see origin change warning
-5. **Sharing data** - Send backup to teammates
-
-### Better Solution: Use a Local Server
-
-For more reliable data persistence, run a local web server:
-
-**Option 1: Python (if installed)**
-```bash
-cd "C:\Users\harsh\Downloads\Platform Test"
-python -m http.server 8000
+**Analytics Tables (Planned):**
 ```
-Then open: `http://localhost:8000`
-
-**Option 2: VS Code Live Server**
-1. Install "Live Server" extension
-2. Right-click `index.html`
-3. Select "Open with Live Server"
-
-**Option 3: Node.js http-server**
-```bash
-npx http-server
+custom_dashboards - User-created dashboards
+success_metrics   - Expected vs actual tracking
+ai_usage          - Message count per user/month
 ```
 
-**Benefits of using local server:**
-- ✅ Consistent storage location (always `localhost`)
-- ✅ No path-based storage issues
-- ✅ Better for development
-- ✅ More reliable
+---
 
-## 🎨 Customization
+## 🧪 Testing
 
-Since this is a single HTML file, you can easily customize:
+**Current Status**: ❌ No automated tests yet (planned for Week 8)
 
-1. **Colors** - Edit the CSS gradient colors in the `<style>` section
-2. **Categories** - Change MVP/SHORT/LONG to your own categories
-3. **Difficulty Levels** - Modify Easy/Medium/Hard to your scale
-4. **AI Models** - Add more models to the dropdown (see section below)
+**Planned Testing:**
+- **Playwright** - E2E tests (authentication, feature CRUD, mind mapping)
+- **Jest** - Unit tests for React components
+- **React Testing Library** - Component integration tests
 
-### Changing the AI Model
+---
 
-Simply use the dropdown in the AI chat panel! The app includes 5 cost-effective models:
+## 🚀 Deployment
 
-- **DeepSeek V3.1 Terminus** - 671B params, extremely cost-effective (default)
-- **Claude Haiku 4.5** - Anthropic's fastest model
-- **GPT-4o Mini** - OpenAI's efficient model
-- **Kimi K2** - 1T params with 256K context window
-- **Grok 4 Fast** - xAI's model with 2M context window
+### Vercel (Recommended)
 
-All models are optimized for speed and cost-effectiveness, perfect for frequent use.
+1. **Push to GitHub**
+   ```bash
+   git add .
+   git commit -m "feat: your changes"
+   git push origin main
+   ```
 
-To add more models, edit the `<select id="modelSelect">` section in the HTML and add new `<option>` tags with the model ID from [OpenRouter's model list](https://openrouter.ai/models).
+2. **Deploy to Vercel**
+   - Automatic deployment via GitHub integration
+   - Or manually: `vercel --prod`
 
-## 📱 Browser Compatibility
+3. **Configure Environment Variables**
+   - Add Supabase URL and anon key
+   - Add OpenRouter API key (for AI features)
+   - Add Stripe keys (for billing)
+   - Add Resend API key (for emails)
 
-Works in all modern browsers:
-- ✅ Chrome / Edge
-- ✅ Firefox
-- ✅ Safari
-- ✅ Opera
+**Live URL**: [https://platform-test-cyan.vercel.app](https://platform-test-cyan.vercel.app)
 
-## 📁 Project Structure
+---
 
-The project is organized into clear directories for better maintainability:
+## 🤝 Contributing
 
-```
-platform-roadmap-manager/
-├── index.html                 # Main application
-├── README.md                  # This file
-├── CLAUDE.md                  # Project guidelines and instructions
-│
-├── css/                       # Stylesheets (extracted from HTML)
-│   ├── variables.css          # CSS variables and theming
-│   ├── base.css               # Base styles and layout
-│   ├── components.css         # Component styles (buttons, modals, cards)
-│   └── views.css              # View-specific styles (table, detail, chat)
-│
-├── js/                        # JavaScript modules
-│   ├── config.js              # Configuration (Supabase keys, defaults)
-│   ├── main.js                # App initialization
-│   │
-│   ├── services/              # External API integrations
-│   │   ├── storage.js         # localStorage management
-│   │   ├── supabase.js        # Supabase integration
-│   │   ├── ai-service.js      # OpenRouter AI integration
-│   │   ├── tavily-search.js   # Tavily web search API
-│   │   ├── exa-api.js         # Exa semantic search
-│   │   ├── perplexity-api.js  # Perplexity Q&A API
-│   │   └── search-orchestrator.js  # Intelligent search routing
-│   │
-│   ├── data/                  # Data management and business logic
-│   │   ├── workspace-manager.js    # Workspace CRUD operations
-│   │   ├── feature-manager.js      # Feature CRUD operations
-│   │   ├── timeline-manager.js     # Timeline item management
-│   │   └── link-manager.js         # Bidirectional link management
-│   │
-│   └── ui/                    # User interface components
-│       ├── modal-manager.js           # All modal dialogs
-│       ├── chat-panel.js              # AI conversation interface
-│       ├── feature-table.js           # Table rendering and filtering
-│       ├── detail-view-core.js        # Detail view navigation
-│       ├── detail-view-tabs.js        # Tab rendering
-│       ├── detail-view-crud.js        # CRUD operations
-│       ├── detail-view-ai.js          # Core AI generation
-│       └── detail-view-ai-workflows.js # Advanced AI workflows
-│
-├── docs/                      # Documentation
-│   ├── IMPROVEMENT_RECOMMENDATIONS.md  # Future enhancement suggestions
-│   │
-│   ├── refactoring/           # Refactoring documentation
-│   │   ├── REFACTORING_COMPLETE.md           # Complete refactoring summary
-│   │   └── REFACTORING_PROGRESS_SUMMARY.md   # Detailed progress tracking
-│   │
-│   ├── setup/                 # Setup and configuration guides
-│   │   ├── MCP_SETUP_COMPLETE.md      # MCP server setup
-│   │   ├── CURSOR_SETUP_GUIDE.md      # Cursor IDE setup
-│   │   └── CURSOR_QUICK_START.md      # Quick start for Cursor
-│   │
-│   └── architecture/          # (Future) Architecture documentation
-│       ├── ARCHITECTURE.md    # System overview (planned)
-│       ├── API_REFERENCE.md   # Module API reference (planned)
-│       └── DATA_MODEL.md      # Database schema (planned)
-│
-├── tests/                     # Automated tests
-│   ├── test_runner_all.html   # Comprehensive test UI (90 tests)
-│   ├── test_phase3_phase4.js  # Service & Data layer tests (57 tests)
-│   └── test_phase5_chat_panel.js  # Chat Panel UI tests (33 tests)
-│
-├── tools/                     # Development utilities
-│   ├── debug-features.html    # Feature debugging interface
-│   ├── mcp-ui-server.js       # MCP UI component server
-│   └── supabase_sync_updates.js  # Supabase sync utility
-│
-├── backups/                   # Backup files
-│   └── index_backup_before_chat_extraction.html
-│
-├── supabase/                  # Supabase configuration
-│   └── migrations/            # Database migration files
-│
-└── package.json               # npm dependencies (MCP servers)
-```
+### Coding Standards
 
-### Key Highlights
+- ✅ Use TypeScript strict mode, avoid `any`
+- ✅ Use shadcn/ui components (not custom UI libraries)
+- ✅ Filter all queries by `team_id` for multi-tenancy
+- ✅ Enable RLS on all tables
+- ✅ Use timestamp-based IDs (`Date.now().toString()`)
+- ✅ Test on mobile (mobile-first design)
 
-**📦 25 Specialized Modules** - Extracted from original 17,085-line monolithic file
-- **56% reduction** in main file size (now 7,447 lines)
-- Clear separation of concerns
-- High maintainability and testability
+See [CLAUDE.md](CLAUDE.md) for comprehensive coding guidelines.
 
-**🧪 90 Automated Tests** - Comprehensive test coverage
-- Service Layer: 24 tests
-- Data Layer: 33 tests
-- UI Layer: 33 tests
-- 100% pass rate
+### Documentation Maintenance
 
-**📚 Comprehensive Documentation** - Well-organized guides
-- Setup instructions
-- Refactoring history
-- Future improvement suggestions
+**When to Update Documentation:**
+- ✅ Database schema changes → Update IMPLEMENTATION_PLAN.md + CHANGELOG.md
+- ✅ Tech stack changes → Update README.md + CLAUDE.md
+- ✅ Process changes → Update CLAUDE.md + .cursorrules
+- ✅ Phase completions → Update IMPLEMENTATION_PLAN.md + PROGRESS.md
+- ✅ Postponed features → Create [FEATURE_NAME].md + Update IMPLEMENTATION_PLAN.md
 
-## 🤝 Support
+**Documentation Sync Schedule:**
+- **Daily**: Update PROGRESS.md, add CHANGELOG.md entries
+- **Weekly**: Review IMPLEMENTATION_PLAN.md, update README.md
+- **Monthly**: Full documentation audit, fix inconsistencies
 
-If you encounter issues:
+---
 
-1. **Check Browser Console** - Press F12 and look for errors
-2. **Verify API Key** - Make sure your OpenRouter key is valid
-3. **Clear Browser Cache** - Sometimes helps with localStorage issues
-4. **Try Incognito Mode** - To rule out extension conflicts
+## 📊 Implementation Timeline
+
+**Original Plan**: 8 weeks (6-8 weeks realistic estimate)
+**Current Progress**: ~25% complete (Week 3-4)
+**Status**: ⚠️ Behind schedule
+
+**Completed Work:**
+- ✅ Week 1-2: Foundation (50% complete)
+- ⏳ Week 3: Mind Mapping (30% complete)
+- ⏳ Week 4: Dependencies (15% complete)
+
+**Next Priorities:**
+1. Complete mind mapping canvas (ReactFlow)
+2. Implement AI integration (OpenRouter)
+3. Build dependency visualization
+4. Add critical path analysis
+5. Set up testing infrastructure (Playwright)
+
+See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for detailed weekly breakdown.
+
+---
+
+## 🐛 Known Issues
+
+1. **Mind Map Canvas** - ReactFlow implementation needs verification
+2. **AI Integration** - OpenRouter client not yet implemented
+3. **RLS Policies** - Multi-tenant security not verified
+4. **Testing** - Zero automated tests currently
+5. **Billing** - Stripe integration not started
+
+---
 
 ## 📄 License
 
-Free to use and modify for your personal and commercial projects!
+Free to use and modify for personal and commercial projects.
 
-## 🎯 Example Use Cases
+---
 
-- Planning a SaaS platform roadmap
-- Managing feature requests
-- Organizing development priorities
-- Evaluating which features to build first
-- Tracking MVP vs future features
-- Collaborating with stakeholders (via CSV export)
+## 🎯 Use Cases
+
+- Planning SaaS product roadmaps
+- Managing feature requests and prioritization
+- Organizing development sprints and milestones
+- Tracking dependencies and critical path
+- Gathering stakeholder feedback
+- Analyzing product performance metrics
+- Collaborating with distributed teams
+
+---
+
+## 📞 Support
+
+**Documentation**: See [CLAUDE.md](CLAUDE.md) for comprehensive guidelines
+**Issues**: Create an issue in the GitHub repository
+**Questions**: Use the AI chat assistant (coming in Week 7)
 
 ---
 
 **Made with ❤️ for product builders and developers**
 
-Need help? Just ask the AI chat assistant! 🤖
+🚀 **Ready to transform your product development process!**
