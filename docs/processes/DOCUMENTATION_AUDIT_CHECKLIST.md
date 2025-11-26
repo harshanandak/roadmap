@@ -157,7 +157,7 @@
 **Last Reviewed**: 2025-01-13
 
 #### Checklist:
-- [ ] **Agent count matches MCP_OPTIMIZATION_SUMMARY.md** (15 agents)
+- [ ] **Agent count matches CLAUDE.md** (15 agents)
 - [ ] **Week-by-week agent recommendations current**
 - [ ] **Agent descriptions accurate**
 - [ ] **Example prompts tested**
@@ -167,18 +167,14 @@
 
 ---
 
-### 9. MCP_OPTIMIZATION_SUMMARY.md
-**Purpose**: MCP configuration rationale, token savings
-**Last Reviewed**: 2025-11-14
+### 9. MCP_USAGE_GUIDE.md
+**Purpose**: MCP usage examples and patterns
+**Last Reviewed**: 2025-11-26
 
 #### Checklist:
-- [ ] **MCP count correct** (3 active: Supabase, Playwright, Parallel-search)
-- [ ] **Token usage accurate** (~6.5k tokens)
-- [ ] **Removed MCPs documented** (4 removed)
-- [ ] **Re-enable instructions provided**
-- [ ] **Parallel-search rationale explained**
+- [ ] **MCP count correct** (5 active: Supabase, Playwright, Vercel, Parallel Search, Parallel Task)
+- [ ] **Usage examples current**
 - [ ] **Matches cursor-mcp-config.json**
-- [ ] **Success criteria met**
 - [ ] **Timestamp updated**
 
 ---
@@ -221,7 +217,7 @@
 - [ ] **MCP count matches docs** (3 active)
 - [ ] **Server configs valid** (Supabase, Playwright, Parallel-search)
 - [ ] **No deprecated MCPs**
-- [ ] **Matches MCP_OPTIMIZATION_SUMMARY.md**
+- [ ] **Matches MCP_USAGE_GUIDE.md**
 
 ---
 
@@ -247,10 +243,10 @@
 ---
 
 ### MCP Configuration Consistency
-**Check these files have same MCP count (3):**
-- [ ] README.md (line 189-193)
-- [ ] CLAUDE.md (line 86-89)
-- [ ] MCP_OPTIMIZATION_SUMMARY.md (line 17-19, 29)
+**Check these files have same MCP count (5):**
+- [ ] README.md (MCP section)
+- [ ] CLAUDE.md (MCP Servers table)
+- [ ] docs/reference/MCP_USAGE_GUIDE.md
 - [ ] cursor-mcp-config.json (count servers)
 
 **Expected MCPs**:
@@ -331,7 +327,7 @@
 **Update Immediately:**
 - [ ] CLAUDE.md (Workflows section)
 - [ ] .cursorrules (if coding standards change)
-- [ ] MCP_OPTIMIZATION_SUMMARY.md (if MCP config changes)
+- [ ] docs/reference/MCP_USAGE_GUIDE.md (if MCP config changes)
 
 ---
 

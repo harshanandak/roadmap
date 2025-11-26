@@ -197,7 +197,7 @@ This project uses **Model Context Protocol (MCP)** servers for enhanced AI capab
 
 **Configuration**: See [cursor-mcp-config.json](cursor-mcp-config.json)
 
-**Optimization**: Token usage optimized with lazy loading + skill-based abstraction. See [MCP_OPTIMIZATION_SUMMARY.md](MCP_OPTIMIZATION_SUMMARY.md) for details.
+**Optimization**: Token usage optimized with lazy loading + skill-based abstraction.
 
 ---
 
@@ -210,7 +210,7 @@ This project uses **Model Context Protocol (MCP)** servers for enhanced AI capab
 | [CLAUDE.md](CLAUDE.md) | Project guidelines, tech stack, quick reference | 700 |
 | [docs/implementation/README.md](docs/implementation/README.md) | Implementation plan overview, architecture, pricing | 318 |
 | [docs/planning/RECOMMENDED_AGENTS.md](docs/planning/RECOMMENDED_AGENTS.md) | Claude agents mapped to implementation phases | 614 |
-| [MCP_OPTIMIZATION_SUMMARY.md](MCP_OPTIMIZATION_SUMMARY.md) | MCP configuration and context optimization | 370 |
+| [docs/reference/MCP_USAGE_GUIDE.md](docs/reference/MCP_USAGE_GUIDE.md) | MCP usage examples and patterns | 468 |
 | [docs/postponed/MIND_MAP_ENHANCEMENTS.md](docs/postponed/MIND_MAP_ENHANCEMENTS.md) | Postponed features (23 enhancements) | 1,672 |
 | [.cursorrules](.cursorrules) | Cursor AI behavior and coding standards | 570 |
 
