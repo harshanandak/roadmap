@@ -75,7 +75,7 @@ Visual canvas with AI-powered suggestions
 - Week 7: AI insights can analyze phase distribution
 
 **Links**:
-- Phase Constants: [../../next-app/src/lib/constants/workspace-phases.ts](../../next-app/src/lib/constants/workspace-phases.ts)
+- Phase Constants: [../../next-app/src/lib/constants/workspace-phases.tsx](../../next-app/src/lib/constants/workspace-phases.tsx)
 - Architecture Update: [../reference/ARCHITECTURE.md](../reference/ARCHITECTURE.md#workspace-phase-system)
 
 ---

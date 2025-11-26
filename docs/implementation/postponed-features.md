@@ -32,7 +32,7 @@ This document follows the [Tracking Postponed Features Policy](../../CLAUDE.md#t
 
 **⏱️ Estimated Effort:** 3-4 weeks (after Week 7 completion)
 
-**📋 Full Details:** See [MIND_MAP_ENHANCEMENTS.md](../../MIND_MAP_ENHANCEMENTS.md)
+**📋 Full Details:** See [MIND_MAP_ENHANCEMENTS.md](../postponed/MIND_MAP_ENHANCEMENTS.md)
 
 ---
 

@@ -229,7 +229,7 @@ CREATE TABLE work_flows (
 
 ## Related Documentation
 
-- [Core Canvas Implementation](../implementation/week-3-4-foundation.md)
+- [Core Canvas Implementation](../implementation/week-3-mind-mapping.md)
 - [Performance Monitoring System](../../next-app/src/lib/performance/monitor.ts)
 - [Database Schema](../reference/ARCHITECTURE.md)
 - [Work Flows Table](../../supabase/migrations/YYYY_unified_canvas.sql)

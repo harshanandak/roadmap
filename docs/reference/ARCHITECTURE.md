@@ -895,10 +895,10 @@ graph TD
 
 ## 🔗 RELATED DOCUMENTATION
 
-- [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) - Detailed implementation timeline
-- [API_REFERENCE.md](API_REFERENCE.md) - API endpoints documentation
-- [CLAUDE.md](CLAUDE.md) - Project guidelines and coding standards
-- [README.md](README.md) - Project overview and quick start
+- [Implementation Plan](../implementation/README.md) - Detailed implementation timeline
+- [API Reference](API_REFERENCE.md) - API endpoints documentation
+- [Project Guidelines](../../CLAUDE.md) - Project guidelines and coding standards
+- [README](../../README.md) - Project overview and quick start
 
 ---
 

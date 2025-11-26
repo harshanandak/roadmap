@@ -1662,9 +1662,9 @@ Use this data to prioritize Phase 2 and Phase 3 features.
 
 ## Related Documents
 
-- [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) - Overall project roadmap
-- [RECOMMENDED_AGENTS.md](RECOMMENDED_AGENTS.md) - Claude agents for each phase
-- [CLAUDE.md](CLAUDE.md) - Project guidelines and standards
+- [Implementation Plan](../implementation/README.md) - Overall project roadmap
+- [Recommended Agents](../planning/RECOMMENDED_AGENTS.md) - Claude agents for each phase
+- [Project Guidelines](../../CLAUDE.md) - Project guidelines and standards
 
 ---
 

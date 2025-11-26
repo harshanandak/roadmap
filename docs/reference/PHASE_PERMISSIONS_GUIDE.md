@@ -771,5 +771,3 @@ async function handleCreateWorkItem(
 ---
 
 **Ready to implement! 🚀**
-
-For complete migration details, see [PHASE_PERMISSIONS_MIGRATION_SUMMARY.md](../../PHASE_PERMISSIONS_MIGRATION_SUMMARY.md)

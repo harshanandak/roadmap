@@ -79,7 +79,7 @@
 - [ ] **Success metrics updated**
 - [ ] **Timestamp updated**
 
-**Action**: If over 2,000 lines, split into folder structure (see [NEXT_STEPS.md](NEXT_STEPS.md#documentation-improvements))
+**Action**: If over 2,000 lines, split into folder structure (see [NEXT_STEPS.md](../planning/NEXT_STEPS.md#documentation-improvements))
 
 ---
 

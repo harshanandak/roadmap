@@ -330,7 +330,6 @@
 
 **Links**:
 - Canvas: [../../next-app/src/components/canvas/](../../next-app/src/components/canvas/)
-- Templates: [../../next-app/src/lib/constants/mind-map-templates.ts](../../next-app/src/lib/constants/mind-map-templates.ts)
 
 ---
 

@@ -532,5 +532,3 @@ ORDER BY upa.assigned_at DESC;
 **Schema Documentation Complete! 📊**
 
 For implementation guide, see [PHASE_PERMISSIONS_GUIDE.md](PHASE_PERMISSIONS_GUIDE.md)
-
-For migration details, see [PHASE_PERMISSIONS_MIGRATION_SUMMARY.md](../../PHASE_PERMISSIONS_MIGRATION_SUMMARY.md)
