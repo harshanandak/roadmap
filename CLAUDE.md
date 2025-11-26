@@ -1,6 +1,6 @@
 # 📚 Project Guidelines & Quick Reference
 
-**Last Updated**: 2025-11-26
+**Last Updated**: 2025-11-26 <!-- Link checker updated -->
 **Project**: Product Lifecycle Management Platform
 **Tech Stack**: Next.js 15 + TypeScript + Supabase + Vercel
 **Current Status**: Week 6 (60-65% overall)
