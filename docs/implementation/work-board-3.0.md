@@ -392,7 +392,6 @@ Features:
 
 ## Related Documentation
 
-- [Phase G: Dialog Refinements](./soft-plotting-widget.md) - Previous phase
 - [Product Tasks System](./week-5-review-system.md) - Tasks implementation
 - [Existing Board Components](../reference/ARCHITECTURE.md) - Board/Kanban architecture
 - [dnd-kit Usage](https://docs.dndkit.com/) - Drag-drop library docs
