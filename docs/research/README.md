@@ -337,4 +337,4 @@ Add new research documents when:
 
 **Ready to research! 🔍**
 
-For questions about using this hub, see [docs/processes/RESEARCH_PROCESS.md](../processes/RESEARCH_PROCESS.md) (if exists) or ask the team.
+For questions about using this hub, see the process guides in [docs/processes/](../processes/) or ask the team.
