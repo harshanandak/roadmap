@@ -414,7 +414,7 @@ CREATE INDEX idx_workspaces_mode ON workspaces(mode);
 
 **Total Effort**: ~7 days
 
-**Scope Decision**: Focus on lightweight, native feedback capture. Deep CRM integration is OUT OF SCOPE (see [scope-decisions.md](../research/scope-decisions.md)).
+**Scope Decision**: Focus on lightweight, native feedback capture. Deep CRM integration is OUT OF SCOPE (see [scope-decisions.md](../research/architecture-decisions/scope-decisions.md)).
 
 #### 4.1 Customer Insights Table
 
@@ -1246,7 +1246,7 @@ ROLLBACK; -- Or COMMIT if successful
 **Mitigation**:
 1. **Stick to "Native Basics" Scope**: Feedback capture + voting + linking ONLY
 2. **Integration Over Building**: For advanced CRM features, integrate with HubSpot/Salesforce
-3. **Reference Document**: Link to [scope-decisions.md](../research/scope-decisions.md) when tempted to add CRM features
+3. **Reference Document**: Link to [scope-decisions.md](../research/architecture-decisions/scope-decisions.md) when tempted to add CRM features
 4. **Phase Gate Review**: Validate scope at end of Phase C
 
 **Scope Boundary**:
@@ -1350,10 +1350,10 @@ if (acceptanceRate < 0.5) {
 - [WORKSPACE_TIMELINE_ARCHITECTURE.md](../postponed/WORKSPACE_TIMELINE_ARCHITECTURE.md) - Timeline refactor
 
 ### Research Findings
-- [ultra-deep-research-findings.md](../research/ultra-deep-research-findings.md) - Market intelligence
-- [scope-decisions.md](../research/scope-decisions.md) - In-scope vs out-of-scope teams
-- [progressive-disclosure-ux.md](../research/progressive-disclosure-ux.md) - UX patterns
-- [cross-team-collaboration.md](../research/cross-team-collaboration.md) - Team workflow research
+- [ultra-deep-research-findings.md](../research/core-research/ultra-deep-research-findings.md) - Market intelligence
+- [scope-decisions.md](../research/architecture-decisions/scope-decisions.md) - In-scope vs out-of-scope teams
+- [progressive-disclosure-ux.md](../research/core-research/progressive-disclosure-ux.md) - UX patterns
+- [cross-team-collaboration.md](../research/core-research/cross-team-collaboration.md) - Team workflow research
 
 ### Technical References
 - [ARCHITECTURE.md](../reference/ARCHITECTURE.md) - System architecture

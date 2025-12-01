@@ -803,8 +803,7 @@ interface ModeAnalytics {
 
 - [Workspace Timeline Architecture](WORKSPACE_TIMELINE_ARCHITECTURE.md) - Required dependency
 - [Implementation Plan - Postponed Features](../implementation/postponed-features.md) - Tracking
-- [Week 7: Analytics & AI](../implementation/week-7-analytics-ai.md) - AI Integration
-- [Dashboard Module](../implementation/dashboard-module.md) - Widget system
+- [Week 7: Analytics & AI](../implementation/week-7-ai-analytics.md) - AI Integration
 - [CLAUDE.md - Project Guidelines](../../CLAUDE.md) - Context
 
 ---
