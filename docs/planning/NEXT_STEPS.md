@@ -1,6 +1,6 @@
 # 🎯 NEXT STEPS - Action Plan
 
-**Last Updated**: 2025-11-26
+**Last Updated**: 2025-11-30
 **Current Week**: Week 6 (Timeline & Execution)
 **Overall Status**: ✅ On Track (60-65% complete)
 
@@ -125,12 +125,24 @@
 
 ### Billing, Testing & Launch
 
-#### Stripe Integration (12-16 hours)
-- [ ] Checkout session API
-- [ ] Webhook handler
-- [ ] Customer portal link
+#### Razorpay Integration (12-16 hours)
+**Note**: Using Razorpay instead of Stripe (Stripe is invite-only in India).
+
+- [ ] Install `razorpay` npm package
+- [ ] Create order API (`/api/razorpay/create-order`)
+- [ ] Payment verification (`/api/razorpay/verify`)
+- [ ] Webhook handler (`/api/razorpay/webhook`)
+- [ ] Subscription management (`/api/razorpay/subscription`)
+- [ ] Customer portal integration
 - [ ] Feature gates (Free vs Pro)
 - [ ] Usage limits enforcement
+
+**Environment Variables**:
+```env
+RAZORPAY_KEY_ID=your_key_id
+RAZORPAY_KEY_SECRET=your_key_secret
+NEXT_PUBLIC_RAZORPAY_KEY_ID=your_key_id
+```
 
 #### E2E Testing (8-12 hours)
 - [ ] Authentication flow test
@@ -177,7 +189,7 @@
 - [ ] Progress: 70% → 85%
 
 ### Week 8 Goals
-- [ ] Billing integration complete
+- [ ] Razorpay billing integration complete
 - [ ] 10+ E2E tests passing
 - [ ] Launch-ready
 - [ ] Progress: 85% → 100%

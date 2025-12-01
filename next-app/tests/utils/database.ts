@@ -4,14 +4,114 @@
  * Provides direct database access for test setup and cleanup.
  * This allows tests to create complex data scenarios without
  * simulating through the UI.
+ *
+ * IMPORTANT: Uses service role key for admin operations (bypasses RLS)
+ * and anon key for testing RLS policies from user perspective.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
+// Regular client (subject to RLS) - for user-perspective testing
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Admin client (bypasses RLS) - for test setup and cleanup
+let adminClient: SupabaseClient | null = null;
+
+/**
+ * Get admin client that bypasses RLS (uses service role key)
+ * Use this for test setup/cleanup, NOT for testing user access
+ */
+export function getAdminClient(): SupabaseClient {
+  if (!adminClient) {
+    if (!supabaseServiceRoleKey) {
+      throw new Error(
+        'SUPABASE_SERVICE_ROLE_KEY is required for admin operations. ' +
+        'Add it to .env.test file.'
+      );
+    }
+    adminClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { persistSession: false }
+    });
+  }
+  return adminClient;
+}
+
+/**
+ * Get regular client (subject to RLS) - for user perspective testing
+ */
+export function getRegularClient(): SupabaseClient {
+  return supabase;
+}
+
+/**
+ * Create a real Supabase auth user for testing
+ * Returns user ID and email that can be used for authentication
+ */
+export async function createTestAuthUser(
+  email: string,
+  password: string
+): Promise<{ id: string; email: string }> {
+  const admin = getAdminClient();
+
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true, // Auto-confirm email
+  });
+
+  if (error) {
+    throw new Error(`Failed to create test user: ${error.message}`);
+  }
+
+  return { id: data.user.id, email: data.user.email! };
+}
+
+/**
+ * Delete a test auth user
+ */
+export async function deleteTestAuthUser(userId: string): Promise<void> {
+  const admin = getAdminClient();
+
+  const { error } = await admin.auth.admin.deleteUser(userId);
+
+  if (error) {
+    console.error(`Failed to delete test user ${userId}:`, error.message);
+  }
+}
+
+/**
+ * Create a Supabase client authenticated as a specific user
+ * Use this to test RLS policies from that user's perspective
+ */
+export async function createClientAsUser(userId: string): Promise<SupabaseClient> {
+  const admin = getAdminClient();
+
+  // Generate a magic link token for the user
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: 'magiclink',
+    email: (await admin.auth.admin.getUserById(userId)).data.user?.email || '',
+  });
+
+  if (error || !data.properties?.access_token) {
+    throw new Error(`Failed to create client as user: ${error?.message}`);
+  }
+
+  // Create a new client with the user's session
+  const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false }
+  });
+
+  await userClient.auth.setSession({
+    access_token: data.properties.access_token,
+    refresh_token: data.properties.refresh_token || '',
+  });
+
+  return userClient;
+}
 
 /**
  * Create a test team directly in the database
@@ -353,6 +453,198 @@ export async function verifyTeamIsolation(
   } catch (error) {
     console.error('Error verifying team isolation:', error);
     return false;
+  }
+}
+
+/**
+ * Create a test resource directly in the database
+ */
+export async function createResourceInDatabase(
+  resourceData: {
+    title: string;
+    url?: string;
+    description?: string;
+    notes?: string;
+    resourceType?: 'reference' | 'inspiration' | 'documentation' | 'media' | 'tool';
+    workspaceId: string;
+    teamId: string;
+    createdBy: string;
+  },
+): Promise<{ id: string; title: string }> {
+  try {
+    const resourceId = `resource_${Date.now()}`;
+
+    const { data, error } = await supabase
+      .from('resources')
+      .insert([
+        {
+          id: resourceId,
+          title: resourceData.title,
+          url: resourceData.url || null,
+          description: resourceData.description || null,
+          notes: resourceData.notes || null,
+          resource_type: resourceData.resourceType || 'reference',
+          workspace_id: resourceData.workspaceId,
+          team_id: resourceData.teamId,
+          created_by: resourceData.createdBy,
+          created_at: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating resource:', error);
+      throw error;
+    }
+
+    return {
+      id: data.id,
+      title: data.title,
+    };
+  } catch (error) {
+    console.error('Failed to create resource in database:', error);
+    throw error;
+  }
+}
+
+/**
+ * Link a resource to a work item
+ */
+export async function linkResourceToWorkItem(
+  resourceId: string,
+  workItemId: string,
+  teamId: string,
+  addedBy: string,
+  tabType: 'inspiration' | 'resource' = 'resource',
+): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('work_item_resources')
+      .insert([
+        {
+          work_item_id: workItemId,
+          resource_id: resourceId,
+          team_id: teamId,
+          tab_type: tabType,
+          added_by: addedBy,
+          added_at: new Date().toISOString(),
+        },
+      ]);
+
+    if (error) {
+      console.error('Error linking resource:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Failed to link resource in database:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get resource by ID
+ */
+export async function getResourceById(
+  resourceId: string,
+): Promise<{ id: string; title: string; is_deleted: boolean } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('resources')
+      .select('id, title, is_deleted')
+      .eq('id', resourceId)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error getting resource:', error);
+    return null;
+  }
+}
+
+/**
+ * Get resource audit log entries
+ */
+export async function getResourceAuditLog(
+  resourceId: string,
+): Promise<Array<{ action: string; performed_at: string }>> {
+  try {
+    const { data, error } = await supabase
+      .from('resource_audit_log')
+      .select('action, performed_at')
+      .eq('resource_id', resourceId)
+      .order('performed_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting audit log:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Failed to get audit log:', error);
+    return [];
+  }
+}
+
+/**
+ * Search resources by query
+ */
+export async function searchResources(
+  teamId: string,
+  query: string,
+): Promise<Array<{ id: string; title: string }>> {
+  try {
+    const { data, error } = await supabase
+      .rpc('search_resources', {
+        p_team_id: teamId,
+        p_query: query,
+        p_limit: 50,
+        p_offset: 0,
+      });
+
+    if (error) {
+      console.error('Error searching resources:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Failed to search resources:', error);
+    return [];
+  }
+}
+
+/**
+ * Cleanup resources for a team
+ */
+export async function cleanupResourcesData(teamId: string): Promise<void> {
+  try {
+    // Delete work_item_resources junction entries
+    await supabase
+      .from('work_item_resources')
+      .delete()
+      .eq('team_id', teamId);
+
+    // Delete resource audit logs
+    await supabase
+      .from('resource_audit_log')
+      .delete()
+      .eq('team_id', teamId);
+
+    // Delete resources
+    await supabase
+      .from('resources')
+      .delete()
+      .eq('team_id', teamId);
+
+    console.log(`Cleaned up resources data for team: ${teamId}`);
+  } catch (error) {
+    console.error('Error during resources cleanup:', error);
   }
 }
 

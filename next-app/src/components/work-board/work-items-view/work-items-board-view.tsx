@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
+import { motion } from 'framer-motion'
 import {
   DndContext,
   DragEndEvent,
@@ -37,6 +39,7 @@ import {
   type WorkItemStatus,
 } from '../shared/filter-context'
 import { BoardColumnEmptyState } from '../shared/empty-state'
+import { columnContainerVariants, boardCardVariants } from '../shared/animation-variants'
 
 // Types
 interface WorkItem {
@@ -209,6 +212,7 @@ export function WorkItemsBoardView({
             status={status}
             items={columns[status]}
             timelineItems={timelineItems}
+            workspaceId={workspaceId}
             getTimelineProgress={getTimelineProgress}
             onItemClick={onItemClick}
             onTaskCountClick={onTaskCountClick}
@@ -245,6 +249,7 @@ interface BoardColumnProps {
   status: WorkItemStatus
   items: WorkItem[]
   timelineItems: TimelineItem[]
+  workspaceId: string
   getTimelineProgress: (workItemId: string) => { mvp?: TimelineItem; short?: TimelineItem; long?: TimelineItem; total: number } | null
   onItemClick?: (item: WorkItem) => void
   onTaskCountClick?: (workItemId: string, workItemName: string) => void
@@ -256,6 +261,7 @@ function BoardColumn({
   status,
   items,
   timelineItems,
+  workspaceId,
   getTimelineProgress,
   onItemClick,
   onTaskCountClick,
@@ -293,7 +299,13 @@ function BoardColumn({
         </div>
 
         {/* Column Content */}
-        <div className="flex-1 p-2 space-y-2 overflow-y-auto min-h-[300px]">
+        <motion.div
+          className="flex-1 p-2 space-y-2 overflow-y-auto min-h-[300px]"
+          variants={columnContainerVariants}
+          initial="hidden"
+          animate="visible"
+          key={`column-${status}-${items.length}`} // Re-animate when items change
+        >
           {items.length === 0 ? (
             <BoardColumnEmptyState
               onAction={onAddItem ? () => onAddItem(status) : undefined}
@@ -301,17 +313,19 @@ function BoardColumn({
             />
           ) : (
             items.map((item) => (
-              <SortableWorkItemCard
-                key={item.id}
-                item={item}
-                timelineProgress={getTimelineProgress(item.id)}
-                onClick={() => onItemClick?.(item)}
-                onTaskCountClick={onTaskCountClick}
-                taskCount={taskCounts[item.id] || 0}
-              />
+              <motion.div key={item.id} variants={boardCardVariants}>
+                <SortableWorkItemCard
+                  item={item}
+                  timelineProgress={getTimelineProgress(item.id)}
+                  workspaceId={workspaceId}
+                  onClick={() => onItemClick?.(item)}
+                  onTaskCountClick={onTaskCountClick}
+                  taskCount={taskCounts[item.id] || 0}
+                />
+              </motion.div>
             ))
           )}
-        </div>
+        </motion.div>
       </div>
     </SortableContext>
   )
@@ -321,12 +335,13 @@ function BoardColumn({
 interface SortableWorkItemCardProps {
   item: WorkItem
   timelineProgress: { mvp?: TimelineItem; short?: TimelineItem; long?: TimelineItem; total: number } | null
+  workspaceId: string
   onClick?: () => void
   onTaskCountClick?: (workItemId: string, workItemName: string) => void
   taskCount?: number
 }
 
-function SortableWorkItemCard({ item, timelineProgress, onClick, onTaskCountClick, taskCount = 0 }: SortableWorkItemCardProps) {
+function SortableWorkItemCard({ item, timelineProgress, workspaceId, onClick, onTaskCountClick, taskCount = 0 }: SortableWorkItemCardProps) {
   const {
     attributes,
     listeners,
@@ -346,6 +361,7 @@ function SortableWorkItemCard({ item, timelineProgress, onClick, onTaskCountClic
       <WorkItemCard
         item={item}
         timelineProgress={timelineProgress}
+        workspaceId={workspaceId}
         isDragging={isDragging}
         dragHandleProps={{ ...attributes, ...listeners }}
         onClick={onClick}
@@ -360,6 +376,7 @@ function SortableWorkItemCard({ item, timelineProgress, onClick, onTaskCountClic
 interface WorkItemCardProps {
   item: WorkItem
   timelineProgress: { mvp?: TimelineItem; short?: TimelineItem; long?: TimelineItem; total: number } | null
+  workspaceId?: string
   isDragging?: boolean
   dragHandleProps?: Record<string, unknown>
   onClick?: () => void
@@ -370,6 +387,7 @@ interface WorkItemCardProps {
 function WorkItemCard({
   item,
   timelineProgress,
+  workspaceId,
   isDragging,
   dragHandleProps,
   onClick,
@@ -391,9 +409,14 @@ function WorkItemCard({
   return (
     <Card
       className={cn(
-        'cursor-pointer hover:shadow-md transition-all bg-background',
-        isDragging && 'opacity-50 shadow-lg rotate-2'
+        'cursor-pointer hover:shadow-md bg-background',
+        // Smooth drag animation with scale and elevated shadow
+        'transition-[transform,box-shadow] duration-200',
+        isDragging && 'scale-[1.02] shadow-[0_14px_28px_rgba(0,0,0,0.12),0_10px_10px_rgba(0,0,0,0.08)]'
       )}
+      style={{
+        transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
       onClick={onClick}
     >
       <CardHeader className="p-3 pb-2">
@@ -409,9 +432,19 @@ function WorkItemCard({
           )}
 
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-sm font-medium line-clamp-2">
-              {item.name}
-            </CardTitle>
+            {workspaceId ? (
+              <Link
+                href={`/workspaces/${workspaceId}/work-items/${item.id}`}
+                className="text-sm font-medium line-clamp-2 hover:text-primary hover:underline transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {item.name}
+              </Link>
+            ) : (
+              <CardTitle className="text-sm font-medium line-clamp-2">
+                {item.name}
+              </CardTitle>
+            )}
             {item.purpose && (
               <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
                 {item.purpose as string}

@@ -172,6 +172,55 @@ export const TEST_DEPENDENCIES = {
 };
 
 /**
+ * Test Resources Data
+ * Used to test resource CRUD, search, sharing, and audit trail
+ */
+export const TEST_RESOURCES = {
+  designInspiration: {
+    title: 'Dribbble Design Inspiration',
+    url: 'https://dribbble.com/shots/popular',
+    description: 'Collection of UI design patterns for dashboard layouts',
+    notes: 'Good examples of data visualization and card layouts',
+    resourceType: 'inspiration' as const,
+  },
+  apiDocumentation: {
+    title: 'REST API Best Practices',
+    url: 'https://restfulapi.net/resource-naming/',
+    description: 'Guide to RESTful API design and naming conventions',
+    notes: 'Reference for API endpoint design',
+    resourceType: 'documentation' as const,
+  },
+  competitorAnalysis: {
+    title: 'Competitor Feature Analysis',
+    url: 'https://example.com/competitor',
+    description: 'Analysis of competitor product features',
+    notes: 'Key differentiators identified: AI features, pricing model',
+    resourceType: 'reference' as const,
+  },
+  videoTutorial: {
+    title: 'React Performance Optimization',
+    url: 'https://youtube.com/watch?v=abc123',
+    description: 'Video tutorial on React performance best practices',
+    notes: 'Covers memo, useMemo, useCallback patterns',
+    resourceType: 'media' as const,
+  },
+  designTool: {
+    title: 'Figma Design Tool',
+    url: 'https://figma.com',
+    description: 'Collaborative design tool for UI/UX',
+    notes: 'Used for wireframes and prototypes',
+    resourceType: 'tool' as const,
+  },
+  searchableResource: {
+    title: 'Authentication Flow Diagrams',
+    url: 'https://example.com/auth-flow',
+    description: 'OAuth2 and JWT authentication flow diagrams with security considerations',
+    notes: 'Includes token refresh, session management, and logout flows',
+    resourceType: 'documentation' as const,
+  },
+};
+
+/**
  * Test Mind Map Data
  * Used to test mind map creation and node management
  */
@@ -302,6 +351,11 @@ export const TEST_PATHS = {
   dependencies: (id: string) => `/workspaces/${id}/dependencies`,
   teamMembers: (id: string) => `/workspaces/${id}/team`,
   settings: (id: string) => `/workspaces/${id}/settings`,
+  // Resources API paths
+  resourcesApi: (teamId: string) => `/api/resources?team_id=${teamId}`,
+  resourcesSearchApi: (teamId: string, query: string) => `/api/resources/search?team_id=${teamId}&q=${encodeURIComponent(query)}`,
+  resourceHistoryApi: (resourceId: string) => `/api/resources/${resourceId}/history`,
+  workItemResourcesApi: (workItemId: string) => `/api/work-items/${workItemId}/resources`,
 };
 
 /**

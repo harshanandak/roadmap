@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect, useRef } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Plus, Keyboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -13,6 +14,7 @@ import {
 import { WorkBoardTabs } from './work-board-tabs'
 import { WorkBoardToolbar } from './work-board-toolbar'
 import { ViewModeToggle } from './view-mode-toggle'
+import { PageTransition } from './shared/page-transition'
 
 // Import keyboard shortcuts
 import { useWorkBoardShortcuts } from './hooks/use-work-board-shortcuts'
@@ -222,27 +224,29 @@ function WorkBoardContent({
         </Button>
       </div>
 
-      {/* Content Area */}
+      {/* Content Area with page transitions */}
       <div className="min-h-[400px]">
-        {primaryTab === 'work-items' ? (
-          <WorkItemsContent
-            workspace={workspace}
-            workItems={filteredWorkItems}
-            timelineItems={timelineItems}
-            currentUserId={currentUserId}
-            viewMode={viewMode}
-            onAddItem={() => setAddWorkItemOpen(true)}
-            hasActiveFilters={hasActiveFilters}
-            onClearFilters={clearFilters}
-          />
-        ) : (
-          <TasksContent
-            workspace={workspace}
-            viewMode={viewMode}
-            filters={filters}
-            dummyTasks={dummyTasks}
-          />
-        )}
+        <PageTransition viewKey={`${primaryTab}-${viewMode}`}>
+          {primaryTab === 'work-items' ? (
+            <WorkItemsContent
+              workspace={workspace}
+              workItems={filteredWorkItems}
+              timelineItems={timelineItems}
+              currentUserId={currentUserId}
+              viewMode={viewMode}
+              onAddItem={() => setAddWorkItemOpen(true)}
+              hasActiveFilters={hasActiveFilters}
+              onClearFilters={clearFilters}
+            />
+          ) : (
+            <TasksContent
+              workspace={workspace}
+              viewMode={viewMode}
+              filters={filters}
+              dummyTasks={dummyTasks}
+            />
+          )}
+        </PageTransition>
       </div>
 
       {/* Add Task Dialog */}

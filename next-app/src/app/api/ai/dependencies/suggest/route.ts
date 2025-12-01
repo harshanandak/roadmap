@@ -1,20 +1,55 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
-import { getDefaultModel, getModelByKey, AIModel } from '@/lib/ai/models'
-import { callOpenRouter } from '@/lib/ai/openrouter'
-import {
-  DEPENDENCY_ANALYSIS_SYSTEM_PROMPT,
-  generateDependencyAnalysisPrompt,
-} from '@/lib/ai/prompts/dependency-suggestion'
-
 /**
- * POST /api/ai/dependencies/suggest - Generate AI dependency suggestions
+ * AI Dependency Suggestion API
+ *
+ * Analyzes work items and suggests dependencies between them.
+ * Uses Vercel AI SDK with generateObject() for type-safe structured output.
+ *
+ * Migration: Replaced callOpenRouter() with AI SDK generateObject()
+ * Benefits: Type-safe responses, automatic validation, no manual JSON parsing
  *
  * Available AI models (2025 - all with :nitro routing for 30-50% faster throughput):
  * - claude-haiku-45: Best reasoning, 73% SWE-bench (DEFAULT)
  * - grok-4-fast: 2M context, real-time data, 86% cheaper
  * - kimi-k2-thinking: Deep reasoning traces, cheapest input cost ($0.15/M)
  * - minimax-m2: Code generation, agentic workflows
+ */
+
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
+import { generateObject } from 'ai'
+import { getDefaultModel, getModelByKey, type AIModel } from '@/lib/ai/models'
+import { getModelFromConfig } from '@/lib/ai/ai-sdk-client'
+import {
+  DependencySuggestionsSchema,
+  type DependencySuggestion,
+} from '@/lib/ai/schemas'
+import { generateDependencyAnalysisPrompt } from '@/lib/ai/prompts/dependency-suggestion'
+
+export const maxDuration = 60 // Allow up to 60s for complex dependency analysis
+
+/**
+ * System prompt for dependency analysis
+ * Moved inline for clarity and to leverage Zod schema descriptions
+ */
+const DEPENDENCY_SYSTEM_PROMPT = `You are an expert software architect analyzing product features and their dependencies.
+
+Your task is to identify logical dependencies between features where:
+- Feature A has **dependency** on Feature B if A requires B's data, functionality, or completion before A can start
+- Feature A **blocks** Feature B if B cannot proceed until A is complete
+- Features **complement** each other if they work better together but don't strictly depend on one another
+- Features **relate_to** each other if they share similar concepts or domains but have no strict dependency
+
+Guidelines:
+1. **Be conservative**: Only suggest dependencies with high confidence (>= 0.6)
+2. **Avoid false positives**: Better to miss a dependency than suggest an incorrect one
+3. **Consider timing**: Dependencies should reflect implementation order
+4. **Think technical**: Consider APIs, databases, authentication, infrastructure
+5. **User flows**: Features in the same user journey often depend on each other
+
+Only include suggestions with confidence >= 0.6.`
+
+/**
+ * POST /api/ai/dependencies/suggest - Generate AI dependency suggestions
  *
  * Request body:
  * - workspace_id: string (required)
@@ -72,8 +107,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    // Get AI model
-    const aiModel: AIModel = getModelByKey(model_key) || getDefaultModel()
+    // Get AI model configuration
+    const configModel: AIModel = getModelByKey(model_key) || getDefaultModel()
+    const aiModel = getModelFromConfig(configModel.id)
 
     // Get all work items for this workspace
     const { data: workItems, error: workItemsError } = await supabase
@@ -103,107 +139,88 @@ export async function POST(request: Request) {
 
     const existingConnectionsSet = new Set(
       existingConnections?.map(
-        (conn) => `${conn.source_work_item_id}->${conn.target_work_item_id}-${conn.connection_type}`
+        (conn) =>
+          `${conn.source_work_item_id}->${conn.target_work_item_id}-${conn.connection_type}`
       ) || []
     )
 
-    // Generate AI prompt
+    // Generate user prompt with work items
     const userPrompt = generateDependencyAnalysisPrompt(workItems)
 
-    // Call AI model
-    const response = await callOpenRouter({
+    // Use generateObject for type-safe structured output
+    const result = await generateObject({
       model: aiModel,
-      messages: [
-        { role: 'system', content: DEPENDENCY_ANALYSIS_SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt },
-      ],
+      schema: DependencySuggestionsSchema,
+      system: DEPENDENCY_SYSTEM_PROMPT,
+      prompt: userPrompt,
       temperature: 0.3, // Lower temperature for consistent results
-      maxTokens: 3000,
     })
 
-    const content = response.choices[0].message.content
+    // Filter and validate suggestions
+    const validSuggestions = result.object.suggestions.filter(
+      (suggestion: DependencySuggestion) => {
+        // Validate IDs exist in work items
+        const sourceExists = workItems.some((item) => item.id === suggestion.sourceId)
+        const targetExists = workItems.some((item) => item.id === suggestion.targetId)
+        if (!sourceExists || !targetExists) {
+          return false
+        }
 
-    // Parse AI response (extract JSON array)
-    let suggestions: any[] = []
-    try {
-      const jsonMatch = content.match(/\[[\s\S]*\]/)
-      if (jsonMatch) {
-        suggestions = JSON.parse(jsonMatch[0])
+        // Filter out existing connections
+        const connectionKey = `${suggestion.sourceId}->${suggestion.targetId}-${suggestion.connectionType}`
+        if (existingConnectionsSet.has(connectionKey)) {
+          return false
+        }
+
+        // Filter by connection type if specified
+        if (connection_type && suggestion.connectionType !== connection_type) {
+          return false
+        }
+
+        // Only include high-confidence suggestions
+        return suggestion.confidence >= 0.6
       }
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError)
-      return NextResponse.json(
-        { error: 'Failed to parse AI response' },
-        { status: 500 }
-      )
-    }
-
-    // Validate and filter suggestions
-    const validSuggestions = suggestions.filter((suggestion: any) => {
-      // Validate structure
-      if (
-        !suggestion.sourceId ||
-        !suggestion.targetId ||
-        !suggestion.connectionType ||
-        !suggestion.reason ||
-        typeof suggestion.confidence !== 'number'
-      ) {
-        return false
-      }
-
-      // Validate IDs exist in work items
-      const sourceExists = workItems.some((item) => item.id === suggestion.sourceId)
-      const targetExists = workItems.some((item) => item.id === suggestion.targetId)
-      if (!sourceExists || !targetExists) {
-        return false
-      }
-
-      // Filter out existing connections
-      const connectionKey = `${suggestion.sourceId}->${suggestion.targetId}-${suggestion.connectionType}`
-      if (existingConnectionsSet.has(connectionKey)) {
-        return false
-      }
-
-      // Filter by connection type if specified
-      if (connection_type && suggestion.connectionType !== connection_type) {
-        return false
-      }
-
-      // Only include high-confidence suggestions
-      return suggestion.confidence >= 0.6
-    })
+    )
 
     // Enhance suggestions with work item details
-    const enhancedSuggestions = validSuggestions.map((suggestion: any) => {
-      const sourceItem = workItems.find((item) => item.id === suggestion.sourceId)
-      const targetItem = workItems.find((item) => item.id === suggestion.targetId)
+    const enhancedSuggestions = validSuggestions.map(
+      (suggestion: DependencySuggestion) => {
+        const sourceItem = workItems.find((item) => item.id === suggestion.sourceId)
+        const targetItem = workItems.find((item) => item.id === suggestion.targetId)
 
-      return {
-        sourceId: suggestion.sourceId,
-        targetId: suggestion.targetId,
-        connectionType: suggestion.connectionType,
-        reason: suggestion.reason,
-        confidence: suggestion.confidence,
-        strength: suggestion.strength || 0.7, // Default strength if not provided
-        sourceWorkItem: sourceItem
-          ? {
-              id: sourceItem.id,
-              name: sourceItem.name,
-              type: sourceItem.type,
-            }
-          : null,
-        targetWorkItem: targetItem
-          ? {
-              id: targetItem.id,
-              name: targetItem.name,
-              type: targetItem.type,
-            }
-          : null,
+        return {
+          sourceId: suggestion.sourceId,
+          targetId: suggestion.targetId,
+          connectionType: suggestion.connectionType,
+          reason: suggestion.reason,
+          confidence: suggestion.confidence,
+          strength: suggestion.strength || 0.7,
+          sourceWorkItem: sourceItem
+            ? {
+                id: sourceItem.id,
+                name: sourceItem.name,
+                type: sourceItem.type,
+              }
+            : null,
+          targetWorkItem: targetItem
+            ? {
+                id: targetItem.id,
+                name: targetItem.name,
+                type: targetItem.type,
+              }
+            : null,
+        }
       }
-    })
+    )
 
     // Sort by confidence (highest first)
     enhancedSuggestions.sort((a, b) => b.confidence - a.confidence)
+
+    // Calculate estimated cost from usage
+    const estimatedCost = result.usage
+      ? (result.usage.promptTokens / 1_000_000) * configModel.costPer1M.input +
+        (result.usage.completionTokens / 1_000_000) * configModel.costPer1M.output
+      : 0
 
     // Track AI usage in database
     try {
@@ -213,14 +230,14 @@ export async function POST(request: Request) {
         workspace_id: workspace_id,
         user_id: user.id,
         model_key: model_key,
-        model_id: aiModel.id,
-        model_name: aiModel.name,
-        provider: aiModel.provider,
+        model_id: configModel.id,
+        model_name: configModel.name,
+        provider: configModel.provider,
         feature_type: 'dependency_suggestion',
-        prompt_tokens: response.usage.promptTokens,
-        completion_tokens: response.usage.completionTokens,
-        total_tokens: response.usage.totalTokens,
-        cost_usd: response.costUsd,
+        prompt_tokens: result.usage?.promptTokens || 0,
+        completion_tokens: result.usage?.completionTokens || 0,
+        total_tokens: result.usage?.totalTokens || 0,
+        cost_usd: estimatedCost,
         suggestions_generated: enhancedSuggestions.length,
       })
     } catch (trackingError) {
@@ -230,22 +247,44 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       suggestions: enhancedSuggestions,
+      analysis: result.object.analysis,
       model: {
         key: model_key,
-        name: aiModel.name,
-        provider: aiModel.provider,
+        name: configModel.name,
+        provider: configModel.provider,
       },
-      usage: {
-        promptTokens: response.usage.promptTokens,
-        completionTokens: response.usage.completionTokens,
-        totalTokens: response.usage.totalTokens,
-        costUsd: response.costUsd,
-      },
+      usage: result.usage
+        ? {
+            promptTokens: result.usage.promptTokens,
+            completionTokens: result.usage.completionTokens,
+            totalTokens: result.usage.totalTokens,
+            costUsd: estimatedCost,
+          }
+        : undefined,
       totalSuggestions: enhancedSuggestions.length,
       analyzedWorkItems: workItems.length,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in POST /api/ai/dependencies/suggest:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // Handle AI SDK specific errors
+    if (error instanceof Error) {
+      if (error.message.includes('validation')) {
+        return NextResponse.json(
+          {
+            error: 'AI response validation failed',
+            details: error.message,
+          },
+          { status: 500 }
+        )
+      }
+    }
+
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
   }
 }

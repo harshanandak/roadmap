@@ -1,19 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import Link from 'next/link'
-import { ArrowLeft, Plus } from 'lucide-react'
-import { CreateTimelineItemDialog } from '@/components/work-items/create-timeline-item-dialog'
-import { TimelineItemsList } from '@/components/work-items/timeline-items-list'
-import { WorkItemEditButton } from '@/components/work-items/work-item-edit-button'
+import { WorkItemDetailShell } from '@/components/work-item-detail'
+import type { WorkItemData, TimelineItemData } from '@/components/work-item-detail'
 
 export default async function WorkItemDetailPage({
   params,
@@ -32,7 +20,8 @@ export default async function WorkItemDetailPage({
     redirect('/login')
   }
 
-  // Get work item details with workspace phase
+  // Get work item details with workspace info
+  // Note: Schema uses 'owner' not 'assigned_to', and 'purpose' not 'description'
   const { data: workItem, error: workItemError } = await supabase
     .from('work_items')
     .select(`
@@ -42,21 +31,7 @@ export default async function WorkItemDetailPage({
         name,
         icon,
         phase,
-        team_id,
-        teams:team_id (
-          id,
-          name
-        )
-      ),
-      assigned_to_user:assigned_to (
-        id,
-        name,
-        email
-      ),
-      created_by_user:created_by (
-        id,
-        name,
-        email
+        team_id
       )
     `)
     .eq('id', workItemId)
@@ -85,194 +60,64 @@ export default async function WorkItemDetailPage({
     .eq('work_item_id', workItemId)
     .order('order_index', { ascending: true })
 
-  // Group timeline items by timeline
-  const mvpItems = timelineItems?.filter((item) => item.timeline === 'MVP') || []
-  const shortItems = timelineItems?.filter((item) => item.timeline === 'SHORT') || []
-  const longItems = timelineItems?.filter((item) => item.timeline === 'LONG') || []
+  // Get task count for this work item
+  const { count: taskCount } = await supabase
+    .from('product_tasks')
+    .select('*', { count: 'exact', head: true })
+    .eq('work_item_id', workItemId)
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'planned':
-        return 'bg-gray-100 text-gray-700 border-gray-300'
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-700 border-blue-300'
-      case 'completed':
-        return 'bg-green-100 text-green-700 border-green-300'
-      case 'on_hold':
-        return 'bg-orange-100 text-orange-700 border-orange-300'
-      case 'cancelled':
-        return 'bg-red-100 text-red-700 border-red-300'
-      default:
-        return 'bg-gray-100 text-gray-700 border-gray-300'
-    }
+  // Get feedback count for this work item
+  const { count: feedbackCount } = await supabase
+    .from('feedback')
+    .select('*', { count: 'exact', head: true })
+    .eq('work_item_id', workItemId)
+
+  // Transform data to match component types
+  // Note: Database uses 'name' (not 'title'), 'purpose' (not 'description'), 'owner' (not 'assigned_to')
+  const workItemData: WorkItemData = {
+    id: workItem.id,
+    title: workItem.name,
+    description: workItem.purpose || null,
+    status: workItem.status,
+    priority: workItem.priority,
+    type: workItem.type,
+    assigned_to: workItem.owner || null,
+    created_by: workItem.created_by || null,
+    created_at: workItem.created_at,
+    updated_at: workItem.updated_at,
+    workspace_id: workItem.workspace_id,
+    team_id: workItem.workspace.team_id,
+    workspace: workItem.workspace,
+    assigned_to_user: null, // Not implemented yet - would need FK to users table
+    created_by_user: null, // Not implemented yet - would need FK to users table
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'low':
-        return 'bg-slate-100 text-slate-700 border-slate-300'
-      case 'medium':
-        return 'bg-blue-100 text-blue-700 border-blue-300'
-      case 'high':
-        return 'bg-orange-100 text-orange-700 border-orange-300'
-      case 'critical':
-        return 'bg-red-100 text-red-700 border-red-300'
-      default:
-        return 'bg-slate-100 text-slate-700 border-slate-300'
-    }
-  }
+  const timelineItemsData: TimelineItemData[] = (timelineItems || []).map(
+    (item) => ({
+      id: item.id,
+      work_item_id: item.work_item_id,
+      title: item.title || '',
+      description: item.description,
+      timeline: item.timeline as 'MVP' | 'SHORT' | 'LONG',
+      difficulty: item.difficulty || 'medium',
+      phase: item.phase,
+      status: item.status,
+      order_index: item.order_index,
+      estimated_hours: item.estimated_hours,
+      actual_hours: item.actual_hours,
+      completed_at: item.completed_at,
+      created_at: item.created_at,
+      planned_start_date: item.planned_start_date,
+      planned_end_date: item.planned_end_date,
+    })
+  )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="border-b bg-white">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href={`/workspaces/${workspaceId}?view=work-items`}>
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Work Items
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold">{workItem.title}</h1>
-                <p className="text-sm text-muted-foreground">
-                  {workItem.workspace.icon} {workItem.workspace.name} " {workItem.workspace.teams.name}
-                </p>
-              </div>
-            </div>
-            <WorkItemEditButton
-              workItemId={workItemId}
-              workspaceId={workspaceId}
-              phase={workItem.workspace.phase}
-            />
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        {/* Work Item Overview */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Work Item Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="text-muted-foreground">
-                  {workItem.description || 'No description provided'}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge
-                  className={getStatusColor(workItem.status)}
-                  variant="outline"
-                >
-                  {workItem.status.replace('_', ' ')}
-                </Badge>
-                <Badge
-                  className={getPriorityColor(workItem.priority)}
-                  variant="outline"
-                >
-                  {workItem.priority}
-                </Badge>
-                {workItem.assigned_to_user && (
-                  <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300">
-                    Assigned: {workItem.assigned_to_user.name || workItem.assigned_to_user.email}
-                  </Badge>
-                )}
-              </div>
-
-              <div className="text-sm text-muted-foreground">
-                Created by {workItem.created_by_user.name || workItem.created_by_user.email} on{' '}
-                {new Date(workItem.created_at).toLocaleDateString()}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Timeline Items */}
-        <div className="space-y-6">
-          {/* MVP Timeline */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>MVP Timeline</CardTitle>
-                <CardDescription>
-                  Minimum Viable Product - Core items needed for launch
-                </CardDescription>
-              </div>
-              <CreateTimelineItemDialog
-                workItemId={workItemId}
-                timeline="MVP"
-                orderIndex={mvpItems.length}
-              />
-            </CardHeader>
-            <CardContent>
-              {mvpItems.length > 0 ? (
-                <TimelineItemsList items={mvpItems} workItemId={workItemId} workspaceId={workspaceId} teamId={workItem.workspace.team_id} />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No MVP items yet. Add your first core item!
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* SHORT Timeline */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Short Term Timeline</CardTitle>
-                <CardDescription>
-                  Items planned for the near future (1-3 months)
-                </CardDescription>
-              </div>
-              <CreateTimelineItemDialog
-                workItemId={workItemId}
-                timeline="SHORT"
-                orderIndex={shortItems.length}
-              />
-            </CardHeader>
-            <CardContent>
-              {shortItems.length > 0 ? (
-                <TimelineItemsList items={shortItems} workItemId={workItemId} workspaceId={workspaceId} teamId={workItem.workspace.team_id} />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No short-term items yet
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* LONG Timeline */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Long Term Timeline</CardTitle>
-                <CardDescription>
-                  Future enhancements and aspirational items
-                </CardDescription>
-              </div>
-              <CreateTimelineItemDialog
-                workItemId={workItemId}
-                timeline="LONG"
-                orderIndex={longItems.length}
-              />
-            </CardHeader>
-            <CardContent>
-              {longItems.length > 0 ? (
-                <TimelineItemsList items={longItems} workItemId={workItemId} workspaceId={workspaceId} teamId={workItem.workspace.team_id} />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No long-term items yet
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
+    <WorkItemDetailShell
+      workItem={workItemData}
+      timelineItems={timelineItemsData}
+      taskCount={taskCount || 0}
+      feedbackCount={feedbackCount || 0}
+    />
   )
 }

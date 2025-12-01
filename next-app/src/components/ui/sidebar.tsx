@@ -40,6 +40,7 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  transitionDirection: "expand" | "collapse" | null
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -73,6 +74,24 @@ function SidebarProvider({
   // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(defaultOpen)
   const open = openProp ?? _open
+
+  // Track transition direction for directional easing
+  // ease-out for collapse (starts fast, ends slow - deceleration)
+  // ease-in for expand (starts slow, ends fast - acceleration)
+  const prevOpenRef = React.useRef(open)
+  const [transitionDirection, setTransitionDirection] = React.useState<"expand" | "collapse" | null>(null)
+
+  React.useEffect(() => {
+    if (prevOpenRef.current !== open) {
+      setTransitionDirection(open ? "expand" : "collapse")
+      prevOpenRef.current = open
+
+      // Clear direction after animation completes (200ms matches duration)
+      const timer = setTimeout(() => setTransitionDirection(null), 200)
+      return () => clearTimeout(timer)
+    }
+  }, [open])
+
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === "function" ? value(open) : value
@@ -122,8 +141,9 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      transitionDirection,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, transitionDirection]
   )
 
   return (
@@ -163,7 +183,14 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, transitionDirection } = useSidebar()
+
+  // Directional easing: ease-out for collapse, ease-in for expand
+  const easingClass = transitionDirection === "collapse"
+    ? "[&_[data-slot=sidebar-gap]]:ease-out [&_[data-slot=sidebar-container]]:ease-out"
+    : transitionDirection === "expand"
+      ? "[&_[data-slot=sidebar-gap]]:ease-in [&_[data-slot=sidebar-container]]:ease-in"
+      : ""
 
   if (collapsible === "none") {
     return (
@@ -207,7 +234,11 @@ function Sidebar({
 
   return (
     <div
-      className="group/sidebar peer text-sidebar-foreground hidden md:block"
+      className={cn(
+        "group/sidebar peer text-sidebar-foreground hidden md:block",
+        // Apply directional easing to child elements via CSS cascade
+        easingClass
+      )}
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
@@ -218,7 +249,8 @@ function Sidebar({
       <div
         data-slot="sidebar-gap"
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          // Removed ease-linear - easing now controlled by parent via easingClass
+          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -229,7 +261,8 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
+          // Removed ease-linear - easing now controlled by parent via easingClass
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 md:flex",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -291,7 +324,8 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        "hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] sm:flex",
+        // Removed ease-linear - inherits easing from parent sidebar
+        "hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all duration-200 group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] sm:flex",
         "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",
         "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
         "hover:group-data-[collapsible=offcanvas]:bg-sidebar group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full",
@@ -310,6 +344,8 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
       data-slot="sidebar-inset"
       className={cn(
         "bg-background relative flex w-full flex-1 flex-col",
+        // Add transition for smooth content reflow when sidebar toggles
+        "transition-[margin] duration-200",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
         className
       )}

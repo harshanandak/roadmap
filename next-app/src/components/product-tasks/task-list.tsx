@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,6 +19,7 @@ import { Plus, Search, Filter, LayoutGrid, List, RefreshCw, MoreHorizontal, Cloc
 import { TaskCard } from './task-card'
 import { CreateTaskDialog } from './create-task-dialog'
 import { TasksEmptyState } from '@/components/work-board/shared/empty-state'
+import { staggerContainerVariants, staggerItemVariants, columnContainerVariants, boardCardVariants } from '@/components/work-board/shared/animation-variants'
 import {
   Table,
   TableBody,
@@ -489,7 +491,7 @@ export function TaskList({
           </Table>
         </div>
       ) : viewMode === 'board' ? (
-        /* Board view - Kanban style */
+        /* Board view - Kanban style with staggered animations */
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {(Object.keys(tasksByStatus) as TaskStatus[]).map((status) => (
             <div key={status} className="space-y-3">
@@ -510,33 +512,47 @@ export function TaskList({
                 </Badge>
               </div>
 
-              <div className="space-y-2 min-h-[100px] p-2 bg-muted/30 rounded-lg">
+              <motion.div
+                className="space-y-2 min-h-[100px] p-2 bg-muted/30 rounded-lg"
+                variants={columnContainerVariants}
+                initial="hidden"
+                animate="visible"
+                key={`task-column-${status}-${tasksByStatus[status].length}`}
+              >
                 {tasksByStatus[status].map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDelete}
-                    onWorkItemClick={onWorkItemClick}
-                  />
+                  <motion.div key={task.id} variants={boardCardVariants}>
+                    <TaskCard
+                      task={task}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDelete}
+                      onWorkItemClick={onWorkItemClick}
+                    />
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </div>
           ))}
         </div>
       ) : (
-        /* List view */
-        <div className="space-y-2">
+        /* List view with staggered animations */
+        <motion.div
+          className="space-y-2"
+          variants={staggerContainerVariants}
+          initial="hidden"
+          animate="visible"
+          key={`task-list-${filteredTasks.length}`}
+        >
           {filteredTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onStatusChange={handleStatusChange}
-              onDelete={handleDelete}
-              onWorkItemClick={onWorkItemClick}
-            />
+            <motion.div key={task.id} variants={staggerItemVariants}>
+              <TaskCard
+                task={task}
+                onStatusChange={handleStatusChange}
+                onDelete={handleDelete}
+                onWorkItemClick={onWorkItemClick}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {/* Create dialog */}

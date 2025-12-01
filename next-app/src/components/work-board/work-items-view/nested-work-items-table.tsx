@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, Fragment } from 'react'
+import Link from 'next/link'
 import {
   Table,
   TableBody,
@@ -351,7 +352,7 @@ export function NestedWorkItemsTable({
   const totalColspan = 2 + visibleColumnCount
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative w-full', className)}>
       {/* Expand/Collapse toggle - positioned to the left of the table */}
       <Button
         variant="ghost"
@@ -369,7 +370,7 @@ export function NestedWorkItemsTable({
 
       {/* Table */}
       <div className="rounded-md border">
-        <Table className="w-auto">
+        <Table className="w-full table-fixed">
           <TableHeader>
             <TableRow className="bg-muted/50">
               {/* Work Item column - always visible */}
@@ -444,11 +445,16 @@ export function NestedWorkItemsTable({
               if (!hasTimelines || !isAllExpanded) {
                 return (
                   <TableRow key={workItem.id} className="group hover:bg-muted/50">
-                    {/* Work Item name - always visible */}
+                    {/* Work Item name - always visible, clickable link to detail page */}
                     <TableCell className="py-2 pl-4">
                       <div className="flex items-center gap-2">
                         <IconComponent className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span className="font-medium">{workItem.name}</span>
+                        <Link
+                          href={`/workspaces/${workspaceId}/work-items/${workItem.id}`}
+                          className="font-medium text-foreground hover:text-primary hover:underline transition-colors"
+                        >
+                          {workItem.name}
+                        </Link>
                       </div>
                     </TableCell>
 
@@ -552,12 +558,17 @@ export function NestedWorkItemsTable({
                         index === timelines.length - 1 && 'border-b'
                       )}
                     >
-                      {/* Work Item name - rowspan merged, always visible */}
+                      {/* Work Item name - rowspan merged, always visible, clickable link */}
                       {index === 0 ? (
                         <TableCell className="py-2 pl-4 align-top" rowSpan={rowSpan}>
                           <div className="flex items-start gap-2">
                             <IconComponent className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                            <span className="font-medium">{workItem.name}</span>
+                            <Link
+                              href={`/workspaces/${workspaceId}/work-items/${workItem.id}`}
+                              className="font-medium text-foreground hover:text-primary hover:underline transition-colors"
+                            >
+                              {workItem.name}
+                            </Link>
                           </div>
                         </TableCell>
                       ) : null}

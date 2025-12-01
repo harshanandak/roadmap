@@ -403,4 +403,452 @@ Features:
 | Date | Change | Author |
 |------|--------|--------|
 | 2025-11-26 | Initial plan created | Claude |
-| | | |
+| 2025-11-28 | Parts 1-6 completed (all 6 views, filters, Gantt, shortcuts) | Claude |
+| 2025-11-29 | Added Part 7: Work Item Detail Page (8-tab structure) | Claude |
+| 2025-11-29 | Added Part 8: Feedback Module Vision | Claude |
+| 2025-11-29 | Added Part 9: Integrations Module Strategy | Claude |
+| 2025-11-29 | Added Part 10: AI Visual Prototype Feature | Claude |
+
+---
+
+# Part 7: Work Item Detail Page (8-Tab Structure)
+
+**Status**: READY FOR IMPLEMENTATION
+**Target**: Week 6 Extension (Project Execution Module)
+**Estimated Time**: ~20-25 hours total
+
+---
+
+## Vision
+
+Transform the basic Work Item Detail Page into a **comprehensive product lifecycle command center** with progressive disclosure based on the current workspace phase.
+
+---
+
+## Final Tab Structure (8 Tabs)
+
+| Tab | Phase Focus | Purpose |
+|-----|-------------|---------|
+| **Summary** | All | Core info, status, dependencies, quick overview |
+| **Inspiration** | Research | Ideas, references, research findings |
+| **Resources** | Planning | Tools, APIs, integrations to use |
+| **Scope** | Planning | Validate the idea - milestones, risks, prerequisites, success criteria |
+| **Tasks** | All | Universal task management with progress tracking |
+| **Feedback** | Review | **Linked feedback** from the Feedback Module (not full management) |
+| **Metrics** | Complete | **TBD / Coming Soon** - Post-launch performance tracking |
+| **AI Copilot** | All | AI assistance throughout the lifecycle |
+
+**Important Distinctions**:
+- **Feedback Tab** = Shows feedback items **linked to this work item** (the full Feedback Module has its own page)
+- **Metrics Tab** = Placeholder for now, will be designed after core tabs are complete
+
+---
+
+## Target Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ← Back to Work Items              Feature Title                  [Edit] │
+│                                   🔍 Research Phase (badge)             │
+├────────────────────────────────────────────────┬────────────────────────┤
+│ [Summary] [Inspiration] [Resources] [Scope]    │  TRACKING SIDEBAR      │
+│           [Tasks] [Feedback] [Metrics] [AI]    │  (280px fixed)         │
+├────────────────────────────────────────────────┤                        │
+│                                                │  Phase: [badge]        │
+│         TAB CONTENT AREA                       │  Status: [select]      │
+│         (scrollable, flex-1)                   │  Priority: [select]    │
+│                                                │  Health: [select]      │
+│  Content varies by:                            │  ──────────────        │
+│  • Current tab                                 │  Owner: [select]       │
+│  • Current phase (progressive disclosure)      │  Dates: [inputs]       │
+│  • Work item type                              │  ──────────────        │
+│  • Soft guidance hints                         │  Progress: [====]      │
+│                                                │  Story Pts: [#]        │
+│                                                │  Est Hours: [#]        │
+│                                                │  ──────────────        │
+│                                                │  Tags: [+chips]        │
+└────────────────────────────────────────────────┴────────────────────────┘
+```
+
+---
+
+## Tracking Sidebar Fields
+
+**Core Fields**:
+- Phase indicator (auto-calculated from `calculateWorkItemPhase()`)
+- Status dropdown (planned, in_progress, completed, on_hold, cancelled)
+- Priority dropdown (low, medium, high, critical)
+- Health indicator (on_track, at_risk, blocked)
+
+**Assignment & Timing**:
+- Owner (assigned_to user select)
+- Target Release (text input)
+- Planned Start/End dates (date pickers)
+
+**Effort Tracking**:
+- Story Points (1-13 Fibonacci scale)
+- Estimated Hours
+- Actual Hours (auto-updated from tasks)
+- T-Shirt Size (XS/S/M/L/XL) - optional
+
+**Progress**:
+- Progress bar (auto-calculated from Tasks %)
+- Tasks summary: "12/20 completed (60%)"
+
+---
+
+## Phase-Based Progressive Disclosure
+
+Uses existing `calculateWorkItemPhase()` from `workspace-phases.tsx`:
+```
+Research → Planning → Execution → Review → Complete
+   🔍         📋          ⚡         💬        ✓
+```
+
+| Tab | Research | Planning | Execution | Review | Complete |
+|-----|----------|----------|-----------|--------|----------|
+| **Summary** | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Read-only |
+| **Inspiration** | ✅ Active | ✅ Reference | ⚪ Archive | ⚪ Archive | ⚪ Archive |
+| **Resources** | ⚪ Suggest | ✅ Define | ✅ Track | ✅ View | ✅ Read-only |
+| **Scope** | ⚪ Empty | ✅ Create | ✅ Track | ✅ Validate | ✅ Read-only |
+| **Tasks** | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Read-only |
+| **Feedback** | ⚪ Empty | ⚪ Empty | ⚪ Preview | ✅ Active | ✅ Read-only |
+| **Metrics** | ⚪ TBD | ⚪ TBD | ⚪ TBD | ⚪ TBD | ✅ TBD |
+| **AI Copilot** | ✅ Research | ✅ Scope | ✅ Tasks | ✅ Feedback | ⚪ None |
+
+---
+
+## Tasks as Universal Module
+
+Tasks can be linked to ANY context:
+
+```
+Work Item
+├── Direct Tasks (work-item level)
+├── Module-linked Tasks:
+│   ├── Inspiration tasks ("Research competitor X")
+│   ├── Resources tasks ("Set up API integration")
+│   ├── Scope tasks ("Define acceptance criteria")
+│   └── Review tasks ("Get stakeholder sign-off")
+└── Timeline-linked Tasks:
+    ├── MVP tasks
+    ├── SHORT tasks
+    └── LONG tasks
+```
+
+**Task Grouping Options**:
+- All (flat list)
+- By Module (Inspiration/Resources/Scope/Review)
+- By Timeline (MVP/SHORT/LONG)
+- By Assignee
+
+**Database Change Required**:
+```sql
+ALTER TABLE product_tasks
+ADD COLUMN module TEXT CHECK (module IN ('inspiration', 'resources', 'scope', 'feedback', NULL));
+```
+
+---
+
+## Implementation Sessions
+
+### Session 1: Tab Structure + Summary + Tasks (~8-10h)
+1. Create 8-Tab Structure shell (~2h)
+2. Build Tracking Sidebar component (~2h)
+3. Summary Tab (overview, timeline, dependencies) (~2h)
+4. Tasks Tab (universal tasks with grouping) (~3-4h)
+
+### Session 2: Scope + Feedback + Phase Progression
+5. Scope Tab (milestones, risks, criteria) (~3-4h)
+6. Feedback Tab (linked feedback) (~2h)
+7. Phase Progression Prompts (~2h)
+
+### Session 3: Resources + Inspiration + Polish
+8. Resources Tab (~2h)
+9. Inspiration Tab (~2h)
+10. Soft Guidance System (~2h)
+11. AI Copilot Tab (placeholder) (~1h)
+12. Metrics Tab (Coming Soon) (~0.5h)
+
+---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `components/work-items/detail/work-item-detail-client.tsx` | Client wrapper with 8-tab structure |
+| `components/work-items/detail/tracking-sidebar.tsx` | Sidebar with inline editing |
+| `components/work-items/detail/tab-summary.tsx` | Overview, timeline, dependencies |
+| `components/work-items/detail/tab-inspiration.tsx` | Research & reference cards |
+| `components/work-items/detail/tab-resources.tsx` | Tools, APIs, integrations |
+| `components/work-items/detail/tab-scope.tsx` | Milestones, risks, criteria |
+| `components/work-items/detail/tab-tasks.tsx` | Universal tasks with grouping |
+| `components/work-items/detail/tab-feedback.tsx` | Linked feedback |
+| `components/work-items/detail/tab-metrics.tsx` | Coming Soon placeholder |
+| `components/work-items/detail/tab-ai-copilot.tsx` | AI placeholder |
+| `components/work-items/detail/phase-guidance.tsx` | Phase-aware empty states |
+| `components/work-items/detail/dependencies-section.tsx` | Dependencies display |
+
+---
+
+# Part 8: Feedback Module (Full Platform)
+
+**Status**: PLANNING COMPLETE - Future Implementation
+**Target**: Week 7 (External Review System)
+**Estimated Time**: ~40-50 hours total
+
+---
+
+## Core Concept
+
+A **comprehensive multi-channel feedback collection platform** for gathering user insights at any product lifecycle stage.
+
+**Important**: This is SEPARATE from the Feedback Tab:
+- **Feedback Tab** = Shows feedback linked to a specific work item
+- **Feedback Module** = Full platform for surveys, voting, collection
+
+---
+
+## Feedback Collection Channels
+
+| Channel | Build/Integrate | Notes |
+|---------|-----------------|-------|
+| **Email Surveys** | 🔗 Resend | Already integrated |
+| **WhatsApp** | 🔗 Twilio | API verified |
+| **SMS** | 🔗 Twilio | Same provider |
+| **Web Popups** | 🏗️ Build | React component |
+| **iFrame Embeds** | 🏗️ Build | Embeddable widget |
+| **Public Links** | 🏗️ Build | Shareable URLs |
+| **API Webhooks** | 🏗️ Build | Receive external feedback |
+
+---
+
+## Feedback Types by Stage
+
+| Phase | Feedback Types |
+|-------|----------------|
+| **Research** | Idea validation surveys, market research polls |
+| **Planning** | Feature prioritization voting, concept testing |
+| **Execution** | Beta tester feedback, usability testing, bug reports |
+| **Review/Complete** | NPS, CSAT surveys, feature adoption feedback |
+
+---
+
+## Key Features
+
+**Survey Builder** (Built In-House):
+- Drag-and-drop question builder
+- MCQ, rating, open-ended, NPS question types
+- Logic branching and skip patterns
+- Custom branding/theming
+
+**Distribution**:
+- Schedule campaigns
+- Audience targeting
+- Multi-channel delivery
+- Reminder automation
+
+**Embeddable Widgets**:
+- Feature voting widget
+- Quick feedback popup
+- In-app feedback button
+- Public roadmap voting
+
+**Analysis**:
+- Response aggregation
+- AI sentiment analysis (OpenRouter)
+- Priority scoring
+- Link feedback to work items
+
+---
+
+## Implementation Priority
+
+| Priority | Feature | Complexity |
+|----------|---------|------------|
+| **P1** | Public feedback link + basic form | Low |
+| **P1** | Link feedback to work items | Low |
+| **P2** | Embeddable voting widget | Medium |
+| **P2** | Email survey distribution | Medium |
+| **P3** | WhatsApp/SMS integration | High |
+| **P3** | SurveyMonkey/Typeform import | High |
+| **P4** | Survey builder with logic | High |
+| **P4** | AI sentiment analysis | High |
+
+---
+
+# Part 9: Integrations Module
+
+**Status**: PLANNING COMPLETE - Future Implementation
+**Target**: Week 7-8
+**Estimated Time**: ~34 hours total
+
+---
+
+## Build vs. Integrate Decision Matrix
+
+| Feature | Recommendation | Rationale |
+|---------|----------------|-----------|
+| **Survey Builder** | 🏗️ BUILD | Core to platform, better UX |
+| **Voting Widgets** | 🏗️ BUILD | Simple, embedded in ecosystem |
+| **Email Distribution** | 🔗 Resend | Already integrated |
+| **WhatsApp Surveys** | 🔗 Twilio | Complex infrastructure |
+| **SMS Distribution** | 🔗 Twilio | Same provider |
+| **SurveyMonkey Import** | 🔗 API | Import, not compete |
+| **Typeform Import** | 🔗 API | Import, not replace |
+| **AI UI Prototypes** | 🏗️ BUILD | Core differentiator |
+| **NPS/CSAT Scoring** | 🏗️ BUILD | Simple calculation |
+| **Sentiment Analysis** | 🏗️ BUILD | Use OpenRouter |
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        INTEGRATIONS MODULE                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  CONNECTED SERVICES (Team Settings > Integrations)                          │
+│  📧 Email (Resend)         ✅ Connected     [Configure]                      │
+│  📱 WhatsApp (Twilio)      ⚪ Not Connected [Connect]                        │
+│  💬 SMS (Twilio)           ⚪ Not Connected [Connect]                        │
+│  📋 SurveyMonkey           ⚪ Not Connected [Connect]                        │
+│  📝 Typeform               ⚪ Not Connected [Connect]                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  BUILT-IN FEATURES (Always Available)                                        │
+│  📊 Survey Builder         [Create Survey]                                   │
+│  🗳️ Voting Widgets         [Create Widget]                                   │
+│  🎨 AI UI Prototypes       [Generate Mockup]                                 │
+│  📈 Analytics Dashboard    [View Analytics]                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Database Schema
+
+```sql
+CREATE TABLE team_integrations (
+    id TEXT PRIMARY KEY,
+    team_id TEXT REFERENCES teams(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL,
+    config JSONB NOT NULL DEFAULT '{}',
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'error')),
+    connected_by TEXT REFERENCES users(id),
+    connected_at TIMESTAMPTZ DEFAULT NOW(),
+    last_sync_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(team_id, provider)
+);
+
+ALTER TABLE team_integrations ENABLE ROW LEVEL SECURITY;
+```
+
+---
+
+## Implementation Order
+
+| Phase | Integration | Time |
+|-------|-------------|------|
+| **1** | Email (Resend extend) | ~2h |
+| **1** | AI UI Prototypes | ~4h |
+| **2** | Survey Builder | ~6h |
+| **2** | Voting Widget | ~4h |
+| **3** | Twilio (WhatsApp + SMS) | ~6h |
+| **3** | SurveyMonkey Import | ~4h |
+| **4** | Typeform Import | ~4h |
+| **4** | Advanced Analytics | ~4h |
+
+---
+
+# Part 10: AI Visual Prototype Feature
+
+**Status**: PLANNING COMPLETE
+**Target**: Week 7 (with Feedback Module)
+**Estimated Time**: ~9 hours
+
+---
+
+## Feature Overview
+
+Generate UI mockups with AI from natural language descriptions.
+
+**User Flow**:
+1. User describes UI idea in natural language
+2. AI generates React/HTML code via OpenRouter
+3. Preview renders in iframe sandbox
+4. User shares link for visual feedback voting
+5. Stakeholders vote/comment on the design
+
+---
+
+## UI Mockup
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  AI VISUAL PROTOTYPE GENERATOR                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Describe your UI idea:                                                      │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │ "A login form with email and password fields, a 'Remember me'         │ │
+│  │  checkbox, and a gradient blue submit button. Modern and minimal."     │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+│                                                           [✨ Generate]      │
+│  ┌─────────────────────────────────────────┐  ┌──────────────────────────┐  │
+│  │          LIVE PREVIEW                    │  │  CODE (editable)         │  │
+│  │  [iframe sandbox renders here]           │  │  export function Login() │  │
+│  └─────────────────────────────────────────┘  └──────────────────────────┘  │
+│  [💾 Save] [🔗 Share for Feedback] [📋 Copy Code] [♻️ Regenerate]             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Database Schema
+
+```sql
+CREATE TABLE ui_prototypes (
+    id TEXT PRIMARY KEY,
+    team_id TEXT REFERENCES teams(id) ON DELETE CASCADE,
+    workspace_id TEXT REFERENCES workspaces(id) ON DELETE SET NULL,
+    work_item_id TEXT REFERENCES work_items(id) ON DELETE SET NULL,
+    prompt TEXT NOT NULL,
+    generated_code TEXT NOT NULL,
+    preview_url TEXT,
+    share_token TEXT UNIQUE,
+    vote_count INTEGER DEFAULT 0,
+    created_by TEXT REFERENCES users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE prototype_votes (
+    id TEXT PRIMARY KEY,
+    prototype_id TEXT REFERENCES ui_prototypes(id) ON DELETE CASCADE,
+    voter_email TEXT,
+    vote INTEGER CHECK (vote IN (-1, 0, 1)),
+    comment TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## Implementation Priority
+
+| Step | Task | Time |
+|------|------|------|
+| 1 | API route `/api/ai/generate-prototype` | ~2h |
+| 2 | Iframe sandbox renderer component | ~2h |
+| 3 | Save/share prototype functionality | ~2h |
+| 4 | Public voting page (no auth) | ~2h |
+| 5 | Link prototypes to work items | ~1h |
+
+---
+
+## Related Documentation
+
+- **Week 6**: [Timeline & Execution](week-6-timeline-execution.md) - Work Item Detail Page
+- **Week 7**: [AI Integration & Analytics](week-7-ai-analytics.md) - Feedback Module, AI features
+- **Product Tasks**: [Week 5](week-5-review-system.md) - Tasks implementation

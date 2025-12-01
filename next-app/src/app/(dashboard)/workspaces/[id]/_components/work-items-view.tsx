@@ -282,7 +282,7 @@ const DUMMY_TASKS = [
 ];
 
 // Flag to enable/disable dummy data - set to false when testing is done
-const USE_DUMMY_DATA = true;
+const USE_DUMMY_DATA = false;
 // =============================================================================
 
 interface WorkItemsViewProps {

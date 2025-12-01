@@ -25,7 +25,11 @@
    - [timeline_items](#timeline_items)
    - [linked_items](#linked_items)
    - [product_tasks](#product_tasks)
-5. [Phase System Tables](#phase-system-tables)
+5. [Resources Module Tables](#resources-module-tables) *(New)*
+   - [resources](#resources)
+   - [work_item_resources](#work_item_resources)
+   - [resource_audit_log](#resource_audit_log)
+6. [Phase System Tables](#phase-system-tables)
    - [user_phase_assignments](#user_phase_assignments)
    - [phase_assignment_history](#phase_assignment_history)
    - [phase_access_requests](#phase_access_requests)
@@ -396,6 +400,192 @@ CREATE INDEX idx_product_tasks_work_item_status ON product_tasks(work_item_id, s
 **Helper Functions:**
 - `get_workspace_task_stats(workspace_id)` - Returns task statistics
 - `get_work_item_tasks(work_item_id)` - Returns tasks with completion percentage
+
+---
+
+## Resources Module Tables
+
+The Resources module enables linking external references, documentation, and inspiration to work items with full audit trail, soft-delete, and many-to-many sharing.
+
+### **resources**
+
+Core resource storage with full-text search and soft-delete support.
+
+```sql
+CREATE TABLE public.resources (
+  id TEXT PRIMARY KEY DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT::TEXT,
+  team_id TEXT NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  workspace_id TEXT NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  url TEXT,
+  description TEXT,
+  notes TEXT,
+  resource_type TEXT NOT NULL DEFAULT 'reference' CHECK (resource_type IN (
+    'reference', 'inspiration', 'documentation', 'media', 'tool'
+  )),
+  image_url TEXT,
+  favicon_url TEXT,
+  source_domain TEXT,
+
+  -- Full-text search (auto-generated)
+  search_vector TSVECTOR GENERATED ALWAYS AS (
+    setweight(to_tsvector('english', COALESCE(title, '')), 'A') ||
+    setweight(to_tsvector('english', COALESCE(description, '')), 'B') ||
+    setweight(to_tsvector('english', COALESCE(notes, '')), 'C')
+  ) STORED,
+
+  -- Soft delete
+  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  deleted_at TIMESTAMPTZ,
+  deleted_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+
+  -- Tracking
+  created_by UUID NOT NULL REFERENCES public.users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_modified_by UUID REFERENCES public.users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_resources_team_id ON public.resources(team_id);
+CREATE INDEX idx_resources_workspace_id ON public.resources(workspace_id);
+CREATE INDEX idx_resources_type ON public.resources(resource_type);
+CREATE INDEX idx_resources_deleted ON public.resources(is_deleted);
+CREATE INDEX idx_resources_search ON public.resources USING GIN(search_vector);
+CREATE INDEX idx_resources_domain ON public.resources(source_domain) WHERE source_domain IS NOT NULL;
+```
+
+**Resource Types:**
+| Type | Description |
+|------|-------------|
+| `reference` | General links, bookmarks, URLs |
+| `inspiration` | Competitor examples, design ideas, benchmarks |
+| `documentation` | Tutorials, guides, articles, specs |
+| `media` | Videos, images, screenshots |
+| `tool` | Tools, utilities, services |
+
+---
+
+### **work_item_resources**
+
+Junction table for many-to-many relationship between resources and work items.
+
+```sql
+CREATE TABLE public.work_item_resources (
+  work_item_id TEXT NOT NULL REFERENCES public.work_items(id) ON DELETE CASCADE,
+  resource_id TEXT NOT NULL REFERENCES public.resources(id) ON DELETE CASCADE,
+  PRIMARY KEY (work_item_id, resource_id),
+
+  team_id TEXT NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  tab_type TEXT NOT NULL DEFAULT 'resource' CHECK (tab_type IN ('inspiration', 'resource')),
+  display_order INTEGER NOT NULL DEFAULT 0,
+  context_note TEXT,
+
+  -- Added by tracking
+  added_by UUID NOT NULL REFERENCES public.users(id),
+  added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  -- Soft unlink
+  is_unlinked BOOLEAN NOT NULL DEFAULT FALSE,
+  unlinked_at TIMESTAMPTZ,
+  unlinked_by UUID REFERENCES public.users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_work_item_resources_work_item ON public.work_item_resources(work_item_id);
+CREATE INDEX idx_work_item_resources_resource ON public.work_item_resources(resource_id);
+CREATE INDEX idx_work_item_resources_team ON public.work_item_resources(team_id);
+CREATE INDEX idx_work_item_resources_tab ON public.work_item_resources(work_item_id, tab_type);
+CREATE INDEX idx_work_item_resources_unlinked ON public.work_item_resources(is_unlinked);
+```
+
+**Tab Types:**
+- `inspiration` - Research phase references, competitor analysis
+- `resource` - General resources for development/execution
+
+---
+
+### **resource_audit_log**
+
+Immutable audit trail for all resource actions.
+
+```sql
+CREATE TABLE public.resource_audit_log (
+  id TEXT PRIMARY KEY,
+  resource_id TEXT NOT NULL REFERENCES public.resources(id) ON DELETE CASCADE,
+  work_item_id TEXT,
+  action TEXT NOT NULL CHECK (action IN (
+    'created', 'updated', 'deleted', 'restored', 'linked', 'unlinked'
+  )),
+  actor_id UUID NOT NULL REFERENCES public.users(id),
+  actor_email TEXT,
+  performed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  changes JSONB,
+  team_id TEXT NOT NULL,
+  workspace_id TEXT NOT NULL
+);
+
+CREATE INDEX idx_resource_audit_resource ON public.resource_audit_log(resource_id, performed_at DESC);
+CREATE INDEX idx_resource_audit_work_item ON public.resource_audit_log(work_item_id, performed_at DESC);
+CREATE INDEX idx_resource_audit_team ON public.resource_audit_log(team_id, performed_at DESC);
+CREATE INDEX idx_resource_audit_action ON public.resource_audit_log(action);
+```
+
+**Audit Actions:**
+| Action | Description |
+|--------|-------------|
+| `created` | Resource was created |
+| `updated` | Resource fields were modified |
+| `deleted` | Resource was soft-deleted (moved to trash) |
+| `restored` | Resource was restored from trash |
+| `linked` | Resource was linked to a work item |
+| `unlinked` | Resource was unlinked from a work item |
+
+---
+
+### **Resource Module Database Functions**
+
+```sql
+-- Full-text search with ranking
+search_resources(p_team_id, p_query, p_workspace_id, p_type, p_limit, p_offset)
+  RETURNS TABLE(id, title, url, ..., rank)
+
+-- Get resource history (audit trail)
+get_resource_history(resource_id_param)
+  RETURNS TABLE(action, performed_at, actor_id, actor_email, work_item_id, changes)
+
+-- Purge soft-deleted resources (30-day retention)
+purge_deleted_resources(days INTEGER DEFAULT 30)
+  RETURNS INTEGER (count of purged records)
+
+-- Generic purge function (reusable for other entities)
+purge_soft_deleted(table_name TEXT, days INTEGER DEFAULT 30)
+  RETURNS INTEGER
+
+-- Purge unlinked junction records
+purge_unlinked_work_item_resources(days INTEGER DEFAULT 30)
+  RETURNS INTEGER
+
+-- Manual purge trigger
+manual_purge_all_deleted(days INTEGER DEFAULT 30)
+  RETURNS JSONB { resources_purged, links_purged, executed_at }
+```
+
+---
+
+### **Scheduled Purge (pg_cron)**
+
+Daily cleanup of soft-deleted resources older than 30 days:
+
+```sql
+-- Runs daily at 3:00 AM UTC
+SELECT cron.schedule('purge-deleted-resources-daily', '0 3 * * *',
+  $$ SELECT purge_deleted_resources(30); $$
+);
+
+-- Cleanup unlinked junction records
+SELECT cron.schedule('purge-unlinked-resources-daily', '0 3 * * *',
+  $$ SELECT purge_unlinked_work_item_resources(30); $$
+);
+```
 
 ---
 

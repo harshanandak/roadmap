@@ -185,4 +185,97 @@ Core mind mapping functionality (Week 3) delivers the essential value:
 
 ---
 
+## Workspace-Level Timelines & Calculated Status (Architecture Refactor)
+
+**📅 Postponed Date:** December 1, 2025
+
+**🎯 Priority:** HIGH (Foundation for future features)
+
+**⏱️ Estimated Effort:** ~25 hours (after 8-tab implementation)
+
+**📋 Full Details:** See [WORKSPACE_TIMELINE_ARCHITECTURE.md](../postponed/WORKSPACE_TIMELINE_ARCHITECTURE.md)
+
+---
+
+### **Why Postponed**
+
+Current 8-tab Work Item Detail Page implementation delivers immediate value. Architecture refactor:
+- ❌ Would require reworking in-progress components
+- ❌ Needs full platform stabilization first
+- ✅ Can be implemented as non-breaking change (new tables alongside existing)
+
+---
+
+### **Dependencies (Must Complete First)**
+
+- [⏳] Work Item Detail Page 8-tab structure
+- [⏳] Resources Tab integration
+- [⏳] Feedback Tab integration
+- [⏳] Current timeline_items system stable
+- [⏳] AI Integration complete (Week 7)
+
+---
+
+### **When to Implement**
+
+**Target:** After Week 7 completion (AI Integration)
+
+**Why then:**
+- ✅ All required dependencies will be complete
+- ✅ 8-tab Work Item Detail Page stable
+- ✅ Current timeline system has been tested in production
+- ✅ Can add new structure alongside old (non-breaking)
+
+---
+
+### **Summary of Changes**
+
+#### Database (4 changes)
+1. NEW: `timelines` table - Workspace-level release milestones
+2. NEW: `work_item_timelines` junction table - M:N work items ↔ timelines
+3. MODIFY: `product_tasks` - Add `effort_size` (xs/s/m/l/xl) with computed `effort_points`
+4. MODIFY: `workspaces` - Add `effort_vocabulary` (simple/technical/business)
+
+#### Conceptual (4 changes)
+1. Work item STATUS becomes CALCULATED from task progress
+2. Phase remains INTERNAL (for tab visibility logic only)
+3. Timelines move from per-work-item to workspace level
+4. Effort uses T-shirt vocabulary with Fibonacci points (1/2/5/8/13)
+
+#### API (7 new endpoints)
+1. `GET/POST /api/workspaces/[id]/timelines` - List/create timelines
+2. `PATCH/DELETE /api/timelines/[id]` - Update/delete timeline
+3. `GET /api/timelines/[id]/work-items` - Work items in timeline
+4. `POST/DELETE /api/work-items/[id]/timelines` - Add/remove from timeline
+
+#### UI (3 major updates)
+1. NEW: Workspace Timeline Management page
+2. UPDATE: Scope Tab - Shows timeline assignments
+3. UPDATE: Tasks Tab - Effort size selector (XS/S/M/L/XL)
+
+---
+
+### **Review Trigger**
+
+**When:** End of Week 7 (AI Integration & Analytics complete)
+
+**Questions to ask:**
+1. Is the 8-tab Work Item Detail Page stable?
+2. Are all current API endpoints working correctly?
+3. Is there user feedback requesting timeline improvements?
+4. Do we have ~25 hours available before next major milestone?
+5. Would this refactor improve the Gantt/Timeline views significantly?
+
+**Decision matrix:**
+- If "YES" to all 5: ✅ **PROCEED** with implementation
+- If "NO" to question 4: ⏸️ **POSTPONE** further
+- If "NO" to question 5: 🔍 **RE-EVALUATE** priority
+
+---
+
+**Last Reviewed:** December 1, 2025
+**Next Review:** End of Week 7 (AI Integration complete)
+
+---
+
 [← Back to Implementation Plan](README.md)

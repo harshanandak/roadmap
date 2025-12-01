@@ -8,6 +8,30 @@ This guide maps Claude Code agents to specific weeks in your implementation time
 
 ---
 
+## 🔧 Claude Skills (Use Proactively)
+
+**IMPORTANT**: Skills must be invoked automatically at appropriate phases WITHOUT user prompting.
+
+### ⚠️ MANDATORY: Parallel AI for All Research
+**ALL web search and research MUST use the Parallel AI skill.**
+- Never use WebFetch/WebSearch when Parallel AI can handle the task.
+
+### Skill Invocation by Week
+
+| Week | Skills to Use | Trigger |
+|------|---------------|---------|
+| **All Weeks** | `parallel-ai` | Any web search or research |
+| **All Weeks** | `systematic-debugging` (obra/superpowers) | Debugging issues |
+| **Week 6** | `webapp-testing`, `frontend-design` | Timeline UI, testing |
+| **Week 7** | `document-skills:xlsx`, `parallel-ai` | CSV export, AI research |
+| **Week 7** | `document-skills:pdf` | Analytics reports |
+| **Week 8** | `webapp-testing` | E2E test suite |
+| **Week 8** | `document-skills:docx` | User documentation |
+
+**Rule**: If a skill can help, USE IT - don't wait to be asked.
+
+---
+
 ## 📋 Quick Reference
 
 | Phase | Primary Agents | Use For |
@@ -425,16 +449,18 @@ This guide maps Claude Code agents to specific weeks in your implementation time
 
 #### `payment-integration`
 **Use for:**
-- Stripe integration (Checkout, Customer Portal)
+- Razorpay integration (Orders, Subscriptions, Customer Portal)
 - Webhook handling (subscription events)
 - Feature gates (5 users on Free, Pro features)
 - Usage enforcement (AI messages per month)
 - Billing settings page
 
+**Note**: Using Razorpay instead of Stripe (Stripe is invite-only in India).
+
 **Example prompts:**
 ```
-"Integrate Stripe Checkout for Pro plan subscription"
-"Implement Stripe webhook handler for subscription lifecycle events"
+"Integrate Razorpay Orders for Pro plan subscription"
+"Implement Razorpay webhook handler for subscription lifecycle events"
 "Create feature gates to limit Free users to 5 team members"
 "Build billing settings page with usage indicators and upgrade CTA"
 ```
@@ -479,14 +505,14 @@ This guide maps Claude Code agents to specific weeks in your implementation time
 
 #### `typescript-pro`
 **Use for:**
-- Payment types (Stripe webhooks, subscriptions)
+- Payment types (Razorpay webhooks, subscriptions)
 - Test types and mock data
 - E2E test page object models
 - Type-safe environment variable validation
 
 **Example prompts:**
 ```
-"Create TypeScript types for Stripe webhook events"
+"Create TypeScript types for Razorpay webhook events"
 "Define types for test fixtures and mock data"
 "Build type-safe environment variable validation schema"
 "Implement page object model types for Playwright tests"
@@ -506,7 +532,7 @@ This guide maps Claude Code agents to specific weeks in your implementation time
 **Example prompts:**
 ```
 "Perform comprehensive security audit for OWASP top 10 vulnerabilities"
-"Review Stripe integration for PCI compliance and security best practices"
+"Review Razorpay integration for security best practices"
 "Audit all API routes for authentication and authorization issues"
 "Create production security checklist and deployment guidelines"
 ```
@@ -544,7 +570,7 @@ This guide maps Claude Code agents to specific weeks in your implementation time
 **Example prompts:**
 ```
 "Review the mind mapping implementation for security and performance issues"
-"Check the Stripe integration for security best practices"
+"Check the Razorpay integration for security best practices"
 ```
 
 ---
@@ -566,7 +592,7 @@ This guide maps Claude Code agents to specific weeks in your implementation time
 
 ## 🎯 Agent Selection Tips
 
-1. **Start with specialized agents** - Use specific agents like `payment-integration` for Stripe, `security-engineer` for auth
+1. **Start with specialized agents** - Use specific agents like `payment-integration` for Razorpay, `security-engineer` for auth
 2. **Fall back to general agents** - Use `frontend-developer` if no specialized agent exists
 3. **Combine agents** - Launch multiple agents in parallel for complex tasks
 4. **Use `code-reviewer` proactively** - Review code after each major feature
@@ -611,7 +637,7 @@ You: "Launch test-automator agent to create Playwright E2E test suite"
 
 ---
 
-**Last Updated**: 2025-01-11
+**Last Updated**: 2025-11-30
 **Project**: Product Lifecycle Management Platform
 **Timeline**: 8 weeks
 **Tech Stack**: Next.js 15 + TypeScript + Supabase + Vercel

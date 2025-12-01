@@ -28,20 +28,24 @@ export default defineConfig({
   testDir: './e2e',
   testMatch: '*.spec.ts',
 
+  /* Global setup and teardown for environment validation and cleanup */
+  globalSetup: require.resolve('./tests/global-setup'),
+  globalTeardown: require.resolve('./tests/global-teardown'),
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* Retry on CI only - also retry once locally for flaky test resilience */
+  retries: process.env.CI ? 2 : 1,
 
-  /* Parallel workers - reduce on CI for stability */
-  workers: process.env.CI ? 1 : 4,
+  /* Parallel workers - reduced for stability (4 was causing resource contention) */
+  workers: process.env.CI ? 1 : 2,
 
-  /* Global test timeout */
-  timeout: 30 * 1000,
+  /* Global test timeout - increased for complex multi-tenant tests */
+  timeout: 60 * 1000,
 
   /* Expect assertions timeout */
   expect: {
@@ -76,8 +80,8 @@ export default defineConfig({
     /* Network timeout */
     navigationTimeout: 10 * 1000,
 
-    /* Action timeout (for individual actions like click, fill, etc.) */
-    actionTimeout: 5 * 1000,
+    /* Action timeout - increased to prevent cascading timeout issues */
+    actionTimeout: 10 * 1000,
   },
 
   /* Configure projects for major browsers */

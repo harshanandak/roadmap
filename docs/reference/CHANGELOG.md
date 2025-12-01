@@ -1,6 +1,6 @@
 # 📜 CHANGELOG
 
-**Last Updated**: 2025-11-26
+**Last Updated**: 2025-12-01
 **Project**: Product Lifecycle Management Platform
 **Format**: Based on [Keep a Changelog](https://keepachangelog.com/)
 
@@ -18,6 +18,302 @@ All notable changes, migrations, and feature implementations are documented in t
 
 ### Changed
 - Documentation structure improvements in progress
+
+### Performance
+#### RLS Policy Optimization (Migration: `20251201000001_optimize_rls_auth_initplan.sql`)
+- **Issue**: Supabase advisor detected 44+ `auth_rls_initplan` warnings - `auth.uid()` and `current_setting()` calls were re-evaluated for every row scanned
+- **Fix**: Wrapped all `auth.uid()` and `current_setting()` calls in scalar subqueries `(select ...)` so they execute once per query instead of once per row
+- **Scope**: Optimized 119 RLS policies across 27 tables
+- **Tables Affected**: users, teams, team_members, invitations, subscriptions, workspaces, work_items, linked_items, timeline_items, execution_steps, product_tasks, feature_resources, milestones, risks, prerequisites, inspiration_items, mind_maps, mind_map_nodes, mind_map_edges, review_links, feedback, custom_dashboards, success_metrics, ai_usage, workflow_stages, conversion_tracking, resources, work_item_resources, resource_audit_log
+- **Helper Functions Updated**: `user_is_team_member()`, `user_is_team_admin()` - also optimized for `(select auth.uid())` pattern
+- **Impact**: Significant query performance improvement for multi-tenant RLS checks
+- **Verification**: Supabase advisor confirmed 0 `auth_rls_initplan` warnings post-migration
+
+#### Duplicate RLS Policy Consolidation (Migration: `20251201000002_consolidate_duplicate_rls_policies.sql`)
+- **Issue**: Supabase advisor detected 50+ `multiple_permissive_policies` warnings - multiple overlapping policies for same table/role/action
+- **Fix**: Consolidated duplicate policies into single policies with combined OR conditions
+- **Tables Affected**:
+  - `mind_maps`, `mind_map_nodes`, `mind_map_edges`: Removed redundant "Workspace members can manage..." FOR ALL policies
+  - `team_members`: Merged "Users can view own..." + "Team members can view roster..." → single SELECT policy
+  - `teams`: Merged duplicate SELECT policies into single policy
+  - `users`: Merged "Users can view all profiles" + "Users can view own profile" → single SELECT policy
+  - `invitations`: Merged token-based and team-based SELECT policies
+  - `work_item_connections`: Consolidated 8 duplicate policies (feature/work-item variants) into 4
+  - `workspaces`: Merged user-based and team-based policies for SELECT/INSERT/UPDATE
+- **Impact**: Reduced duplicate policy evaluations, improving RLS query performance
+
+#### Duplicate Index Cleanup (Migration: `20251201000003_drop_duplicate_indexes.sql`)
+- **Issue**: Supabase advisor detected 5 `duplicate_index` warnings - identical indexes with different names
+- **Fix**: Dropped redundant indexes, keeping the ones with better naming conventions
+- **Indexes Dropped**:
+  - `linked_items`: Dropped `idx_linked_items_workspace` (kept `idx_linked_items_workspace_id`)
+  - `work_item_connections`: Dropped legacy `idx_connections_*` indexes (kept `idx_work_item_connections_*`)
+    - `idx_connections_type`, `idx_connections_source`, `idx_connections_target`, `idx_connections_workspace`
+- **Impact**: Reduced disk space usage and write overhead (no duplicate index maintenance)
+
+### Planned - Architecture Refactor (Scheduled Post-Week 7)
+
+#### Workspace-Level Timelines & Calculated Status
+- **Status**: PLANNING COMPLETE - Postponed for implementation
+- **Detailed Spec**: [WORKSPACE_TIMELINE_ARCHITECTURE.md](../postponed/WORKSPACE_TIMELINE_ARCHITECTURE.md)
+- **Estimated Effort**: ~25 hours
+- **Target**: After Week 7 (AI Integration complete)
+
+**Database Changes (Planned)**:
+- NEW: `timelines` table - Workspace-level release milestones
+- NEW: `work_item_timelines` junction table - M:N work items ↔ timelines
+- MODIFY: `product_tasks` - Add `effort_size` (xs/s/m/l/xl) with computed `effort_points`
+- MODIFY: `workspaces` - Add `effort_vocabulary` (simple/technical/business)
+
+**Conceptual Changes**:
+- Work item STATUS becomes CALCULATED from task progress
+- Phase remains INTERNAL (for tab visibility logic only)
+- Timelines move from per-work-item to workspace level
+- Effort uses T-shirt vocabulary with Fibonacci points (1/2/5/8/13)
+
+---
+
+## [0.8.0] - 2025-11-30 (Resources Module)
+
+### Added - Database
+
+#### Resources Module Tables (Migration: `20251130000001_create_resources_module.sql`)
+- **`resources`** - Core resource storage with PostgreSQL full-text search
+  - 5 resource types: reference, inspiration, documentation, media, tool
+  - TSVECTOR with weighted fields (title=A, description=B, notes=C)
+  - GIN index for fast search
+  - Soft-delete with 30-day retention (is_deleted, deleted_at, deleted_by)
+  - Source domain extraction for URL grouping
+- **`work_item_resources`** - Many-to-many junction table
+  - Composite PRIMARY KEY (work_item_id, resource_id)
+  - Tab-based organization (inspiration vs resource tabs)
+  - Soft unlink capability with re-link support
+  - Display order for drag-and-drop
+- **`resource_audit_log`** - Immutable audit trail
+  - 6 action types: created, updated, deleted, restored, linked, unlinked
+  - JSONB changes field for field-level tracking
+  - Actor tracking with email for historical accuracy
+
+#### Database Functions
+- `search_resources()` - Full-text search with ranking
+- `get_resource_history()` - Get complete audit trail
+- `purge_deleted_resources(days)` - Remove soft-deleted after N days
+- `purge_soft_deleted(table_name, days)` - Generic purge (reusable)
+- `purge_unlinked_work_item_resources(days)` - Junction cleanup
+- `manual_purge_all_deleted(days)` - Manual trigger with results
+
+#### Scheduled Jobs (Migration: `20251130000002_schedule_resource_purge_job.sql`)
+- `purge-deleted-resources-daily` - pg_cron job at 3:00 AM UTC
+- `purge-unlinked-resources-daily` - Junction table cleanup
+- `cron_job_status` view for monitoring
+
+### Added - API Routes
+
+#### Resources CRUD (`/api/resources`)
+- **GET** `/api/resources` - List with filtering (type, workspace, deleted)
+- **POST** `/api/resources` - Create with optional auto-link to work item
+- **GET** `/api/resources/:id` - Get with linked work items
+- **PATCH** `/api/resources/:id` - Update fields or restore from trash
+- **DELETE** `/api/resources/:id` - Soft delete or permanent delete
+
+#### Search & History
+- **GET** `/api/resources/search` - Full-text search with ranking
+- **GET** `/api/resources/:id/history` - Complete audit trail
+
+#### Work Item Linking (`/api/work-items/:id/resources`)
+- **GET** - Get resources organized by tab (inspiration/resources)
+- **POST** - Link existing or create-and-link new
+- **DELETE** - Unlink resource (soft unlink with re-link capability)
+
+### Added - TypeScript Types
+
+#### File: `lib/types/resources.ts`
+- `ResourceType`, `TabType`, `AuditAction` unions
+- `Resource`, `WorkItemResource`, `ResourceAuditEntry` interfaces
+- `ResourceWithMeta` - Extended with link counts
+- Request/response types for all API endpoints
+- Utility functions: `calculateDaysRemaining()`, `extractDomain()`, `getResourceTypeLabel()`
+
+### Added - UI Components
+
+#### Reusable Soft-Delete Components (`components/shared/soft-delete.tsx`)
+- `DaysRemaining` - Countdown to permanent deletion with color coding
+- `RestoreButton` - Restore from trash with loading state
+- `DeleteForeverButton` - Permanent delete with confirmation dialog
+- `TrashBadge` - Visual indicator for deleted items
+- `EmptyTrash` - Empty state component
+- `TrashInfoBanner` - Info banner with item count
+
+#### Resource Components (`components/resources/`)
+- `ResourceCard` - Full card with thumbnail, actions, link count
+- `ResourceItem` - Compact list item for search results
+- `AddResourceDialog` - Tabbed dialog (New/Link Existing)
+  - New: URL, title, type, description, notes fields
+  - Existing: Search with debounce, selection, context note
+
+### Added - Edge Functions
+
+#### `purge-deleted-resources` (`supabase/functions/purge-deleted-resources/`)
+- Manual trigger for purge operations
+- Requires service_role key (admin-only)
+- Supports dry_run mode for preview
+- Returns detailed results (resources_purged, links_purged, duration)
+
+### Technical Details
+
+#### Architecture Decisions
+- **Separate Tables > JSONB**: Chose Option B for proper schema, RLS, and global search
+- **Soft Delete Pattern**: 30-day recycle bin with automatic purge via pg_cron
+- **Many-to-Many Sharing**: Resources can be linked to multiple work items
+- **Tab Organization**: Inspiration (research phase) vs Resources (general)
+- **Audit Trail**: Immutable log for compliance and undo capability
+
+#### Key Files
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20251130000001_create_resources_module.sql` | Tables, indexes, RLS, functions |
+| `supabase/migrations/20251130000002_schedule_resource_purge_job.sql` | pg_cron jobs |
+| `supabase/functions/purge-deleted-resources/index.ts` | Edge Function |
+| `lib/types/resources.ts` | TypeScript types |
+| `app/api/resources/route.ts` | CRUD endpoints |
+| `app/api/resources/search/route.ts` | Full-text search |
+| `app/api/resources/[id]/route.ts` | Single resource ops |
+| `app/api/resources/[id]/history/route.ts` | Audit trail |
+| `app/api/work-items/[id]/resources/route.ts` | Link/unlink |
+| `components/shared/soft-delete.tsx` | Reusable trash components |
+| `components/resources/resource-card.tsx` | Card + Item |
+| `components/resources/add-resource-dialog.tsx` | Add dialog |
+
+---
+
+## [0.7.0] - 2025-11-30 (AI SDK Migration)
+
+### Added - AI Infrastructure
+
+#### Vercel AI SDK Adoption
+- **Package Installation**: `ai`, `@openrouter/ai-sdk-provider`, `@ai-sdk/react`
+- **AI SDK Client**: `lib/ai/ai-sdk-client.ts` - OpenRouter provider with pre-configured models
+- **Parallel AI Tools**: `lib/ai/tools/parallel-ai-tools.ts` - Tool definitions for web search, extract, research
+- **Chat API Route**: `/api/ai/sdk-chat/route.ts` - New streaming endpoint using `streamText()`
+- **ChatPanel Component**: `components/ai/chat-panel.tsx` - React component with `useChat()` hook
+
+#### Zod Schemas for Type-Safe AI Outputs
+- **schemas.ts**: `lib/ai/schemas.ts` - Comprehensive Zod schemas
+  - `SuggestedWorkItemSchema` - Note analysis → work item conversion
+  - `DependencySuggestionsSchema` - Dependency suggestion arrays
+  - `MindMapExpansionSchema` - AI-assisted mind map expansion
+  - `FeaturePrioritizationSchema` - Feature priority scoring
+  - `ChatIntentSchema` - User intent classification
+
+### Changed - Endpoint Migrations
+
+#### analyze-note Endpoint (`/api/ai/analyze-note`)
+- **Before**: Manual `fetch()` to OpenRouter, regex JSON parsing
+- **After**: `generateObject()` with `SuggestedWorkItemSchema`
+- **Benefits**: Type-safe responses, automatic validation, no manual parsing
+
+#### dependencies/suggest Endpoint (`/api/ai/dependencies/suggest`)
+- **Before**: `callOpenRouter()`, manual JSON regex extraction
+- **After**: `generateObject()` with `DependencySuggestionsSchema`
+- **Benefits**: Compile-time types, AI SDK retries on validation failure
+
+#### openrouter.ts Updates
+- Added `suggestDependenciesWithSDK()` - New AI SDK version
+- Deprecated `suggestDependencies()` - Old manual parsing version
+
+### Technical Details
+
+#### AI Architecture
+```
+User → ChatPanel (useChat) → /api/ai/sdk-chat → OpenRouter (LLM)
+                                    ↓ (tool calls)
+                             Parallel AI (Tool Layer)
+```
+
+| Component | Role |
+|-----------|------|
+| OpenRouter | LLM provider (300+ models, :nitro routing) |
+| Parallel AI | Tool layer (search, extract, research APIs) |
+| AI SDK | Unified interface (streaming, tools, structured output) |
+
+#### Key Files Modified
+| File | Change |
+|------|--------|
+| `lib/ai/ai-sdk-client.ts` | NEW - OpenRouter provider config |
+| `lib/ai/schemas.ts` | NEW - Zod schemas for AI outputs |
+| `lib/ai/tools/parallel-ai-tools.ts` | NEW - Tool definitions |
+| `app/api/ai/sdk-chat/route.ts` | NEW - AI SDK chat endpoint |
+| `components/ai/chat-panel.tsx` | NEW - useChat() component |
+| `app/api/ai/analyze-note/route.ts` | MIGRATED - generateObject() |
+| `app/api/ai/dependencies/suggest/route.ts` | MIGRATED - generateObject() |
+| `lib/ai/openrouter.ts` | UPDATED - Added SDK version |
+
+### Migration Pattern
+```typescript
+// Before (fragile)
+const content = response.choices[0].message.content
+const jsonMatch = content.match(/\[[\s\S]*\]/)
+const data = JSON.parse(jsonMatch[0]) // Can fail!
+
+// After (type-safe)
+const result = await generateObject({
+  model: aiModel,
+  schema: MySchema, // Zod schema
+  system: '...',
+  prompt: '...',
+})
+// result.object is fully typed!
+```
+
+---
+
+## [0.6.0] - 2025-11-29 (Week 6 Documentation)
+
+### Added - Documentation
+
+#### Work Board 3.0 (Parts 7-10)
+- **Part 7: Work Item Detail Page** - 8-Tab structure design
+  - Summary, Inspiration, Resources, Scope, Tasks, Feedback, Metrics, AI Copilot tabs
+  - Phase-based progressive disclosure using `calculateWorkItemPhase()`
+  - Tracking sidebar with effort tracking (Story Points, Hours)
+- **Part 8: Feedback Module** - Multi-channel feedback collection
+  - In-app widget, public links, email collection, embeddable iframe
+  - AI-powered analysis (sentiment, categorization, theme extraction)
+  - Stakeholder portal with voting/ranking
+- **Part 9: Integrations Module** - External service connections
+  - Build vs Integrate decision matrix
+  - Twilio (SMS/WhatsApp), SurveyMonkey, Typeform integrations
+  - Database: `team_integrations` table schema
+- **Part 10: AI Visual Prototype Feature** - Generate React UI from prompts
+  - Text-to-UI generation with shadcn/ui components
+  - Sandboxed iframe preview
+  - Feedback collection via public links and voting
+  - Database: `ui_prototypes` and `prototype_votes` tables
+
+#### Week Documentation Updates
+- **week-6-timeline-execution.md** - Added Work Item Detail Page (8-Tab Structure) reference
+  - Cross-links to work-board-3.0.md Part 7
+  - Updated Project Execution Module with Tasks as Universal Module concept
+- **week-7-ai-analytics.md** - Added Feedback, Integrations, AI Visual Prototypes
+  - New task sections: Day 15-17 (Feedback), Day 18-19 (Integrations), Day 20-21 (AI Prototypes)
+  - Module Features sections with database schemas
+  - Testing checklists for all new features
+
+#### README Navigation Updates
+- Updated implementation progress (60-65% complete, Week 6 in progress)
+- Enhanced navigation descriptions for Week 6 and Week 7
+- Updated Work Board 3.0 description to include Parts 7-10
+- Added cross-links to work-board-3.0.md for each new feature
+
+### Changed
+- README.md version bumped to 1.2
+- Week-6 status changed from "Not Started" to "In Planning"
+- Week-7 status changed from "Not Started" to "In Planning"
+
+### Technical Decisions Documented
+- **Tasks as Universal Module**: Tasks can link to Work Items, Timeline Items, or Module content
+- **Phase-Based Tab Visibility**: Tabs show/hide based on work item phase
+- **Build vs Integrate Matrix**: Core features built in-house, complex infrastructure integrated
 
 ---
 
@@ -238,8 +534,14 @@ All notable changes, migrations, and feature implementations are documented in t
 | 43 | 2025-01-24 | `20250124000003_add_work_items_hierarchy.sql` | Add work_items hierarchy support |
 | 44 | 2025-01-24 | `20250124000004_extend_timeline_items_execution.sql` | Extend timeline_items for execution tracking |
 | 45 | 2025-11-25 | `20251125000001_create_product_tasks_table.sql` | Create product_tasks table |
+| 46 | 2025-11-30 | `20251130000001_create_resources_module.sql` | Create resources module (tables, functions, indexes, RLS) |
+| 47 | 2025-11-30 | `20251130000002_schedule_resource_purge_job.sql` | Schedule pg_cron purge jobs for soft-deleted resources |
+| 48 | 2025-11-30 | `20251130110700_add_work_items_workspace_fk.sql` | Add foreign key to work_items table |
+| 49 | 2025-12-01 | `20251201000001_optimize_rls_auth_initplan.sql` | Optimize 119 RLS policies (auth.uid() → scalar subquery) |
+| 50 | 2025-12-01 | `20251201000002_consolidate_duplicate_rls_policies.sql` | Consolidate 50+ duplicate permissive RLS policies |
+| 51 | 2025-12-01 | `20251201000003_drop_duplicate_indexes.sql` | Drop 5 duplicate indexes |
 
-**Total Migrations**: 45
+**Total Migrations**: 51
 **Total Tables**: 26+
 
 ---

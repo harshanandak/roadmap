@@ -109,6 +109,26 @@
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+
+  /* ============================================
+   * Animation Custom Properties
+   * Consistent timing and easing across the app
+   * ============================================ */
+
+  /* Durations */
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-page: 300ms;
+
+  /* Easing Functions */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);  /* Material Design standard */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);         /* Accelerate - for expand */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);        /* Decelerate - for collapse */
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);  /* Slight overshoot */
+
+  /* Drag Shadow */
+  --shadow-drag: 0 14px 28px rgba(0,0,0,0.12), 0 10px 10px rgba(0,0,0,0.08);
 }
 
 .dark {

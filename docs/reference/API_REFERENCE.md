@@ -32,13 +32,14 @@ Cookie: sb-access-token=<token>; sb-refresh-token=<refresh-token>
 6. [Work Items API](#work-items-api) *(New)*
 7. [Timeline Items API](#timeline-items-api) *(New)*
 8. [Product Tasks API](#product-tasks-api) *(New)*
-9. [Mind Maps API](#mind-maps-api)
-10. [Dependencies API](#dependencies-api)
-11. [Review & Feedback API](#review-feedback-api)
-12. [Search API](#search-api) *(New)*
-13. [AI Assistant API](#ai-assistant-api)
-14. [Analytics API](#analytics-api)
-15. [Webhooks](#webhooks)
+9. [Resources API](#resources-api) *(New)*
+10. [Mind Maps API](#mind-maps-api)
+11. [Dependencies API](#dependencies-api)
+12. [Review & Feedback API](#review-feedback-api)
+13. [Search API](#search-api) *(New)*
+14. [AI Assistant API](#ai-assistant-api)
+15. [Analytics API](#analytics-api)
+16. [Webhooks](#webhooks)
 
 ---
 
@@ -996,6 +997,281 @@ Convert task to work item
     "name": "Create login form",
     "type": "feature"
   }
+}
+```
+
+---
+
+## 📎 RESOURCES API
+
+Resources are external links, documentation, and inspiration that can be linked to work items.
+Features: full-text search, many-to-many linking, soft-delete with 30-day recycle bin, complete audit trail.
+
+### GET `/api/resources`
+List resources with optional filtering
+
+**Query Parameters:**
+- `team_id` (required): Team ID
+- `workspace_id` (optional): Filter by workspace
+- `type` (optional): Filter by type (reference, inspiration, documentation, media, tool)
+- `include_deleted` (optional): Include soft-deleted resources
+- `limit` (optional, default: 50): Items per page
+- `offset` (optional, default: 0): Pagination offset
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "1736857200100",
+      "title": "React Documentation",
+      "url": "https://react.dev",
+      "resource_type": "documentation",
+      "source_domain": "react.dev",
+      "is_deleted": false,
+      "linked_work_items_count": 3,
+      "created_at": "2025-01-14T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### POST `/api/resources`
+Create a new resource
+
+**Request Body:**
+```json
+{
+  "workspace_id": "1736857200002",
+  "team_id": "1736857200000",
+  "title": "Stripe API Reference",
+  "url": "https://stripe.com/docs/api",
+  "description": "Official Stripe API documentation",
+  "resource_type": "documentation",
+  "work_item_id": "1736857200010",
+  "tab_type": "resource",
+  "context_note": "Use for payment integration"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "data": {
+    "id": "1736857200101",
+    "title": "Stripe API Reference",
+    "url": "https://stripe.com/docs/api",
+    "resource_type": "documentation",
+    "source_domain": "stripe.com"
+  }
+}
+```
+
+---
+
+### GET `/api/resources/:id`
+Get resource details with linked work items
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "id": "1736857200100",
+    "title": "React Documentation",
+    "url": "https://react.dev",
+    "description": "Official React docs",
+    "notes": "Great resource for hooks patterns",
+    "resource_type": "documentation",
+    "is_deleted": false,
+    "linked_work_items": [
+      {
+        "id": "1736857200010",
+        "name": "User Authentication",
+        "tab_type": "resource"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### PATCH `/api/resources/:id`
+Update resource or restore from trash
+
+**Request Body (update):**
+```json
+{
+  "title": "Updated Title",
+  "notes": "Updated notes"
+}
+```
+
+**Request Body (restore - use query param `?action=restore`):**
+```json
+{}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": { /* updated resource */ }
+}
+```
+
+---
+
+### DELETE `/api/resources/:id`
+Soft delete or permanent delete
+
+**Query Parameters:**
+- `permanent` (optional): If `true`, permanently delete (skip trash)
+
+**Response (200 OK - soft delete):**
+```json
+{
+  "message": "Resource moved to trash"
+}
+```
+
+**Response (204 No Content - permanent delete)**
+
+---
+
+### GET `/api/resources/search`
+Full-text search across resources
+
+**Query Parameters:**
+- `team_id` (required): Team ID
+- `q` (required): Search query
+- `workspace_id` (optional): Filter by workspace
+- `type` (optional): Filter by resource type
+- `limit` (optional, default: 20): Max results
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "1736857200100",
+      "title": "React Documentation",
+      "url": "https://react.dev",
+      "resource_type": "documentation",
+      "rank": 0.85
+    }
+  ],
+  "total": 15
+}
+```
+
+---
+
+### GET `/api/resources/:id/history`
+Get audit trail for a resource
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "action": "created",
+      "performed_at": "2025-01-14T12:00:00Z",
+      "actor": {
+        "id": "uuid",
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "changes": { "title": { "old": null, "new": "React Docs" } }
+    },
+    {
+      "action": "linked",
+      "performed_at": "2025-01-14T12:05:00Z",
+      "actor": { /* ... */ },
+      "work_item_id": "1736857200010"
+    }
+  ],
+  "resource": {
+    "id": "1736857200100",
+    "title": "React Documentation"
+  }
+}
+```
+
+---
+
+### GET `/api/work-items/:id/resources`
+Get resources linked to a work item, organized by tab
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "inspiration": [
+      {
+        "work_item_id": "1736857200010",
+        "resource_id": "1736857200100",
+        "tab_type": "inspiration",
+        "context_note": "Competitor analysis",
+        "resource": { /* full resource object */ }
+      }
+    ],
+    "resources": [
+      {
+        "work_item_id": "1736857200010",
+        "resource_id": "1736857200101",
+        "tab_type": "resource",
+        "resource": { /* full resource object */ }
+      }
+    ]
+  }
+}
+```
+
+---
+
+### POST `/api/work-items/:id/resources`
+Link a resource to work item or create and link new resource
+
+**Request Body (link existing):**
+```json
+{
+  "resource_id": "1736857200100",
+  "tab_type": "inspiration",
+  "context_note": "Relevant for UI design"
+}
+```
+
+**Request Body (create and link):**
+```json
+{
+  "title": "New Resource",
+  "url": "https://example.com",
+  "resource_type": "reference",
+  "tab_type": "resource"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "message": "Resource linked successfully"
+}
+```
+
+---
+
+### DELETE `/api/work-items/:id/resources`
+Unlink a resource from work item
+
+**Query Parameters:**
+- `resource_id` (required): Resource ID to unlink
+
+**Response (200 OK):**
+```json
+{
+  "message": "Resource unlinked successfully"
 }
 ```
 

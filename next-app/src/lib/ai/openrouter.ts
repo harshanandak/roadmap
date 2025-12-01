@@ -300,6 +300,10 @@ export async function extractStreamText(
 
 /**
  * Generate dependency suggestions using AI
+ *
+ * @deprecated Use the AI SDK version `suggestDependenciesWithSDK` instead.
+ * This function uses manual JSON parsing which is fragile.
+ * The new version uses generateObject() with Zod schemas for type-safe responses.
  */
 export async function suggestDependencies(
   workItems: Array<{ id: string; name: string; purpose: string }>,
@@ -362,4 +366,62 @@ Only include dependencies with confidence >= 0.6. Be conservative - it's better 
     console.error('Failed to parse AI response:', error)
     throw new Error(`Invalid AI response format: ${error.message}`)
   }
+}
+
+// =============================================================================
+// AI SDK VERSIONS (Recommended)
+// =============================================================================
+
+import { generateObject } from 'ai'
+import { z } from 'zod'
+import { getModelFromConfig } from './ai-sdk-client'
+
+/**
+ * Schema for dependency suggestions using AI SDK
+ */
+const SimpleDependencySchema = z.object({
+  dependencies: z.array(
+    z.object({
+      sourceId: z.string().describe('ID of the feature that depends on another'),
+      targetId: z.string().describe('ID of the feature it depends on'),
+      reason: z.string().max(200).describe('Brief explanation (1 sentence)'),
+      confidence: z.number().min(0).max(1).describe('Confidence score (0.0-1.0)'),
+    })
+  ),
+})
+
+/**
+ * Generate dependency suggestions using AI SDK (Recommended)
+ *
+ * Uses generateObject() with Zod schemas for type-safe, validated responses.
+ * No manual JSON parsing needed - AI SDK handles validation and retries.
+ *
+ * @example
+ * const suggestions = await suggestDependenciesWithSDK(workItems, getDefaultModel())
+ */
+export async function suggestDependenciesWithSDK(
+  workItems: Array<{ id: string; name: string; purpose: string }>,
+  model: AIModel
+): Promise<Array<{ sourceId: string; targetId: string; reason: string; confidence: number }>> {
+  const aiModel = getModelFromConfig(model.id)
+
+  const result = await generateObject({
+    model: aiModel,
+    schema: SimpleDependencySchema,
+    system: `You are an expert at analyzing software features and identifying dependencies.
+
+Given a list of features, identify which features depend on others. A feature A depends on feature B if:
+- Feature A requires data or functionality from feature B
+- Feature B must be completed before feature A can start
+- Feature A builds upon or extends feature B
+
+Only include dependencies with confidence >= 0.6. Be conservative - it's better to miss a dependency than suggest incorrect ones.`,
+    prompt: `Analyze these features and identify dependencies:\n\n${workItems
+      .map((item) => `ID: ${item.id}\nName: ${item.name}\nPurpose: ${item.purpose}\n`)
+      .join('\n---\n')}`,
+    temperature: 0.3,
+  })
+
+  // Filter by confidence threshold
+  return result.object.dependencies.filter((dep) => dep.confidence >= 0.6)
 }

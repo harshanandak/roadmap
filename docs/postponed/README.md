@@ -20,6 +20,33 @@ Features that were planned but **strategically deferred** to later phases due to
 
 ## 📄 DOCUMENTS IN THIS FOLDER
 
+### **[WORKSPACE_TIMELINE_ARCHITECTURE.md](WORKSPACE_TIMELINE_ARCHITECTURE.md)**
+Major architecture refactor: workspace-level timelines, calculated status, effort vocabulary
+
+**📅 Postponed Date:** December 1, 2025
+
+**🎯 Priority:** HIGH (Foundation for scalability)
+
+**⏱️ Estimated Effort:** ~25 hours
+
+**Dependencies:**
+- [⏳] Work Item Detail Page (8-tab structure)
+- [⏳] Current timeline system stable
+- [⏳] AI Integration complete (Week 7)
+
+**Summary of Features:**
+- Workspace-level timelines (release milestones)
+- Many-to-many work item ↔ timeline relationship
+- Calculated work item status from task progress
+- Effort vocabulary system (T-shirt sizes)
+- Weighted progress calculation
+
+**When to Implement:** After Week 7 (AI Integration complete)
+
+**Review Trigger:** End of Week 7
+
+---
+
 ### **[MIND_MAP_ENHANCEMENTS.md](MIND_MAP_ENHANCEMENTS.md)**
 23 mind map enhancement features across 3 phases (UX improvements + AI-powered features)
 

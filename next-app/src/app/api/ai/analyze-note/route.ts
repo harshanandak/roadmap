@@ -1,15 +1,21 @@
 /**
  * AI Note Analysis API
  *
- * Analyzes placeholder notes and suggests conversion to work items
- * Uses Claude Haiku via OpenRouter for fast, cost-effective analysis
+ * Analyzes placeholder notes and suggests conversion to work items.
+ * Uses Vercel AI SDK with generateObject() for type-safe structured output.
+ *
+ * Migration: Replaced manual OpenRouter calls with AI SDK generateObject()
+ * Benefits: Type-safe responses, automatic validation, no manual JSON parsing
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { generateObject } from 'ai'
 import { createClient } from '@/lib/supabase/server'
+import { aiModels, getModelFromConfig } from '@/lib/ai/ai-sdk-client'
+import { SuggestedWorkItemSchema, type SuggestedWorkItem } from '@/lib/ai/schemas'
+import { getModelByKey } from '@/lib/ai/models'
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
-const MODEL = 'anthropic/claude-3-haiku-20240307'
+export const maxDuration = 30 // Allow up to 30s for AI responses
 
 interface AnalyzeNoteRequest {
   noteContent: string
@@ -17,18 +23,18 @@ interface AnalyzeNoteRequest {
     existingTypes: string[]
     existingTags: string[]
   }
+  model?: string // Optional model key (default: claude-haiku-45)
 }
 
-interface SuggestedWorkItem {
-  type: 'idea' | 'epic' | 'feature' | 'user_story' | 'task' | 'bug'
-  name: string
-  purpose: string
-  priority: 'critical' | 'high' | 'medium' | 'low'
-  tags: string[]
-  acceptanceCriteria: string[]
-  estimatedHours?: number
-  confidence: number // 0-100
-  reasoning: string
+interface AnalyzeNoteResponse {
+  success: boolean
+  suggestion: SuggestedWorkItem
+  model: string
+  usage?: {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -45,134 +51,105 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Validate OpenRouter API key
-    if (!OPENROUTER_API_KEY) {
-      return NextResponse.json(
-        { error: 'OpenRouter API key not configured' },
-        { status: 500 }
-      )
-    }
-
     // Parse request body
     const body: AnalyzeNoteRequest = await request.json()
-    const { noteContent, workspaceContext } = body
+    const { noteContent, workspaceContext, model: modelKey = 'claude-haiku-45' } = body
 
     if (!noteContent || noteContent.trim().length === 0) {
       return NextResponse.json({ error: 'Note content is required' }, { status: 400 })
     }
 
+    // Get AI model
+    const configModel = getModelByKey(modelKey)
+    const aiModel = configModel
+      ? getModelFromConfig(configModel.id)
+      : aiModels.claudeHaiku
+
     // Build context prompt
-    const contextPrompt = workspaceContext
+    const contextInfo = workspaceContext
       ? `
-Existing work item types in workspace: ${workspaceContext.existingTypes.join(', ')}
-Existing tags in workspace: ${workspaceContext.existingTags.join(', ')}
+## Workspace Context:
+- Existing work item types: ${workspaceContext.existingTypes.join(', ') || 'None'}
+- Existing tags: ${workspaceContext.existingTags.join(', ') || 'None'}
+
+Consider reusing existing tags when appropriate.
 `
       : ''
 
-    // Call OpenRouter API with Claude Haiku
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        'X-Title': 'Product Lifecycle Management Platform',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: `You are an AI assistant that analyzes placeholder notes and suggests how to convert them into proper work items.
+    // Use generateObject for type-safe structured output
+    const result = await generateObject({
+      model: aiModel,
+      schema: SuggestedWorkItemSchema,
+      system: `You are an AI assistant that analyzes placeholder notes and suggests how to convert them into proper work items for a product lifecycle management system.
 
-Work item types:
-- idea: High-level concept or brainstorming note
-- epic: Large body of work spanning multiple features
-- feature: User-facing functionality
-- user_story: Specific user need or requirement
-- task: Technical implementation work
-- bug: Issue or defect to fix
+## Work Item Types:
+- **idea**: High-level concept or brainstorming note
+- **epic**: Large body of work spanning multiple features
+- **feature**: User-facing functionality
+- **user_story**: Specific user need or requirement (format: "As a [user], I want [goal] so that [benefit]")
+- **task**: Technical implementation work
+- **bug**: Issue or defect to fix
 
-Priorities: critical, high, medium, low
+## Priority Levels:
+- **critical**: Blocking other work, security issues, data loss risk
+- **high**: Important for next release, significant user impact
+- **medium**: Standard priority, normal development flow
+- **low**: Nice to have, can be deferred
 
-Analyze the note and suggest the best work item type, a concise name, purpose, priority, relevant tags, and acceptance criteria.
-${contextPrompt}
+## Guidelines:
+1. Choose the most specific type that fits (prefer feature over idea if it's clearly defined)
+2. Write concise names (3-8 words) that describe the outcome
+3. Purpose should explain WHY this matters, not just WHAT it is
+4. Acceptance criteria should be specific and testable
+5. Only estimate hours if you have enough context
+6. Set confidence based on how well the note describes the work
+${contextInfo}`,
+      prompt: `Analyze this note and suggest how to convert it to a work item:
 
-IMPORTANT: Respond ONLY with valid JSON matching this schema:
-{
-  "type": "idea" | "epic" | "feature" | "user_story" | "task" | "bug",
-  "name": "string (concise, 3-8 words)",
-  "purpose": "string (1-2 sentences explaining why this matters)",
-  "priority": "critical" | "high" | "medium" | "low",
-  "tags": ["string"],
-  "acceptanceCriteria": ["string"],
-  "estimatedHours": number (optional, only if you can infer),
-  "confidence": number (0-100, how confident you are in this classification),
-  "reasoning": "string (brief explanation of why you chose this type/priority)"
-}`,
-          },
-          {
-            role: 'user',
-            content: `Analyze this note and suggest how to convert it to a work item:\n\n${noteContent}`,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 1000,
-      }),
+---
+${noteContent}
+---
+
+Provide a structured suggestion with appropriate type, name, purpose, priority, tags, and acceptance criteria.`,
+      temperature: 0.3, // Lower temperature for consistent results
     })
 
-    if (!response.ok) {
-      const errorData = await response.text()
-      console.error('[AI Note Analysis] OpenRouter error:', errorData)
-      return NextResponse.json(
-        { error: 'Failed to analyze note with AI' },
-        { status: response.status }
-      )
-    }
-
-    const data = await response.json()
-    const aiResponse = data.choices?.[0]?.message?.content
-
-    if (!aiResponse) {
-      return NextResponse.json({ error: 'No response from AI' }, { status: 500 })
-    }
-
-    // Parse AI response (it should be JSON)
-    let suggestion: SuggestedWorkItem
-    try {
-      suggestion = JSON.parse(aiResponse)
-    } catch (parseError) {
-      console.error('[AI Note Analysis] Failed to parse AI response:', aiResponse)
-      return NextResponse.json(
-        { error: 'Invalid AI response format', rawResponse: aiResponse },
-        { status: 500 }
-      )
-    }
-
-    // Validate suggestion
-    const validTypes = ['idea', 'epic', 'feature', 'user_story', 'task', 'bug']
-    const validPriorities = ['critical', 'high', 'medium', 'low']
-
-    if (!validTypes.includes(suggestion.type)) {
-      suggestion.type = 'task' // Default fallback
-    }
-
-    if (!validPriorities.includes(suggestion.priority)) {
-      suggestion.priority = 'medium' // Default fallback
-    }
-
-    // Ensure confidence is in valid range
-    suggestion.confidence = Math.max(0, Math.min(100, suggestion.confidence || 50))
-
-    return NextResponse.json({
+    // Build response
+    const response: AnalyzeNoteResponse = {
       success: true,
-      suggestion,
-      model: MODEL,
-    })
+      suggestion: result.object,
+      model: configModel?.name || 'Claude Haiku 4.5',
+      usage: result.usage
+        ? {
+            promptTokens: result.usage.promptTokens,
+            completionTokens: result.usage.completionTokens,
+            totalTokens: result.usage.totalTokens,
+          }
+        : undefined,
+    }
+
+    return NextResponse.json(response)
   } catch (error) {
-    console.error('[AI Note Analysis] Unexpected error:', error)
+    console.error('[AI Note Analysis] Error:', error)
+
+    // Handle AI SDK specific errors
+    if (error instanceof Error) {
+      if (error.message.includes('validation')) {
+        return NextResponse.json(
+          {
+            error: 'AI response validation failed',
+            details: error.message,
+          },
+          { status: 500 }
+        )
+      }
+    }
+
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }

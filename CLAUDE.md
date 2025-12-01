@@ -1,6 +1,6 @@
 # 📚 Project Guidelines & Quick Reference
 
-**Last Updated**: 2025-11-26 <!-- Link checker updated -->
+**Last Updated**: 2025-11-30 <!-- MCP config cleanup -->
 **Project**: Product Lifecycle Management Platform
 **Tech Stack**: Next.js 15 + TypeScript + Supabase + Vercel
 **Current Status**: Week 6 (60-65% overall)
@@ -41,22 +41,44 @@ UI:           shadcn/ui + Tailwind CSS + Lucide React
 Mind Mapping: ReactFlow (custom nodes, AI-powered)
 Charts:       Recharts (10+ chart types)
 Testing:      Playwright (E2E) + Jest (Unit)
-Payments:     Stripe (Checkout + Webhooks)
+Payments:     Razorpay (Orders + Subscriptions + Webhooks) - India-compatible
 Email:        Resend (Invitations, notifications)
 AI:           OpenRouter (Claude Haiku, Perplexity, Grok)
 Deployment:   Vercel (Serverless functions)
 ```
 
-### MCP Servers (5 Active)
+### MCP Servers (2 Active)
 
 | MCP | Purpose |
 |-----|---------|
 | **Supabase** | Migrations, queries, RLS, real-time, TypeScript types |
-| **Playwright** | E2E testing, browser automation, screenshots |
-| **Vercel** | Deployment, environment vars, build monitoring |
-| **Parallel Search** | Multi-source web search (Tavily, Perplexity, Exa, Brave) |
-| **Parallel Task** | Workflow automation, multi-agent workflows |
-| **shadcn/ui** *(Week 4+)* | Component installation, multi-registry access |
+| **shadcn/ui** | Component installation, multi-registry access |
+
+### Claude Skills
+
+#### ⚠️ MANDATORY: Parallel AI for All Research
+**ALL web search and research MUST use the Parallel AI skill.**
+- Web search → `parallel-ai` Search API
+- URL extraction → `parallel-ai` Extract API
+- Deep research → `parallel-ai` Task API (pro/ultra)
+- Quick answers → `parallel-ai` Chat API
+
+**NEVER use WebFetch/WebSearch tools when Parallel AI can handle the task.**
+
+#### Proactive Skill Usage
+Skills must be invoked automatically at appropriate phases WITHOUT user prompting:
+
+| Skill | Purpose | Phase | Invoke When |
+|-------|---------|-------|-------------|
+| **Parallel AI** | Web search, data extraction, deep research | All | Any research needed |
+| **webapp-testing** | Playwright testing, UI validation | Week 6-8 | Testing features |
+| **frontend-design** | Production-grade UI components | Week 6-7 | Building UI |
+| **document-skills:xlsx** | CSV import/export | Week 7-8 | Exporting data |
+| **document-skills:pdf** | PDF reports, invoices | Week 7-8 | Generating reports |
+| **document-skills:docx** | Documentation, specs export | Week 8 | Creating docs |
+| **systematic-debugging** | 4-phase debugging (obra/superpowers) | All | Debugging issues |
+
+**Rule**: If a skill can help with the current task, USE IT - don't wait to be asked.
 
 **shadcn/ui MCP Setup** (Install at Week 4 start):
 ```json
@@ -131,7 +153,7 @@ Transform roadmap manager into **Product Lifecycle Management Platform**:
 users           - User accounts (Supabase Auth)
 teams           - Organizations/teams
 team_members    - Team membership and roles
-subscriptions   - Stripe billing data
+subscriptions   - Razorpay billing data
 workspaces      - Projects with phase and modules
 ```
 
@@ -550,7 +572,7 @@ git add . && git commit -m "feat: description" && git push
 
 ### External
 - [Next.js 15](https://nextjs.org/docs) | [Supabase](https://supabase.com/docs) | [shadcn/ui](https://ui.shadcn.com)
-- [ReactFlow](https://reactflow.dev) | [Playwright](https://playwright.dev) | [Stripe](https://stripe.com/docs)
+- [ReactFlow](https://reactflow.dev) | [Playwright](https://playwright.dev) | [Razorpay](https://razorpay.com/docs/)
 
 ---
 

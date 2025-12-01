@@ -1,6 +1,6 @@
 # **WEEK 8: Billing, Testing & Launch**
 
-**Last Updated:** 2025-11-14
+**Last Updated:** 2025-11-30
 **Status:** ❌ Not Started
 
 [← Previous: Week 7](week-7-ai-analytics.md) | [Back to Plan](README.md)
@@ -8,26 +8,43 @@
 ---
 
 ## Goal
-Stripe integration, UI polish, production-ready
+Razorpay integration (India-compatible), UI polish, production-ready
+
+> **Note**: Using Razorpay instead of Stripe because Stripe is invite-only in India.
 
 ---
 
 ## Tasks
 
-### Day 1-3: Stripe Integration
-- [ ] Set up Stripe account
-- [ ] Create products and prices:
-  - [ ] Pro plan: $40/month (recurring)
-  - [ ] Additional user: $5/month (metered)
+### Day 1-3: Razorpay Integration
+- [ ] Set up Razorpay account (razorpay.com)
+  - Select "Individual/Unregistered Business" type
+  - Documents needed: PAN card + Aadhaar + Bank account (savings OK)
+  - No GST required (exempt under ₹40 lakh turnover)
+  - Verification takes 24-48 hours
+- [ ] Install npm package: `npm install razorpay @types/razorpay`
+- [ ] Configure environment variables:
+  ```env
+  # Start with test keys, switch to live after verification
+  RAZORPAY_KEY_ID=rzp_test_xxxxx
+  RAZORPAY_KEY_SECRET=xxxxx
+  NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxx
+  ```
+- [ ] Create subscription plans in Razorpay Dashboard:
+  - [ ] Pro plan: ₹3,000/month (recurring)
+  - [ ] Additional user: ₹400/month (metered)
 - [ ] Pricing page: `/app/(marketing)/pricing/page.tsx`
   - [ ] Free vs Pro comparison table
   - [ ] [Upgrade to Pro] button
-- [ ] Stripe Checkout integration
-- [ ] Webhook handler: `/app/api/webhooks/stripe/route.ts`
-  - [ ] `customer.subscription.created`
-  - [ ] `customer.subscription.updated`
-  - [ ] `customer.subscription.deleted`
-  - [ ] `invoice.payment_failed`
+- [ ] API Routes:
+  - [ ] `/api/razorpay/create-order` - Create payment order
+  - [ ] `/api/razorpay/verify` - Verify payment signature
+  - [ ] `/api/razorpay/subscription` - Manage subscriptions
+- [ ] Webhook handler: `/app/api/webhooks/razorpay/route.ts`
+  - [ ] `subscription.activated`
+  - [ ] `subscription.charged`
+  - [ ] `subscription.cancelled`
+  - [ ] `payment.failed`
 - [ ] Update `teams.plan` and `subscriptions` table
 
 ### Day 4-5: Feature Gates
@@ -48,7 +65,7 @@ Stripe integration, UI polish, production-ready
   - [ ] AI messages (847/1,000 this month)
   - [ ] Storage (1.2GB/50GB)
 - [ ] [Upgrade to Pro] button
-- [ ] [Manage Subscription] button (Stripe portal link)
+- [ ] [Manage Subscription] button (Razorpay customer portal)
 
 ### Day 8-10: UI Polish
 - [ ] Add loading states (skeletons):
@@ -74,7 +91,7 @@ Stripe integration, UI polish, production-ready
   - [ ] Feature CRUD
   - [ ] Mind map creation
   - [ ] External review flow
-  - [ ] Stripe upgrade flow (test mode)
+  - [ ] Razorpay upgrade flow (test mode)
 - [ ] Unit tests (Jest):
   - [ ] Permission checks (`canAddMember()`, `canUpgrade()`)
   - [ ] Billing calculations
@@ -151,7 +168,7 @@ roadmap-platform/
 │   │   │       ├── modules/page.tsx    # Enable/disable modules
 │   │   │       ├── team/page.tsx       # Team management
 │   │   │       ├── ai/page.tsx         # AI model config
-│   │   │       └── billing/page.tsx    # Stripe billing
+│   │   │       └── billing/page.tsx    # Razorpay billing
 │   │   ├── (marketing)/                # Marketing route group
 │   │   │   ├── page.tsx                # Landing page
 │   │   │   ├── pricing/page.tsx
@@ -162,7 +179,7 @@ roadmap-platform/
 │   │   │       └── embed/page.tsx      # Iframe embed
 │   │   └── api/
 │   │       ├── auth/callback/route.ts  # Supabase Auth callback
-│   │       ├── webhooks/stripe/route.ts # Stripe webhook handler
+│   │       ├── webhooks/razorpay/route.ts # Razorpay webhook handler
 │   │       └── ai/
 │   │           ├── chat/route.ts       # Streaming chat
 │   │           └── tools/[tool]/route.ts # AI tool execution
@@ -198,7 +215,8 @@ roadmap-platform/
 │   │   │   ├── client.ts                # Client-side Supabase
 │   │   │   ├── server.ts                # Server-side Supabase (RSC)
 │   │   │   └── types.ts                 # Generated TypeScript types
-│   │   ├── stripe/
+│   │   ├── razorpay/
+│   │   │   ├── client.ts                # Razorpay API client
 │   │   │   └── webhooks.ts              # Webhook handler logic
 │   │   ├── ai/
 │   │   │   ├── openrouter.ts            # OpenRouter API client
@@ -234,7 +252,7 @@ roadmap-platform/
 
 ## Deliverables
 
-✅ Stripe billing fully integrated
+✅ Razorpay billing fully integrated
 ✅ Feature gates enforced (5 users, 1,000 msgs)
 ✅ UI polished (loading, errors, empty states)
 ✅ Mobile responsive

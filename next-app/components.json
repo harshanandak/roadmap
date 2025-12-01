@@ -21,17 +21,19 @@
   "registries": {
     "@magicui": "https://magicui.design/r/{name}.json",
     "@aceternity": "https://ui.aceternity.com/registry/{name}.json",
-    "@origin": "https://originui.com/r/{name}.json",
     "@kokonut": "https://kokonutui.com/r/{name}.json",
     "@kibo": "https://kibo-ui.com/r/{name}.json",
     "@cult": "https://cult-ui.com/r/{name}.json",
-    "@jolly": "https://www.jollyui.dev/r/{name}.json",
     "@animate": "https://animate-ui.com/r/{name}.json",
     "@reui": "https://reui.io/r/{name}.json",
-    "@shadcnio": "https://shadcn.io/r/{name}.json",
     "@dice": "https://www.diceui.com/r/{name}.json",
     "@eldora": "https://www.eldoraui.site/r/{name}.json",
     "@hextaui": "https://hextaui.com/r/{name}.json",
-    "@shadix": "https://shadix-ui.vercel.app/r/{name}.json"
+    "@shadix": "https://shadix-ui.vercel.app/r/{name}.json",
+    "@shadcnblocks": "https://shadcnblocks.com/r/{name}.json",
+    "@shadcn-studio": "https://shadcnstudio.com/r/{name}.json",
+    "@ss-blocks": "https://shadcnstudio.com/r/blocks/{name}.json",
+    "@ss-themes": "https://shadcnstudio.com/r/themes/{name}.json",
+    "@blocks": "https://blocks.so/r/{name}.json"
   }
 }

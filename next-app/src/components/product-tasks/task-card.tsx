@@ -146,10 +146,15 @@ export function TaskCard({ task, onEdit, onDelete, onStatusChange, onWorkItemCli
   return (
     <Card
       className={cn(
-        'group transition-all hover:shadow-md',
+        'group hover:shadow-md',
+        // Consistent animation timing with other cards
+        'transition-[transform,box-shadow,opacity] duration-200',
         task.status === 'done' && 'opacity-60',
         isOverdue && 'border-red-300'
       )}
+      style={{
+        transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
     >
       <CardHeader className="p-3 pb-0">
         <div className="flex items-start justify-between gap-2">
