@@ -1,6 +1,6 @@
 # 📜 CHANGELOG
 
-**Last Updated**: 2025-12-11
+**Last Updated**: 2025-12-23
 **Project**: Product Lifecycle Management Platform
 **Format**: Based on [Keep a Changelog](https://keepachangelog.com/)
 
@@ -11,6 +11,259 @@ All notable changes, migrations, and feature implementations are documented in t
 ## [Unreleased]
 
 ### Added
+
+#### Type-Aware Phase System - Database Columns (2025-12-22)
+Database migration adding missing phase tracking, versioning, and review columns to `work_items` table.
+
+**Migration**: `20251222120000_add_missing_phase_columns.sql`
+
+**Schema Changes**:
+```sql
+-- Add phase column (work item lifecycle stage - replaces status)
+ALTER TABLE work_items ADD COLUMN IF NOT EXISTS phase TEXT;
+
+-- Add versioning columns
+ALTER TABLE work_items ADD COLUMN IF NOT EXISTS enhances_work_item_id TEXT REFERENCES work_items(id);
+ALTER TABLE work_items ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;
+ALTER TABLE work_items ADD COLUMN IF NOT EXISTS version_notes TEXT;
+
+-- Add review process columns
+ALTER TABLE work_items ADD COLUMN IF NOT EXISTS review_enabled BOOLEAN DEFAULT true;
+ALTER TABLE work_items ADD COLUMN IF NOT EXISTS review_status TEXT;
+```
+
+**New Columns**:
+| Column | Type | Default | Description |
+|--------|------|---------|-------------|
+| `phase` | TEXT | (type-based) | Work item lifecycle phase (IS the status field) |
+| `enhances_work_item_id` | TEXT | null | Links to parent work item for versioning |
+| `version` | INTEGER | 1 | Version number in enhancement chain |
+| `version_notes` | TEXT | null | Changelog/release notes for this version |
+| `review_enabled` | BOOLEAN | true | Per-item toggle for review process |
+| `review_status` | TEXT | null | Review state: pending, approved, needs_revision, rejected |
+
+**Type-Specific Phase Constraints**:
+- **Feature/Enhancement**: design → build → refine → launch
+- **Concept**: ideation → research → validated | rejected
+- **Bug**: triage → investigating → fixing → verified
+
+**Indexes Created**:
+- `idx_work_items_enhances` - Finding all enhancements of a work item
+- `idx_work_items_type_phase` - Type-phase composite queries
+- `idx_work_items_review_status` - Filtering by review status
+
+**Helper Functions**:
+- `get_next_version(parent_id TEXT)` - Auto-increment version numbers for enhancement chains
+
+**Files Modified**:
+- `next-app/src/lib/supabase/types.ts` - Regenerated TypeScript types from schema
+- `next-app/tests/utils/database.ts` - Fixed `createWorkItemInDatabase` (phase instead of status)
+- `next-app/tests/utils/fixtures.ts` - Updated test fixtures
+- `next-app/e2e/*.spec.ts` - Updated 4 E2E test files to use `phase` field
+
+**Rationale**:
+- Previous migrations were marked as applied but columns weren't actually created
+- Work items use `phase` as their status field (timeline items have separate execution status)
+- Enables type-aware phase workflows, versioning chains, and detached review process
+
+---
+
+### Fixed
+
+#### Type-Aware Phase System - Critical Fixes (2025-12-23)
+Code review cleanup addressing 5 critical security, data integrity, and architecture consistency issues.
+
+**Migration 1: Safety & Security Fixes**
+- **File**: `20251222120000_add_missing_phase_columns.sql` (modified)
+- **Changes**:
+  - Added `WHERE phase IS NULL` to UPDATE statement (line 30) - protects existing data
+  - Added `p_team_id TEXT` parameter to `get_next_version()` function (line 120)
+  - Added `WHERE team_id = p_team_id` filter - enforces multi-tenancy isolation
+
+**Migration 2: Schema Cleanup**
+- **File**: `20251223000000_drop_work_items_status_column.sql` (new)
+- **Changes**:
+  - Dropped `work_items.status` column (conflicted with architecture)
+  - Architecture now consistent: work items have `phase` only (which IS the status)
+  - Timeline items retain separate `status` field for execution tracking
+  - Logged 5 work items with differing status/phase values before dropping column
+
+**Code Changes**:
+```sql
+-- Migration Safety Fix
+UPDATE work_items
+SET phase = CASE type
+  WHEN 'feature' THEN 'design'
+  WHEN 'enhancement' THEN 'design'
+  WHEN 'concept' THEN 'ideation'
+  WHEN 'bug' THEN 'triage'
+  ELSE 'design'
+END
+WHERE phase IS NULL;  -- ✅ Added - only update NULL values
+
+-- Multi-Tenancy Security Fix
+CREATE OR REPLACE FUNCTION get_next_version(
+  parent_id TEXT,
+  p_team_id TEXT  -- ✅ Added parameter
+)
+RETURNS INTEGER AS $$
+BEGIN
+  SELECT COALESCE(MAX(version), 0) INTO max_version
+  FROM work_items
+  WHERE team_id = p_team_id  -- ✅ Added team filter
+    AND (enhances_work_item_id = parent_id OR id = parent_id);
+  RETURN max_version + 1;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Test Fixes** (24 total changes):
+- `tests/fixtures/test-data.ts` - Removed `status` property from 5 TEST_WORK_ITEMS, updated phase values
+- `tests/utils/fixtures.ts` - Changed `.status` → `.phase` (2 locations)
+- `e2e/type-phases.spec.ts` - Removed 7 `status:` field inserts from work_items
+- `e2e/review-process.spec.ts` - Removed 9 `status:` field inserts from work_items
+- `e2e/versioning.spec.ts` - Removed 8 `status:` field inserts from work_items
+
+**TypeScript Types**:
+- `src/lib/supabase/types.ts` - Regenerated, `work_items.status` column removed
+
+**Critical Issues Addressed**:
+| Issue | Severity | Impact | Fix |
+|-------|----------|--------|-----|
+| Unsafe UPDATE | 🔴 HIGH | Could overwrite valid phase data | Added WHERE clause |
+| Missing team_id filter | 🔴 CRITICAL | Version leakage across teams | Added parameter + filter |
+| .status references | 🟡 MEDIUM | Test failures | Updated 2 fixture files |
+| status: inserts | 🟡 MEDIUM | E2E test breakage | Removed 24 occurrences |
+| Schema conflict | 🔴 CRITICAL | Architecture violation | Dropped status column |
+
+**Architecture Validation**:
+- ✅ **Phase IS Status**: Work items have `phase` only (no separate status)
+- ✅ **Timeline Status**: Timeline items retain separate `status` for execution tracking
+- ✅ **Multi-Tenancy**: All database functions now enforce team_id filtering
+- ✅ **Test Alignment**: Test suite matches architecture decisions
+- ✅ **Type Safety**: TypeScript types match actual schema
+
+**Rationale**:
+- Code review by `feature-dev:code-reviewer` agent identified critical flaws
+- Schema had conflicting column violating documented "phase IS the status" architecture
+- Multi-tenancy isolation was incomplete, allowing potential cross-team data leakage
+- Test suite had invalid field references that would cause future failures
+
+---
+
+### Added
+
+#### Strategy Customization Fields (Session 5 - 2025-12-15)
+Database migration adding pillar-specific context fields to `product_strategies` table.
+
+**Migration**: `20251214165151_add_strategy_customization_fields.sql`
+
+**Schema Changes**:
+```sql
+ALTER TABLE product_strategies
+ADD COLUMN IF NOT EXISTS user_stories TEXT[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS user_examples TEXT[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS case_studies TEXT[] DEFAULT '{}';
+```
+
+**New Columns**:
+| Column | Type | Default | Description |
+|--------|------|---------|-------------|
+| `user_stories` | TEXT[] | '{}' | User stories relevant to the strategy pillar |
+| `user_examples` | TEXT[] | '{}' | Real-world examples and applications |
+| `case_studies` | TEXT[] | '{}' | Case studies demonstrating success |
+
+**Components Created** (`src/components/strategy/`):
+- `alignment-strength-indicator.tsx` - Visual indicator for weak/medium/strong alignment
+- `org-level-strategy-display.tsx` - Full organization-level strategy view with tabs
+- `work-item-strategy-alignment.tsx` - Compact work item alignment view
+
+**Files Modified**:
+- `src/lib/types/strategy.ts` - Added new fields to `ProductStrategy` interface
+- `src/components/strategy/strategy-form.tsx` - Added pillar-specific fields section
+- `src/lib/supabase/types.ts` - Regenerated with new columns
+
+---
+
+#### Workspace Analysis Service (Session 2 - 2025-12-15)
+Complete workspace health scoring and analysis service with dashboard integration.
+
+**API Endpoints** (`src/app/api/workspaces/[id]/analyze/`):
+- `GET /api/workspaces/[id]/analyze` - Workspace analysis endpoint
+  - Auth: Requires authenticated user with team membership
+  - Query params: `staleThreshold` (days), `upgradeThreshold` (0-1)
+  - Response: `{ data: WorkspaceAnalysis, meta: { workspaceName, config } }`
+
+**Core Infrastructure** (`src/lib/workspace/`):
+- `analyzer-types.ts` - TypeScript interfaces (WorkspaceAnalysis, HealthBreakdown, MismatchedItem, UpgradeOpportunity, StaleItem)
+- `analyzer-service.ts` (~320 lines) - Core analysis logic:
+  - `analyzeWorkspace()` - Main analysis function
+  - `calculateDistributionScore()` - Phase concentration penalty (0-30 pts)
+  - `calculateReadinessScoreAndOpportunities()` - Using Session 1's calculator (0-30 pts)
+  - `calculateFreshnessScore()` - Stale item detection (0-20 pts)
+  - `calculateFlowScore()` - Phase advancement rate (0-20 pts)
+  - `detectMismatches()` - Mode vs distribution analysis
+  - `calculateStuckPenalty()` - Items stuck >14 days
+
+**React Hooks** (`src/hooks/`):
+- `use-workspace-analysis.ts` - React Query hook with Supabase real-time invalidation
+
+**UI Components** (`src/components/workspace/`):
+- `workspace-health-card.tsx` - Health card with circular gauge, breakdown bars, recommendations
+
+**Dashboard Integration**:
+- Added `'workspace-health'` to `DashboardWidget` type in `mode-config.ts`
+- Added widget to all 4 workspace modes (development, launch, growth, maintenance)
+- Updated `ModeAwareDashboard` to render `WorkspaceHealthCard`
+
+**Health Score Algorithm**: Distribution (30) + Readiness (30) + Freshness (20) + Flow (20) - Penalties
+
+---
+
+#### Design Thinking Integration (Session 3 - 2025-12-15)
+Complete Design Thinking methodology integration with frameworks, tools, and AI-powered suggestions.
+
+**New Module** (`src/lib/design-thinking/`):
+- `frameworks.ts` - 4 Design Thinking frameworks database:
+  - Stanford d.school (Empathize → Define → Ideate → Prototype → Test)
+  - Double Diamond (Discover → Define → Develop → Deliver)
+  - IDEO HCD (Inspiration → Ideation → Implementation)
+  - IBM Enterprise (The Loop + Hills, Playbacks, Sponsor Users)
+- `phase-methods.ts` - Maps 4 platform phases to DT stages and methods
+- `index.ts` - Module re-exports
+
+**Design Thinking Tools (14 total)**:
+Empathy maps, journey maps, personas, how might we, brainstorming, affinity diagrams, prototyping methods, user testing, stakeholder mapping, problem framing, ideation workshops, design sprints, feedback synthesis, iteration planning
+
+**Case Studies (7)**:
+Airbnb (Host Guarantee), Apple (iPhone), IBM (Enterprise Design), GE Healthcare, IDEO Shopping Cart, PillPack (Pharmacy), Stanford d.school (Embrace Incubator)
+
+**New API Endpoint**:
+- `POST /api/ai/methodology/suggest` - AI-powered methodology suggestions
+  - Request: `{ work_item_id, team_id, current_phase, work_item_context?, model_key? }`
+  - Response: `{ primaryFramework, frameworkReason, suggestedMethods, nextSteps, relevantCaseStudies }`
+  - Uses `generateObject()` with MethodologySuggestionSchema
+
+**New Schema** (`lib/ai/schemas.ts`):
+- `DesignThinkingFrameworkSchema` - Enum: stanford, double-diamond, ideo, ibm
+- `SuggestedMethodSchema` - Method name, description, expected outcome
+- `MethodologySuggestionSchema` - Complete AI response structure
+
+**New UI Components**:
+- `guiding-questions-tooltip.tsx` - Phase badge hover tooltip with 2-3 questions
+- `methodology-guidance-panel.tsx` - Full slide-over panel with:
+  - Guiding questions with DT method badges
+  - Tool cards (duration, participants, difficulty)
+  - Case study cards (expandable)
+  - Alternative framework suggestions
+  - AI-powered personalized suggestions
+  - Next phase preview
+
+**Component Integrations**:
+- `phase-context-badge.tsx` - Added `showTooltip` and `onOpenMethodologyPanel` props
+- `work-item-detail-header.tsx` - Added "Methodology" button and Sheet wrapper
+
+---
 
 #### Architecture Decisions Finalized (2025-12-11)
 Complete documentation of platform architecture principles and design decisions.

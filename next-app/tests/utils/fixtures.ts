@@ -103,7 +103,6 @@ export const testDataFixture = baseTest.extend<TestDataFixtures>({
 
     const team = await createTeamInDatabase({
       name: TEST_TEAMS.teamA.name,
-      description: TEST_TEAMS.teamA.description,
       ownerId: userId,
     });
 
@@ -137,7 +136,7 @@ export const testDataFixture = baseTest.extend<TestDataFixtures>({
       title: TEST_WORK_ITEMS.authentication.title,
       description: TEST_WORK_ITEMS.authentication.description,
       type: TEST_WORK_ITEMS.authentication.type as any,
-      status: TEST_WORK_ITEMS.authentication.status,
+      phase: TEST_WORK_ITEMS.authentication.phase,
       priority: TEST_WORK_ITEMS.authentication.priority,
       teamId: testTeamId,
       workspaceId: testWorkspaceId,
@@ -187,7 +186,7 @@ export const authenticatedWithDataFixture = baseTest.extend<
     const workItem = await createWorkItemInDatabase({
       title: TEST_WORK_ITEMS.authentication.title,
       type: TEST_WORK_ITEMS.authentication.type as any,
-      status: TEST_WORK_ITEMS.authentication.status,
+      phase: TEST_WORK_ITEMS.authentication.phase,
       priority: TEST_WORK_ITEMS.authentication.priority,
       teamId: testTeamId,
       workspaceId: testWorkspaceId,
