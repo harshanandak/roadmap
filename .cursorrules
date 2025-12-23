@@ -1,594 +1,576 @@
-# Cursor AI Rules - Platform Roadmap Manager
+# Cursor AI Rules - Product Lifecycle Management Platform
 
-## Project Overview
-Platform Roadmap Manager - A multi-workspace roadmap planning application with AI-powered features, real-time Supabase sync, and Vercel deployment.
+**Last Updated**: 2025-12-23
+**Project**: Product Lifecycle Management Platform
+**Tech Stack**: Next.js 15 + TypeScript + Supabase + Vercel
+**Status**: Week 7/12 (95% complete)
 
-**Tech Stack**:
-- Framework: Next.js 15 + TypeScript (App Router, Server Components)
-- Database: Supabase (PostgreSQL + Real-time + Auth)
-- UI: shadcn/ui + Tailwind CSS + Lucide React
-- Mind Mapping: ReactFlow
-- Charts: Recharts
-- Testing: Playwright (E2E) + Jest (Unit)
-- Payments: Stripe
-- Email: Resend
-- Deployment: Vercel
-- MCP Servers: 5 active (Supabase, Playwright, Parallel-search, Parallel-Task, Vercel)
+---
+
+## 🎯 Project Overview
+
+Transform roadmap manager into **Product Lifecycle Management Platform** with:
+1. **Research & Ideate** - AI-powered mind mapping, web search, knowledge base
+2. **Plan & Structure** - Features, timeline, dependencies
+3. **Review & Gather Feedback** - Stakeholder input (invite-based, public links)
+4. **Execute Collaboratively** - Team assignment, task tracking, real-time collaboration
+5. **Test & Iterate** - User feedback collection and analysis
+6. **Measure Success** - Analytics, expected vs actual performance tracking
 
 **Live URL**: https://platform-test-cyan.vercel.app
 
----
-
-## Architecture Principles
-
-### Multi-Workspace System
-- **Workspace isolation**: All data must filter by `workspace_id`
-- **User scope**: Currently single-user (`user_id = 'default'`)
-- **ID format**: Timestamp-based strings (`Date.now().toString()`) - NEVER use UUID
-- **Workspace properties**: id, name, description, color (hex), icon (emoji), customInstructions, aiMemory
-- **No cross-workspace references**: Features, timeline items, and links stay within workspace boundaries
-
-### Database Schema (Supabase)
-**Primary Tables**:
-- `workspaces` - Workspace metadata and AI settings
-- `features` - Top-level roadmap items with `workspace_id` foreign key
-- `timeline_items` - Nested items with `feature_id` and timeline (MVP/SHORT/LONG)
-- `linked_items` - Bidirectional relationships between timeline items
-- `user_settings` - Global user preferences
-
-**Key Constraints**:
-- All tables have `user_id` and `workspace_id` columns
-- RLS policies enabled (user + workspace filtering)
-- Timestamps: `created_at`, `updated_at` (auto-managed)
-- Soft deletes preferred over hard deletes
-
-### Data Sync Strategy
-1. **Write**: Save to localStorage immediately → Async sync to Supabase
-2. **Read**: Load from Supabase → Cache in localStorage
-3. **Real-time**: Subscribe to Supabase changes for cross-browser sync
-4. **Conflict resolution**: Last write wins (timestamp-based)
+**Canonical Reference**: `docs/ARCHITECTURE_CONSOLIDATION.md` is the single source of truth
 
 ---
 
-## Coding Standards
+## 🏛️ Architecture Principles
 
-### TypeScript Style
+### Multi-Tenant System (CRITICAL)
+
+- **Team Isolation**: ALL data must filter by `team_id` (NOT workspace_id)
+- **ID Format**: Timestamp-based TEXT IDs (`Date.now().toString()`) - NEVER use UUID
+- **Row-Level Security**: RLS policies enforce access control on all tables
+- **Workspace = Project**: Each workspace is a separate product/project within a team
+
+**Critical Rule**: `team_id` must NEVER be NULL (breaks RLS silently with empty `{}` errors)
+
 ```typescript
-// ✅ GOOD: Strict typing, interfaces, modern syntax
-interface CreateWorkspaceParams {
-  name: string;
-  description: string;
-  teamId: string;
+// ✅ CORRECT - Always filter by team_id
+const { data } = await supabase
+  .from('work_items')
+  .select('*')
+  .eq('team_id', teamId)
+  .order('created_at', { ascending: false })
+
+// ❌ WRONG - Missing team_id filter
+const { data } = await supabase
+  .from('work_items')
+  .select('*')
+```
+
+### Two-Layer System (NOT Three)
+
+```
+WORKSPACE (Aggregation View)
+├── mode: development | launch | growth | maintenance
+├── Shows: Phase DISTRIBUTION across all work items
+│   Example: "5 features in build, 2 bugs in triage, 1 concept in research..."
+│
+└── WORK ITEMS (Each has own type-specific phase)
+    ├── Feature/Enhancement: design → build → refine → launch
+    ├── Concept: ideation → research → validated | rejected
+    ├── Bug: triage → investigating → fixing → verified
+    │         ↑ PHASE IS THE STATUS - No separate status field!
+    │
+    └── TIMELINE ITEMS (MVP/SHORT/LONG breakdowns)
+        └── status: not_started | in_progress | blocked | completed | on_hold | cancelled
+                    ↑ Separate status for task-level execution tracking
+```
+
+**Key Clarifications**:
+| Concept | Correct | Wrong |
+|---------|---------|-------|
+| **Phase vs Status** | Phase IS the status for work items | Separate fields |
+| **Workspace Stage** | Shows DISTRIBUTION (aggregation) | Has single stage value |
+| **Timeline Status** | Separate field for execution tasks | Same as work item phase |
+
+---
+
+## 📊 Phase System (Type-Aware)
+
+### Type-Specific Phase Workflows
+
+Different work item types follow different phase progressions:
+
+**Feature/Enhancement**:
+```
+design → build → refine → launch
+```
+| Phase | Description | Focus |
+|-------|-------------|-------|
+| **design** | Research, ideation, problem definition | Empathy, user needs, scope planning |
+| **build** | Active development work | Building, coding, creating |
+| **refine** | Testing, validation, iteration | Quality, user testing, feedback |
+| **launch** | Shipped, deployed, done (TERMINAL) | Release, retrospective, metrics |
+
+**Concept**:
+```
+ideation → research → validated | rejected
+```
+| Phase | Description | Terminal |
+|-------|-------------|----------|
+| **ideation** | Initial idea capture | No |
+| **research** | Validation research | No |
+| **validated** | Concept approved | Yes (promote to feature) |
+| **rejected** | Concept rejected | Yes (lessons learned) |
+
+**Bug**:
+```
+triage → investigating → fixing → verified
+```
+| Phase | Description | Terminal |
+|-------|-------------|----------|
+| **triage** | Initial assessment | No |
+| **investigating** | Root cause analysis | No |
+| **fixing** | Active fix development | No |
+| **verified** | Fix confirmed | Yes (deployed and validated) |
+
+### Default Phases by Type
+
+```typescript
+const DEFAULT_PHASES = {
+  feature: 'design',
+  enhancement: 'design',
+  concept: 'ideation',
+  bug: 'triage'
+} as const
+```
+
+### Phase Transition Requirements
+
+**Feature/Enhancement**:
+- `design → build`: `purpose` filled, 1+ timeline items OR scope defined
+- `build → refine`: `progress_percent` >= 80, `actual_start_date` set
+- `refine → launch`: Feedback addressed, review approved (if enabled)
+
+**Concept**:
+- `ideation → research`: `purpose` filled, hypothesis defined
+- `research → validated`: Research complete, viable confirmed
+- `research → rejected`: Research complete, not viable
+
+**Bug**:
+- `triage → investigating`: Priority set, assigned
+- `investigating → fixing`: Root cause identified
+- `fixing → verified`: Fix deployed, review approved (if enabled)
+
+---
+
+## 💻 Coding Standards
+
+### TypeScript
+
+- **Strict mode** enabled, NO `any` type ever
+- Use **interfaces** for all data structures
+- **Union types** for enums: `'design' | 'build' | 'refine' | 'launch'`
+- **Explicit return types** on functions
+
+```typescript
+// ✅ GOOD
+interface CreateWorkItemParams {
+  name: string
+  purpose: string
+  type: 'feature' | 'bug' | 'concept' | 'enhancement'
+  teamId: string
+  workspaceId: string
 }
 
-const createWorkspace = async ({ name, description, teamId }: CreateWorkspaceParams): Promise<Workspace> => {
-  const workspace: Workspace = {
+async function createWorkItem(params: CreateWorkItemParams): Promise<WorkItem> {
+  const workItem: WorkItem = {
     id: Date.now().toString(),  // Timestamp ID
-    teamId,
-    name,
-    description,
-    phase: 'research',
-    color: '#3B82F6',
-    icon: '📊',
-    enabledModules: ['research', 'mind_map', 'features'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  return workspace;
-};
+    team_id: params.teamId,
+    workspace_id: params.workspaceId,
+    name: params.name,
+    purpose: params.purpose,
+    type: params.type,
+    phase: DEFAULT_PHASES[params.type],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+  return workItem
+}
 
-// ❌ BAD: any types, unclear parameter objects, UUID
-const createWorkspace = async (data: any) => {
-  const w: any = { id: generateUUID(), ...data };
-  return w;
-};
+// ❌ BAD
+const createWorkItem = async (data: any): any => {
+  return { id: crypto.randomUUID(), ...data }
+}
 ```
 
 ### Database Queries
-```javascript
-// ✅ GOOD: Workspace-scoped, error handling
-const loadFeatures = async (workspaceId) => {
-    try {
-        const { data, error } = await supabase
-            .from('features')
-            .select('*')
-            .eq('user_id', 'default')
-            .eq('workspace_id', workspaceId)  // REQUIRED
-            .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return data || [];
-    } catch (err) {
-        console.error('Failed to load features:', err);
-        return [];
-    }
-};
+**ALWAYS filter by `team_id`**:
 
-// ❌ BAD: No workspace filter, no error handling
-const loadFeatures = async () => {
-    const { data } = await supabase.from('features').select('*');
-    return data;
-};
+```typescript
+// ✅ GOOD - Team-scoped, error handling
+const loadWorkItems = async (teamId: string, workspaceId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('work_items')
+      .select('*')
+      .eq('team_id', teamId)        // REQUIRED
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data ?? []
+  } catch (err) {
+    console.error('Failed to load work items:', err)
+    return []
+  }
+}
+
+// ❌ BAD - No team_id filter, no error handling
+const loadWorkItems = async () => {
+  const { data } = await supabase.from('work_items').select('*')
+  return data
+}
 ```
 
 ### React/Next.js Components
+
+- **Server Components** by default
+- `'use client'` only for interactive components
+- **shadcn/ui** components ONLY (no custom CSS)
+- **Tailwind CSS** utility classes (no inline styles)
+- **Mobile-first** responsive design
+
 ```tsx
-// ✅ GOOD: TypeScript, shadcn/ui, accessible
-import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+// ✅ GOOD
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
-interface WorkspaceCardProps {
-  workspace: Workspace;
-  onEdit: (id: string) => void;
+interface WorkItemCardProps {
+  workItem: WorkItem
+  onEdit: (id: string) => void
 }
 
-export function WorkspaceCard({ workspace, onEdit }: WorkspaceCardProps) {
+export function WorkItemCard({ workItem, onEdit }: WorkItemCardProps) {
   return (
-    <Card className="workspace-card" data-workspace-id={workspace.id}>
+    <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl" role="img" aria-label="Workspace icon">
-            {workspace.icon}
-          </span>
-          <CardTitle>{workspace.name}</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>{workItem.name}</CardTitle>
+          <Badge variant={workItem.type === 'bug' ? 'destructive' : 'default'}>
+            {workItem.type}
+          </Badge>
         </div>
-        <CardDescription>{workspace.description}</CardDescription>
       </CardHeader>
-      <CardFooter>
-        <Button onClick={() => onEdit(workspace.id)} aria-label="Edit workspace">
-          Edit
-        </Button>
-      </CardFooter>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">{workItem.purpose}</p>
+      </CardContent>
     </Card>
-  );
+  )
 }
 
-// ❌ BAD: No types, inline styles, poor accessibility
-const WorkspaceCard = ({ workspace, onEdit }) => (
-  <div style={{ padding: '10px' }} onClick={onEdit}>
-    <span>{workspace.icon}</span>
-    <div>{workspace.name}</div>
+// ❌ BAD - No types, inline styles, custom CSS
+const WorkItemCard = ({ item, onEdit }) => (
+  <div style={{ padding: '10px', border: '1px solid #ccc' }} onClick={onEdit}>
+    <span>{item.name}</span>
   </div>
-);
+)
 ```
 
 ---
 
-## MCP Server Usage (Optimized for Next.js 15 + TypeScript)
+## 🔧 Tech Stack
 
-### Active MCPs (5 Total - Enhanced Automation & Search)
+### Framework & Database
+```
+Framework:    Next.js 15 + TypeScript (App Router, Server Components)
+Database:     Supabase (PostgreSQL + Real-time + Auth + RLS)
+UI:           shadcn/ui + Tailwind CSS + Lucide React
+Mind Mapping: XYFlow/ReactFlow (custom nodes, AI-powered)
+Charts:       Recharts (10+ chart types)
+Testing:      Playwright (E2E)
+Payments:     Stripe (Checkout, Subscriptions, Webhooks)
+Email:        Resend (Invitations, notifications)
+AI:           OpenRouter (Kimi K2, DeepSeek V3.2, Grok 4, Claude Haiku 4.5)
+State:        Zustand + React Query
+Deployment:   Vercel (Serverless functions)
+```
 
-**Supabase MCP** (Essential) - Use for:
-- Multi-tenant schema design (`teams`, `workspaces`, `features`, `mind_maps`)
+### MCP Servers (3 Active)
+
+**Supabase MCP** - Use for:
+- Multi-tenant schema design (`teams`, `team_members`, `workspaces`, `work_items`)
 - Database migrations with RLS policies
 - Complex queries (joins, aggregations, transactions)
 - Real-time subscriptions setup
 - PostgreSQL functions and triggers
 - Schema inspection and type generation
-- Running SQL scripts for data migrations
 
-**Playwright MCP** (Testing) - Use for:
-- E2E testing Next.js pages and API routes
-- User authentication flow tests
-- Feature CRUD operation tests
-- Mind map canvas interaction tests
-- Stripe payment flow tests (test mode)
-- Screenshot capture for documentation
-- CI/CD integration (GitHub Actions)
+**shadcn/ui MCP** - Use for:
+- Component installation from 14 registries
+- Multi-registry access (origin, new-york, default, miami, etc.)
+- Discovering components (1000+ available)
+- Installing with proper theming
 
-**Parallel-search MCP** (AI Research) - Use for:
-- Multi-source web search (Tavily, Perplexity, Exa, Brave)
-- Competitive analysis and market research
-- AI-powered content discovery and trend analysis
-- Knowledge base population with web sources
-- Semantic search across multiple engines
-- Real-time information gathering for AI features
+**Context7 MCP** - Use for:
+- Fetching up-to-date library documentation
+- Verifying API signatures and patterns
+- Framework-specific best practices
+- When official docs may have changed since training
 
-**Parallel-Task MCP** (Automation) - Use for:
-- Multi-agent task orchestration and workflows
-- Parallel execution of complex development tasks
-- Task dependency management and coordination
-- Automated testing and deployment pipelines
-- Multi-step workflow automation (migration + build + deploy)
-- CI/CD pipeline integration and orchestration
-
-**Vercel MCP** (Deployment) - Use for:
-- Production and preview deployments
-- Environment variable management (Supabase keys, Stripe keys, OpenRouter API)
-- Build logs and error debugging
-- Performance monitoring and analytics
-- Custom domain configuration and SSL
-- Deployment orchestration with Parallel-Task MCP
-
-### Removed MCPs (Context Savings)
-
-- ❌ **Puppeteer** - Redundant with Playwright
-- ❌ **Browser Tools** - Use Chrome DevTools instead
-- ❌ **21st Magic** - Using shadcn/ui, not generating components
-- ❌ **MCP-UI** - Not needed for Next.js + shadcn/ui
-- ❌ **Exa** - Redundant with Parallel-search MCP (which includes Exa + Tavily + Perplexity + Brave)
-
-### MCP Usage Examples
-
-```plaintext
-// Multi-Tenant Schema
-"Create migrations for mind_maps, mind_map_nodes, and mind_map_edges tables with team_id and RLS policies"
-→ Supabase MCP creates migrations, applies RLS policies
-
-// Real-time Setup
-"Set up Supabase Realtime subscriptions for workspace changes with proper filtering by team_id"
-→ Supabase MCP configures real-time, provides TypeScript client code
-
-// Deployment
-"Deploy to production and verify environment variables are set correctly"
-→ Vercel MCP builds, deploys, checks env vars
-
-// E2E Testing
-"Create Playwright tests for authentication flow, team creation, and feature CRUD"
-→ Playwright MCP generates test suite with proper selectors
-
-// Performance Query
-"Optimize the query for loading features with timeline_items and linked_items"
-→ Supabase MCP analyzes query, suggests indexes, provides optimized SQL
-
-// AI Research
-"Search for best practices in product roadmap management and mind mapping UX patterns"
-→ Parallel-search MCP queries multiple engines, aggregates results
-
-// Task Automation
-"Orchestrate workflow: apply migration → build Next.js app → run tests → deploy to Vercel"
-→ Parallel-Task MCP coordinates multi-step workflow with proper dependencies
-```
+**Note**: Parallel AI is a **Claude Skill**, not an MCP. Use `/parallel-ai` for web search and research.
 
 ---
 
-## Common Patterns
+## 🤖 Claude Skills (Slash Commands)
 
-### Adding New Fields to Features
+### MAKER Commands (Multi-Agent Reliability)
 
-**1. Update Data Model**:
-```javascript
-// In feature creation logic
-const feature = {
-    // ... existing fields
-    newField: value  // Add new field
-};
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `/decompose` | Break task into atomic steps (MAD) | Complex features, unclear scope |
+| `/validate-consensus` | K-threshold voting (2/3 approve) | Security code, 3+ file changes |
+| `/red-flag-check` | Detect issues by severity | Before ANY security commit |
+
+### Operational Commands
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `/db-migration` | Database migration workflow | Schema changes, RLS policies |
+| `/security-review` | OWASP security checklist | Auth/API/payment code |
+| `/tdd-feature` | Test-driven development | Critical business logic |
+| `/week-update` | Progress documentation | Weekly updates |
+| `/parallel-ai` | Web search, data extraction | Any research needed |
+
+---
+
+## 🗄️ Database Schema
+
+### Core Tables
+
+```
+users           - User accounts (Supabase Auth)
+teams           - Organizations/teams
+team_members    - Team membership and roles
+subscriptions   - Stripe billing data
+workspaces      - Projects with mode and modules (within teams)
 ```
 
-**2. Create Migration**:
+### Feature Tables
+
+```
+work_items      - Top-level items (features, bugs, concepts, enhancements)
+timeline_items  - MVP/SHORT/LONG breakdowns
+linked_items    - Dependencies and relationships
+product_tasks   - Execution tasks
+```
+
+### Other Tables
+
+```
+mind_maps       - Canvas data (ReactFlow JSON)
+work_flows      - Hierarchical sub-canvases
+feedback        - User/stakeholder feedback
+user_phase_assignments    - Phase-based permissions
+phase_assignment_history  - Audit trail
+phase_access_requests     - Self-service permission requests
+```
+
+### Required Fields (ALL Tables)
+
 ```sql
--- supabase/migrations/20250111_add_new_field.sql
-ALTER TABLE features ADD COLUMN IF NOT EXISTS new_field TEXT;
-CREATE INDEX IF NOT EXISTS idx_features_new_field ON features(new_field);
-UPDATE features SET new_field = 'default' WHERE new_field IS NULL;
-```
+CREATE TABLE table_name (
+  id TEXT PRIMARY KEY,                    -- Date.now().toString(), NEVER UUID
+  team_id TEXT NOT NULL,                  -- CRITICAL for RLS! NEVER NULL!
+  -- ... other fields ...
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-**3. Update Sync Method**:
-```javascript
-// In supabaseService.js
-const featuresData = features.map(f => ({
-    // ... existing mappings
-    new_field: f.newField  // camelCase → snake_case
-}));
-```
+-- Enable RLS
+ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
 
-**4. Update Export/Import**:
-```javascript
-// Ensure new field is included in backup JSON
-```
+-- Create policy for team members
+CREATE POLICY "table_team_access" ON table_name
+FOR ALL USING (
+  team_id IN (
+    SELECT team_id FROM team_members
+    WHERE user_id = auth.uid()
+  )
+);
 
-### Creating Workspace-Scoped Features
-
-**Always include workspace context**:
-```javascript
-// ✅ Correct
-const createFeature = (title, description) => {
-    if (!this.currentWorkspaceId) {
-        throw new Error('No active workspace');
-    }
-
-    const feature = {
-        id: Date.now().toString(),
-        workspaceId: this.currentWorkspaceId,  // REQUIRED
-        title,
-        description,
-        timelineItems: [],
-        createdAt: new Date().toISOString()
-    };
-
-    return feature;
-};
-
-// ❌ Wrong - no workspace assignment
-const createFeature = (title, description) => {
-    return { id: Date.now().toString(), title, description };
-};
-```
-
-### Bidirectional Link Creation
-
-**Always maintain both directions**:
-```javascript
-const createLink = (sourceItemId, targetItemId, relationshipType) => {
-    const links = [
-        {
-            id: Date.now().toString(),
-            sourceItemId,
-            targetItemId,
-            relationshipType,  // 'dependency' or 'complements'
-            direction: 'outgoing'
-        },
-        {
-            id: (Date.now() + 1).toString(),
-            sourceItemId: targetItemId,
-            targetItemId: sourceItemId,
-            relationshipType,
-            direction: 'incoming'  // Reverse direction
-        }
-    ];
-
-    return links;
-};
+-- Create index for performance
+CREATE INDEX idx_table_team ON table_name(team_id);
 ```
 
 ---
 
-## Testing Guidelines
+## 🔐 Security Checklist
 
-### Before Committing
+### Before Every Commit
 
-1. **Manual Testing**:
-   - Test in actual browser (not just DevTools)
-   - Try with multiple workspaces
-   - Verify Supabase sync works
-   - Check localStorage cache
+- [ ] All queries filter by `team_id`
+- [ ] All tables have RLS enabled
+- [ ] No API keys in client code
+- [ ] Input validation with Zod schemas
+- [ ] Error messages don't leak data
+- [ ] No `any` types in TypeScript
+- [ ] No UUID usage (use timestamp IDs)
 
-2. **Automated Testing**:
-   ```plaintext
-   "Run Playwright tests for workspace CRUD operations"
-   ```
+### OWASP Top 10
 
-3. **Data Integrity**:
-   - Verify no orphaned features (features without workspace_id)
-   - Check bidirectional links are maintained
-   - Confirm timestamps are ISO 8601 format
+- [ ] **A01: Broken Access Control** - RLS policies on all tables
+- [ ] **A02: Cryptographic Failures** - No sensitive data in logs/URLs
+- [ ] **A03: Injection** - Parameterized queries (Supabase handles)
+- [ ] **A04: Insecure Design** - Auth on all protected routes
+- [ ] **A05: Security Misconfiguration** - Environment variables secured
+- [ ] **A06: Vulnerable Components** - Dependencies up to date
+- [ ] **A07: Auth Failures** - Proper session management
+- [ ] **A08: Data Integrity** - Input validation with Zod
+- [ ] **A09: Security Logging** - Audit trail for sensitive ops
+- [ ] **A10: SSRF** - Validate external URLs
 
-### Common Test Scenarios
+---
 
-```plaintext
-1. Create workspace → Add features → Switch workspace → Verify isolation
-2. Create link → Check both directions exist → Delete link → Verify cleanup
-3. Export data → Import in fresh browser → Verify all data restored
-4. Real-time: Open two browser tabs → Edit in one → Verify sync in other
+## 🧪 Testing Standards
+
+### Playwright E2E Tests
+
+Location: `next-app/e2e/`
+
+```typescript
+import { test, expect } from '@playwright/test'
+
+test.describe('Work Items', () => {
+  test.beforeEach(async ({ page }) => {
+    // Login and setup
+    await page.goto('/login')
+    await page.fill('[name="email"]', 'test@example.com')
+    await page.fill('[name="password"]', 'password')
+    await page.click('button[type="submit"]')
+  })
+
+  test('should create feature with design phase', async ({ page }) => {
+    await page.goto('/workspaces/test-workspace-id')
+    await page.click('[data-testid="create-work-item"]')
+    await page.fill('[name="name"]', 'Test Feature')
+    await page.selectOption('[name="type"]', 'feature')
+    await page.click('button:has-text("Create")')
+
+    // Verify default phase for feature is 'design'
+    await expect(page.locator('[data-testid="work-item-phase"]')).toContainText('design')
+  })
+})
+```
+
+**Test Coverage Requirements**:
+- [ ] Authentication flows
+- [ ] CRUD operations for all entities
+- [ ] RLS policy enforcement (can't access other team's data)
+- [ ] Type-aware phase transitions
+- [ ] Form validation
+
+---
+
+## 🎨 New Concepts (Post-Launch)
+
+### Versioning System
+
+Work items can be **enhanced** to create version chains:
+
+```
+Original Feature (v1)
+    └── Enhanced Feature (v2)
+         └── Enhanced Feature (v3)
+```
+
+**Database Fields**: `version`, `enhances_work_item_id`, `version_notes`
+
+### Review Process
+
+Review is **optional and detached** from phases:
+- Can be enabled/disabled per work item
+- Required before certain phase transitions (when enabled)
+- Applies to bugs (fixing → verified) and features (refine → launch)
+
+**Database Fields**: `review_enabled`, `review_status`, `review_requested_at`, `review_completed_at`, `review_reason`
+
+### Design Thinking Methodology
+
+Design Thinking is a **methodology/framework** for HOW to work, NOT lifecycle stages:
+- AI actively suggests Design Thinking methods
+- Shows guiding questions as tooltips
+- References case studies for inspiration
+- Maps to platform phases (Empathize/Define → design, Ideate/Prototype → build, Test → refine)
+
+### Strategy Alignment (Four-Tier Hierarchy)
+
+```
+ORGANIZATION STRATEGY (Pillars - Team-wide)
+    └── TEAM STRATEGY (Objectives - Department)
+         └── WORK ITEM STRATEGY (Alignment - Feature)
+              └── PROCESS STRATEGY (Methodology - Execution)
 ```
 
 ---
 
-## Performance Optimization
+## 📝 Documentation Rules
 
-### Database Queries
-- **Index frequently filtered columns**: `workspace_id`, `user_id`, `created_at`
-- **Batch operations**: Use Supabase batch insert/update when possible
-- **Limit data**: Don't load all workspaces if only using one
+### Update Triggers
 
-### Frontend
-- **Lazy load**: Load features only when workspace is selected
-- **Debounce saves**: Don't save on every keystroke (300ms debounce)
-- **Cache smartly**: Use localStorage to reduce API calls
+| Change Type | Update These Files |
+|-------------|-------------------|
+| **Database schema** | `CHANGELOG.md`, `database-schema.md`, regenerate types |
+| **API endpoint** | `API_REFERENCE.md`, `CHANGELOG.md` |
+| **Feature complete** | `week-X-Y.md`, `PROGRESS.md`, `CHANGELOG.md`, `NEXT_STEPS.md` |
+| **Tech stack** | `README.md`, `CLAUDE.md`, `.cursorrules` |
+| **Bug fix** | `CHANGELOG.md` only |
 
-### Supabase Real-time
-- **Subscribe selectively**: Only subscribe to current workspace's changes
-- **Unsubscribe on switch**: Clean up subscriptions when switching workspaces
+### File Creation Rules
 
----
-
-## Security Considerations
-
-### API Keys
-- **Never commit**: API keys in `.env` files (already in `.gitignore`)
-- **Use anon key**: Client-side uses Supabase anon key only
-- **Service role key**: Only for backend/migration scripts (not in browser)
-
-### Data Validation
-```javascript
-// ✅ Validate user input
-const createWorkspace = (name, description) => {
-    if (!name || name.trim().length === 0) {
-        throw new Error('Workspace name is required');
-    }
-    if (name.length > 100) {
-        throw new Error('Workspace name too long (max 100 chars)');
-    }
-    // ... create workspace
-};
-```
-
-### SQL Injection Prevention
-- **Use parameterized queries**: Supabase client handles this automatically
-- **Never concatenate user input into SQL strings**
+| Need | Location | Convention |
+|------|----------|------------|
+| Migration | `supabase/migrations/` | `YYYYMMDDHHMMSS_[action]_[table].sql` |
+| API route | `next-app/src/app/api/[resource]/` | `route.ts` |
+| Component | `next-app/src/components/[feature]/` | `[name].tsx` (kebab-case) |
+| Types | `next-app/src/lib/types/` | **EXTEND** existing file |
 
 ---
 
-## Deployment Workflow
+## 🚀 Quick Commands
 
-### Standard Process
+### Development
 ```bash
-# 1. Test locally
-npm install
-# Open index.html in browser
-
-# 2. Apply migrations (if any)
-npx supabase db push
-
-# 3. Commit changes
-git add .
-git commit -m "feat: add priority field to features"
-git push origin main
-
-# 4. Deploy to Vercel
-vercel --prod
-
-# 5. Verify production
-# Visit https://platform-test-cyan.vercel.app
+npm run dev              # Start dev server (localhost:3000 ONLY)
+npm run build            # Build for production
+npm run lint             # Run ESLint
+npx tsc --noEmit         # Type check
 ```
 
-### Using Vercel MCP
-```plaintext
-You: "Deploy to production and check if the build succeeded"
-Cursor: [Uses Vercel MCP to deploy, monitors logs, reports status]
+### Database
+```bash
+npx supabase db push                              # Apply migrations
+npx supabase gen types typescript                 # Generate types
+npx supabase gen types typescript > next-app/src/lib/supabase/types.ts
+```
+
+### Testing
+```bash
+npm run test:e2e                                  # Playwright E2E (all browsers)
+npm run test:e2e:chrome                           # Chrome only
+npm run test:e2e:chrome -- e2e/04-work-items.spec.ts  # Targeted test
+npm run check:links                               # Validate doc links
 ```
 
 ---
 
-## Error Handling
+## ⚠️ Critical Reminders
 
-### Supabase Errors
-```javascript
-try {
-    const { data, error } = await supabase
-        .from('features')
-        .insert(featureData);
+### Always
+- ✅ Timestamp IDs: `Date.now().toString()`
+- ✅ Filter by `team_id` in ALL queries
+- ✅ Enable RLS on ALL tables
+- ✅ `team_id TEXT NOT NULL` (NULL breaks RLS silently!)
+- ✅ TypeScript strict mode, no `any`
+- ✅ shadcn/ui components only
+- ✅ Mobile-first design
+- ✅ Check Pro tier feature gates
 
-    if (error) {
-        // Log full error for debugging
-        console.error('Supabase error:', error);
-
-        // Show user-friendly message
-        showNotification('Failed to save feature. Please try again.', 'error');
-        return null;
-    }
-
-    return data;
-} catch (err) {
-    console.error('Unexpected error:', err);
-    showNotification('An unexpected error occurred.', 'error');
-    return null;
-}
-```
-
-### Network Failures
-```javascript
-const syncWithRetry = async (data, maxRetries = 3) => {
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            await supabaseService.syncData(data);
-            return true;
-        } catch (err) {
-            console.warn(`Sync attempt ${i + 1} failed:`, err);
-            if (i === maxRetries - 1) {
-                showNotification('Sync failed. Data saved locally.', 'warning');
-                return false;
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-        }
-    }
-};
-```
+### Never
+- ❌ UUID for IDs
+- ❌ Skip RLS policies
+- ❌ Skip team_id filtering
+- ❌ Allow NULL team_id
+- ❌ Custom CSS files
+- ❌ Hardcode API keys
+- ❌ Use `workspace_id` for isolation (use `team_id`)
+- ❌ Separate status field for work items (phase IS the status)
 
 ---
 
-## AI Assistant Behavior
+**Ready to build! 🚀**
 
-### When Using MCPs
-- **Prefer MCP tools** over manual file editing for database/deployment tasks
-- **Use Supabase MCP** for all SQL operations, migrations, and RLS policies
-- **Use Vercel MCP** for deployments, environment variables, and monitoring
-- **Use Playwright MCP** for E2E testing and user flow validation
-- **Use shadcn/ui** for UI components (not external generation tools)
-
-### Code Generation Preferences
-- **TypeScript Strict Mode**: Always use explicit types, avoid `any`, prefer `unknown`
-- **Next.js 15 Best Practices**: App Router, Server Components (RSC), Server Actions
-- **shadcn/ui Components**: Use pre-built components from shadcn/ui library
-- **Tailwind CSS**: Utility-first styling, avoid custom CSS files
-- **Accessibility-first**: ARIA labels, semantic HTML, keyboard navigation
-- **Mobile-responsive**: Mobile-first design with Tailwind breakpoints
-
-### Documentation
-- **Comment complex logic**: Especially AI-related algorithms
-- **Update CLAUDE.md**: When architecture changes
-- **Migration comments**: Explain WHY, not just WHAT
-- **Inline JSDoc**: For public functions
-
----
-
-## Quick Reference
-
-### File Structure
-```
-Platform Test/
-├── index.html              # Main application UI
-├── css/
-│   ├── variables.css       # CSS custom properties (colors, spacing)
-│   ├── base.css           # Reset and base styles
-│   ├── components.css     # Reusable component styles
-│   └── views.css          # View-specific styles
-├── js/
-│   ├── services/
-│   │   ├── supabase.js    # Supabase client and sync logic
-│   │   ├── ai-service.js  # AI integration (Claude/GPT)
-│   │   └── search-orchestrator.js  # Search functionality
-│   └── data/
-│       └── sample-data.js # Sample workspace/feature data
-├── supabase/
-│   └── migrations/        # Database migration SQL files
-├── mcp-ui-server.js       # Custom MCP server
-├── CLAUDE.md              # Project guidelines (YOU ARE HERE)
-├── CURSOR_SETUP_GUIDE.md  # Cursor MCP setup instructions
-└── .cursorrules           # Cursor AI behavior rules
-```
-
-### Important Constants
-```javascript
-USER_ID = 'default'                    // Single-user mode
-TIMELINE_TYPES = ['MVP', 'SHORT', 'LONG']
-RELATIONSHIP_TYPES = ['dependency', 'complements']
-DIRECTIONS = ['incoming', 'outgoing']
-```
-
-### Color Palette (CSS Variables)
-```css
---primary-blue: #3B82F6
---primary-dark: #1E40AF
---success-green: #10B981
---warning-yellow: #F59E0B
---danger-red: #EF4444
---neutral-gray: #6B7280
-```
-
----
-
-## Troubleshooting Common Issues
-
-### Features Not Showing After Workspace Switch
-**Cause**: Features not filtered by `workspace_id`
-**Fix**: Ensure all queries include `.eq('workspace_id', currentWorkspaceId)`
-
-### Import Fails with "Invalid Data"
-**Cause**: Backup JSON missing `version` field or wrong structure
-**Fix**: Check backup has `{ version: '2.0', workspaces: [...], features: [...] }`
-
-### Supabase Sync Fails Silently
-**Cause**: RLS policies blocking inserts, or network issues
-**Fix**: Check browser console, verify Supabase project is active
-
-### Duplicate Links Created
-**Cause**: Bidirectional links not checked before creation
-**Fix**: Check if link exists before creating (both directions)
-
-### Workspace Selector Empty
-**Cause**: No workspaces in database, or failed to load
-**Fix**: Run `migrate_existing_data.sql` or create first workspace
-
----
-
-## Version History
-
-- **v2.0** (2025-01-11): Multi-workspace support, Supabase sync, MCP integration
-- **v1.0** (2024): Initial single-workspace localStorage-only version
-
----
-
-**Last Updated**: 2025-01-11
-**Cursor Setup Guide**: [CURSOR_SETUP_GUIDE.md](CURSOR_SETUP_GUIDE.md)
-**Main Guidelines**: [CLAUDE.md](CLAUDE.md)
+See `docs/ARCHITECTURE_CONSOLIDATION.md` for complete architecture reference.
+See `docs/implementation/README.md` for detailed implementation steps.
