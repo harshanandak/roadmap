@@ -8,6 +8,7 @@ import {
   type BugPhase,
   getPhaseIndex,
   canTransitionTo,
+  getBugPhaseConfig,
 } from '@/lib/bug/workflow'
 import {
   Tooltip,
@@ -204,7 +205,7 @@ export function BugPhaseStepperInline({
                   )}
                   style={isCurrent ? {
                     backgroundColor: phaseConfig.color,
-                    ringColor: phaseConfig.color,
+                    ['--tw-ring-color' as string]: phaseConfig.color,
                   } : undefined}
                 />
               </TooltipTrigger>

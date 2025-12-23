@@ -101,7 +101,7 @@ export function BugTriageForm({
                 )}
                 style={isSelected ? {
                   borderColor: config.color,
-                  ringColor: config.color,
+                  ['--tw-ring-color' as string]: config.color,
                 } : undefined}
               >
                 <div className="flex items-center gap-2">
