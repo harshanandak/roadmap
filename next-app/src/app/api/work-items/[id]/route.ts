@@ -170,6 +170,12 @@ export async function PATCH(
 
       const { canTransitionConcept } = await import('@/lib/concept/workflow')
       const currentConceptPhase = currentItem.phase as ConceptPhase
+      if (!CONCEPT_PHASES.includes(currentConceptPhase)) {
+        return NextResponse.json(
+          { error: `Invalid current phase: ${currentConceptPhase}. Data integrity issue.` },
+          { status: 500 }
+        )
+      }
       const targetConceptPhase = body.phase as ConceptPhase
 
       if (!canTransitionConcept(currentConceptPhase, targetConceptPhase)) {
