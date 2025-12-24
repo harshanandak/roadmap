@@ -395,16 +395,13 @@ git push
 ## Reference Documentation
 
 ### Implementation Guides
-- **GitHub Setup**: [docs/reference/GITHUB_SETUP.md](../reference/GITHUB_SETUP.md)
-- **Full Developer Workflow**: [docs/reference/DEVELOPER_WORKFLOW.md](../reference/DEVELOPER_WORKFLOW.md)
-- **Git Workflow Rules**: [.claude/rules/git-workflow.md](../../.claude/rules/git-workflow.md)
+- **GitHub Setup**: [GITHUB_SETUP.md](GITHUB_SETUP.md)
+- **Full Developer Workflow**: [DEVELOPER_WORKFLOW.md](DEVELOPER_WORKFLOW.md)
+- **Git Workflow Rules**: See `.claude/rules/git-workflow.md`
 
 ### Quick References
 - **CLAUDE.md** - Phase commands table
-- **PR Template**: [.github/pull_request_template.md](../../.github/pull_request_template.md)
-
-### Implementation Plan
-- **Original Plan**: `C:\Users\harsh\.claude\plans\reflective-launching-coral.md`
+- **PR Template**: See `.github/pull_request_template.md`
 
 ---
 
