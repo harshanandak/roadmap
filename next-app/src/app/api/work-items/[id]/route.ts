@@ -15,6 +15,35 @@ import {
 import { calculateWorkItemPhase, isValidPhaseTransition, migratePhase } from '@/lib/constants/workspace-phases'
 import type { WorkspacePhase } from '@/lib/constants/workspace-phases'
 
+/** Typed update payload for work items */
+interface WorkItemUpdateData {
+  updated_at: string
+  name?: string
+  purpose?: string
+  type?: string
+  target_release?: string | null
+  acceptance_criteria?: string | null
+  business_value?: string | null
+  customer_impact?: string | null
+  strategic_alignment?: string | null
+  estimated_hours?: number | null
+  priority?: string
+  actual_start_date?: string | null
+  actual_end_date?: string | null
+  actual_hours?: number | null
+  progress_percent?: number | null
+  title?: string
+  description?: string | null
+  status?: string
+  has_timeline_breakdown?: boolean
+  assigned_to?: string | null
+  is_mind_map_conversion?: boolean
+  rejection_reason?: string | null
+  archived?: boolean
+  phase?: WorkspacePhase
+  metadata?: Record<string, unknown>
+}
+
 /**
  * GET /api/work-items/[id]
  *
@@ -126,7 +155,7 @@ export async function PATCH(
     }
 
     // 5. Prepare update data (merge with current values)
-    const updateData: any = {
+    const updateData: WorkItemUpdateData = {
       updated_at: new Date().toISOString(),
     }
 
