@@ -14,6 +14,7 @@ import {
 } from '@/lib/middleware/permission-middleware'
 import { calculateWorkItemPhase, isValidPhaseTransition, migratePhase } from '@/lib/constants/workspace-phases'
 import type { WorkspacePhase } from '@/lib/constants/workspace-phases'
+import { CONCEPT_PHASES, type ConceptPhase } from '@/lib/concept/workflow'
 
 /** Typed update payload for work items */
 interface WorkItemUpdateData {
@@ -34,7 +35,6 @@ interface WorkItemUpdateData {
   progress_percent?: number | null
   title?: string
   description?: string | null
-  status?: string
   has_timeline_breakdown?: boolean
   assigned_to?: string | null
   is_mind_map_conversion?: boolean
@@ -42,6 +42,8 @@ interface WorkItemUpdateData {
   archived?: boolean
   phase?: WorkspacePhase
   metadata?: Record<string, unknown>
+  review_enabled?: boolean
+  review_status?: string | null
 }
 
 /**
@@ -140,15 +142,49 @@ export async function PATCH(
       }
     }
 
-    // Validate concept phase transitions
-    if (currentItem.type === 'concept' && body.status !== undefined) {
+    // Validate rejection_reason length (10-5000 characters)
+    if (body.rejection_reason !== undefined && body.rejection_reason !== null) {
+      const reasonLength = body.rejection_reason.trim().length
+      if (reasonLength > 0 && reasonLength < 10) {
+        return NextResponse.json(
+          { error: 'Rejection reason must be at least 10 characters' },
+          { status: 400 }
+        )
+      }
+      if (reasonLength > 5000) {
+        return NextResponse.json(
+          { error: 'Rejection reason cannot exceed 5000 characters' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Validate concept phase transitions (if type is concept and phase is changing)
+    if (currentItem.type === 'concept' && body.phase !== undefined && body.phase !== currentItem.phase) {
+      // Validate both phases are valid concept phases before casting
+      if (!CONCEPT_PHASES.includes(body.phase as ConceptPhase)) {
+        return NextResponse.json(
+          { error: `Invalid concept phase: ${body.phase}. Must be one of: ${CONCEPT_PHASES.join(', ')}` },
+          { status: 400 }
+        )
+      }
+
       const { canTransitionConcept } = await import('@/lib/concept/workflow')
-      const currentConceptPhase = currentItem.status as 'ideation' | 'research' | 'validated' | 'rejected'
-      const targetConceptPhase = body.status as 'ideation' | 'research' | 'validated' | 'rejected'
+      const currentConceptPhase = currentItem.phase as ConceptPhase
+      if (!CONCEPT_PHASES.includes(currentConceptPhase)) {
+        return NextResponse.json(
+          { error: `Invalid current phase: ${currentConceptPhase}. Data integrity issue.` },
+          { status: 500 }
+        )
+      }
+      const targetConceptPhase = body.phase as ConceptPhase
 
       if (!canTransitionConcept(currentConceptPhase, targetConceptPhase)) {
         return NextResponse.json(
-          { error: `Invalid concept phase transition from ${currentConceptPhase} to ${targetConceptPhase}` },
+          {
+            error: 'Invalid concept phase transition',
+            allowed_transitions: ['ideation→research', 'research→validated/rejected', 'any→rejected'],
+          },
           { status: 400 }
         )
       }
@@ -179,24 +215,28 @@ export async function PATCH(
     if (body.actual_hours !== undefined) updateData.actual_hours = body.actual_hours
     if (body.progress_percent !== undefined) updateData.progress_percent = body.progress_percent
 
-    // Legacy fields (for backward compatibility)
+    // Additional work item fields
     if (body.title !== undefined) updateData.title = body.title
     if (body.description !== undefined) updateData.description = body.description
-    if (body.status !== undefined) updateData.status = body.status
     if (body.has_timeline_breakdown !== undefined) updateData.has_timeline_breakdown = body.has_timeline_breakdown
     if (body.assigned_to !== undefined) updateData.assigned_to = body.assigned_to
     if (body.is_mind_map_conversion !== undefined) updateData.is_mind_map_conversion = body.is_mind_map_conversion
 
     // Concept workflow fields
+    if (body.phase !== undefined) updateData.phase = body.phase
+    if (body.metadata !== undefined) updateData.metadata = body.metadata
     if (body.rejection_reason !== undefined) updateData.rejection_reason = body.rejection_reason
     if (body.archived !== undefined) updateData.archived = body.archived
+    if (body.review_enabled !== undefined) updateData.review_enabled = body.review_enabled
+    if (body.review_status !== undefined) updateData.review_status = body.review_status
 
     // 6. Recalculate phase if relevant fields changed
     // Updated 2025-12-13: Always recalculate phase based on merged data
+    // Note: phase IS the status per architecture - no separate status field
     const mergedItem = {
       ...currentItem,
       ...updateData,
-      status: updateData.status ?? currentItem.status,
+      phase: updateData.phase ?? currentItem.phase,
       has_timeline_breakdown: updateData.has_timeline_breakdown ?? currentItem.has_timeline_breakdown,
       assigned_to: updateData.assigned_to ?? currentItem.assigned_to,
       is_mind_map_conversion: updateData.is_mind_map_conversion ?? currentItem.is_mind_map_conversion,

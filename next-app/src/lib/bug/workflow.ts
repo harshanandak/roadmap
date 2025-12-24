@@ -53,7 +53,7 @@ export interface BugTriageData {
  * Extended metadata for bugs stored in work_items.metadata
  */
 export interface BugMetadata {
-  triage?: BugTriageData
+  triage?: Partial<BugTriageData>
   investigation?: {
     rootCause?: string
     affectedAreas?: string[]
@@ -255,7 +255,7 @@ export function getAllowedTransitions(currentPhase: BugPhase): BugPhase[] {
 /**
  * Check if triage data is complete enough to proceed
  */
-export function isTriageComplete(triage?: BugTriageData): boolean {
+export function isTriageComplete(triage?: Partial<BugTriageData>): boolean {
   if (!triage) return false
   // Severity is required
   if (!triage.severity) return false
@@ -269,7 +269,7 @@ export function isTriageComplete(triage?: BugTriageData): boolean {
 /**
  * Get missing triage fields
  */
-export function getMissingTriageFields(triage?: BugTriageData): string[] {
+export function getMissingTriageFields(triage?: Partial<BugTriageData>): string[] {
   const missing: string[] = []
   if (!triage?.severity) missing.push('Severity')
   if (triage?.reproducible === undefined) missing.push('Reproducible status')
@@ -282,7 +282,7 @@ export function getMissingTriageFields(triage?: BugTriageData): string[] {
 /**
  * Get triage completion percentage
  */
-export function getTriageCompletionPercent(triage?: BugTriageData): number {
+export function getTriageCompletionPercent(triage?: Partial<BugTriageData>): number {
   if (!triage) return 0
 
   let completed = 0
@@ -380,7 +380,7 @@ export function createInitialTriageData(): Partial<BugTriageData> {
  */
 export function createInitialBugMetadata(): BugMetadata {
   return {
-    triage: createInitialTriageData() as BugTriageData,
+    triage: createInitialTriageData(),
   }
 }
 
@@ -391,7 +391,32 @@ export function parseBugMetadata(metadata: unknown): BugMetadata {
   if (!metadata || typeof metadata !== 'object') {
     return {}
   }
-  return metadata as BugMetadata
+
+  // Validate structure before casting
+  const parsed = metadata as Record<string, unknown>
+  const result: BugMetadata = {}
+
+  // Validate triage data if present
+  if (parsed.triage && typeof parsed.triage === 'object') {
+    result.triage = parsed.triage as Partial<BugTriageData>
+  }
+
+  // Validate investigation data if present
+  if (parsed.investigation && typeof parsed.investigation === 'object') {
+    result.investigation = parsed.investigation as BugMetadata['investigation']
+  }
+
+  // Validate fix data if present
+  if (parsed.fix && typeof parsed.fix === 'object') {
+    result.fix = parsed.fix as BugMetadata['fix']
+  }
+
+  // Validate verification data if present
+  if (parsed.verification && typeof parsed.verification === 'object') {
+    result.verification = parsed.verification as BugMetadata['verification']
+  }
+
+  return result
 }
 
 /**

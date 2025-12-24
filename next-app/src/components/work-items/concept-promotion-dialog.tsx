@@ -3,15 +3,11 @@
 /**
  * Concept Promotion Dialog
  *
- * Dialog for promoting a validated concept to a feature work item.
- * Shows when a concept reaches the 'validated' phase and offers two paths:
- * 1. Promote to Feature - Creates a new feature linked to the concept
- * 2. Keep as Concept - Marks as validated without creating a feature
- *
- * @module components/work-items/concept-promotion-dialog
+ * Allows promoting a validated concept to a feature work item.
+ * Creates a new feature with `enhances_work_item_id` linking to the concept.
  */
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Dialog,
@@ -22,311 +18,163 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
-import {
-  Loader2,
-  Lightbulb,
-  ArrowRight,
-  Rocket,
-  CheckCircle2,
-  Sparkles,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { getTypePhaseConfig } from '@/lib/constants/workspace-phases'
+import { Loader2, Rocket } from 'lucide-react'
 
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
-
-/**
- * Minimal work item interface for concept promotion
- */
 export interface ConceptForPromotion {
   id: string
   name: string
-  title?: string // Some places use title, others use name
-  purpose?: string | null
-  description?: string | null
-  team_id: string
+  description: string | null
   workspace_id: string
-  phase: string
-  type: string
-  tags?: string[] | null
+  team_id: string
 }
 
-/**
- * Props for ConceptPromotionDialog
- */
 export interface ConceptPromotionDialogProps {
-  /** The validated concept to potentially promote */
-  concept: ConceptForPromotion | null
-  /** Whether the dialog is open */
+  concept: ConceptForPromotion
   open: boolean
-  /** Callback when dialog open state changes */
   onOpenChange: (open: boolean) => void
-  /** Callback when feature is created from concept */
-  onPromote?: (featureId: string) => void
-  /** Callback when user chooses to keep as concept */
-  onKeepAsConcept?: () => void
+  onPromote: (featureId: string) => void
 }
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
-
-/**
- * Dialog component for promoting a validated concept to a feature
- *
- * @example
- * ```tsx
- * <ConceptPromotionDialog
- *   concept={validatedConcept}
- *   open={showPromotionDialog}
- *   onOpenChange={setShowPromotionDialog}
- *   onPromote={(id) => router.push(`/work-items/${id}`)}
- * />
- * ```
- */
 export function ConceptPromotionDialog({
   concept,
   open,
   onOpenChange,
   onPromote,
-  onKeepAsConcept,
 }: ConceptPromotionDialogProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [featureTitle, setFeatureTitle] = useState('')
-  const [featureDescription, setFeatureDescription] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [featureName, setFeatureName] = useState(concept.name)
+  const [featureDescription, setFeatureDescription] = useState(
+    concept.description || ''
+  )
 
-  // Initialize form when concept changes
-  useState(() => {
-    if (concept) {
-      setFeatureTitle(concept.title || concept.name || '')
-      setFeatureDescription(concept.description || concept.purpose || '')
+  const handlePromote = async () => {
+    if (!featureName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Feature name is required',
+        variant: 'destructive',
+      })
+      return
     }
-  })
 
-  /**
-   * Handle promoting concept to feature
-   */
-  const handlePromote = useCallback(async () => {
-    if (!concept) return
-
-    setIsSubmitting(true)
+    setLoading(true)
     try {
       const response = await fetch('/api/work-items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          name: featureName.trim(),
+          description: featureDescription.trim() || null,
           type: 'feature',
-          phase: 'design',
-          name: featureTitle || concept.title || concept.name,
-          title: featureTitle || concept.title || concept.name,
-          purpose: featureDescription || concept.description || concept.purpose,
-          description: featureDescription || concept.description || concept.purpose,
-          enhances_work_item_id: concept.id, // Link to original concept
-          version: 1,
+          phase: 'design', // Start in design phase
+          priority: 'medium',
           workspace_id: concept.workspace_id,
           team_id: concept.team_id,
-          tags: concept.tags,
+          enhances_work_item_id: concept.id, // Link to concept
         }),
       })
 
-      const result = await response.json()
-
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create feature')
+        throw new Error('Failed to create feature')
       }
+
+      const { data: newFeature } = await response.json()
 
       toast({
         title: 'Concept Promoted!',
-        description: 'Created new feature from validated concept',
+        description: `Feature "${featureName}" created successfully`,
       })
 
+      // Close dialog and notify parent
       onOpenChange(false)
       router.refresh()
-      onPromote?.(result.id || result.work_item?.id)
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Could not promote concept'
+      onPromote(newFeature.id)
+    } catch (error) {
+      console.error('Failed to promote concept:', error)
       toast({
         title: 'Promotion Failed',
-        description: message,
+        description: 'Could not create feature. Please try again.',
         variant: 'destructive',
       })
     } finally {
-      setIsSubmitting(false)
+      setLoading(false)
     }
-  }, [
-    concept,
-    featureTitle,
-    featureDescription,
-    toast,
-    router,
-    onOpenChange,
-    onPromote,
-  ])
-
-  /**
-   * Handle keeping concept without promotion
-   */
-  const handleKeepAsConcept = useCallback(() => {
-    onOpenChange(false)
-    onKeepAsConcept?.()
-    toast({
-      title: 'Concept Validated',
-      description: 'Concept marked as validated without feature creation',
-    })
-  }, [onOpenChange, onKeepAsConcept, toast])
-
-  if (!concept) return null
-
-  // Get phase configs for display
-  const conceptPhaseConfig = getTypePhaseConfig('concept', 'validated')
-  const featurePhaseConfig = getTypePhaseConfig('feature', 'design')
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-green-600" />
-            Concept Validated - Ready to Promote?
+            <Rocket className="h-5 w-5 text-green-600" />
+            Promote to Feature
           </DialogTitle>
           <DialogDescription>
-            Your concept has been validated! You can now promote it to a feature
-            to begin the design and development process.
+            Create a new feature work item from this validated concept.
+            The new feature will link to this concept for traceability.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Concept Summary */}
-          <div className="space-y-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 text-green-600" />
-                <span className="font-medium">Validated Concept</span>
-              </div>
-              {conceptPhaseConfig && (
-                <Badge className={cn(conceptPhaseConfig.bgColor, conceptPhaseConfig.textColor)}>
-                  {conceptPhaseConfig.emoji} {conceptPhaseConfig.name}
-                </Badge>
-              )}
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">
-                {concept.title || concept.name}
-              </h3>
-              {(concept.description || concept.purpose) && (
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-3">
-                  {concept.description || concept.purpose}
-                </p>
-              )}
-            </div>
+        <div className="space-y-4 py-4">
+          {/* Feature Name */}
+          <div className="space-y-2">
+            <Label htmlFor="feature-name">
+              Feature Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="feature-name"
+              value={featureName}
+              onChange={(e) => setFeatureName(e.target.value)}
+              placeholder="Enter feature name..."
+              disabled={loading}
+            />
           </div>
 
-          {/* Promotion Arrow */}
-          <div className="flex items-center justify-center">
-            <ArrowRight className="h-5 w-5 text-muted-foreground" />
+          {/* Feature Description */}
+          <div className="space-y-2">
+            <Label htmlFor="feature-description">Description</Label>
+            <Textarea
+              id="feature-description"
+              value={featureDescription}
+              onChange={(e) => setFeatureDescription(e.target.value)}
+              placeholder="Describe what this feature will do..."
+              rows={4}
+              disabled={loading}
+              className="resize-none"
+            />
           </div>
 
-          {/* Feature Creation Form */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Rocket className="h-4 w-4 text-violet-600" />
-                <span className="font-medium">New Feature</span>
-              </div>
-              {featurePhaseConfig && (
-                <Badge className={cn(featurePhaseConfig.bgColor, featurePhaseConfig.textColor)}>
-                  {featurePhaseConfig.emoji} {featurePhaseConfig.name}
-                </Badge>
-              )}
-            </div>
-
-            {/* Feature Title */}
-            <div className="space-y-2">
-              <Label htmlFor="feature-title">Feature Title</Label>
-              <Input
-                id="feature-title"
-                placeholder="E.g., User Authentication System"
-                value={featureTitle}
-                onChange={(e) => setFeatureTitle(e.target.value)}
-                maxLength={200}
-              />
-              <p className="text-xs text-muted-foreground">
-                Pre-filled with concept title. Customize if needed.
-              </p>
-            </div>
-
-            {/* Feature Description */}
-            <div className="space-y-2">
-              <Label htmlFor="feature-description">Description</Label>
-              <Textarea
-                id="feature-description"
-                placeholder="Describe the feature and its goals..."
-                value={featureDescription}
-                onChange={(e) => setFeatureDescription(e.target.value)}
-                rows={4}
-              />
-            </div>
-
-            {/* Info Box */}
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-xs text-blue-900 dark:text-blue-100">
-                <strong>What happens next:</strong> A new feature will be created
-                in the <strong>Design</strong> phase, linked to this concept. The
-                concept will remain as a reference for the research and validation
-                that led to this feature.
-              </p>
-            </div>
+          {/* Info Message */}
+          <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+            <p className="font-medium">What happens next:</p>
+            <ul className="mt-1 list-inside list-disc space-y-1 text-xs">
+              <li>New feature created in Design phase</li>
+              <li>Linked to this concept for traceability</li>
+              <li>You'll be redirected to the new feature</li>
+            </ul>
           </div>
         </div>
 
-        <Separator />
-
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          {/* Keep as Concept option */}
+        <DialogFooter>
           <Button
             variant="outline"
-            onClick={handleKeepAsConcept}
-            disabled={isSubmitting}
-            className="sm:mr-auto"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
           >
-            <CheckCircle2 className="mr-2 h-4 w-4" />
-            Keep as Validated Concept
+            Cancel
           </Button>
-
-          {/* Cancel / Promote */}
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handlePromote}
-              disabled={isSubmitting || !featureTitle.trim()}
-              className="bg-violet-600 hover:bg-violet-700 text-white"
-            >
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Rocket className="mr-2 h-4 w-4" />
-              {isSubmitting ? 'Creating...' : 'Promote to Feature'}
-            </Button>
-          </div>
+          <Button onClick={handlePromote} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Create Feature
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
-
-export default ConceptPromotionDialog

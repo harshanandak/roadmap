@@ -20,6 +20,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -32,6 +42,7 @@ import { ConceptRejectionDialog } from './concept-rejection-dialog'
 
 // Workflow logic
 import {
+  CONCEPT_PHASES,
   canTransitionConcept,
   getConceptPhaseConfig,
   getConceptColors,
@@ -49,26 +60,35 @@ export function ConceptWorkflowPanel() {
 
   const [showPromotionDialog, setShowPromotionDialog] = useState(false)
   const [showRejectionDialog, setShowRejectionDialog] = useState(false)
+  const [showAdvanceDialog, setShowAdvanceDialog] = useState(false)
+  const [pendingPhase, setPendingPhase] = useState<ConceptPhase | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   // Track previous phase to detect validation
-  const prevPhaseRef = useRef(workItem.status as ConceptPhase)
+  const prevPhaseRef = useRef(workItem.phase as ConceptPhase)
 
   // Auto-show promotion dialog when validated
   useEffect(() => {
-    const currentPhase = workItem.status as ConceptPhase
+    const currentPhase = workItem.phase as ConceptPhase
     if (prevPhaseRef.current !== 'validated' && currentPhase === 'validated') {
       setShowPromotionDialog(true)
     }
     prevPhaseRef.current = currentPhase
-  }, [workItem.status])
+  }, [workItem.phase])
 
   // Only show for concepts
   if (!workItem || workItem.type !== 'concept') {
     return null
   }
 
-  const currentPhase = workItem.status as ConceptPhase
+  const currentPhase = workItem.phase as ConceptPhase
+
+  // Validate phase is a valid ConceptPhase
+  if (!CONCEPT_PHASES.includes(currentPhase)) {
+    console.warn(`Invalid concept phase: ${currentPhase}`)
+    return null
+  }
+
   const phaseConfig = getConceptPhaseConfig(currentPhase)
   if (!phaseConfig) return null
 
@@ -91,7 +111,7 @@ export function ConceptWorkflowPanel() {
       const response = await fetch(`/api/work-items/${workItem.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: targetPhase }),
+        body: JSON.stringify({ phase: targetPhase }),
       })
 
       if (!response.ok) {
@@ -100,7 +120,7 @@ export function ConceptWorkflowPanel() {
       }
 
       // Optimistic update
-      updateWorkItem({ status: targetPhase })
+      updateWorkItem({ phase: targetPhase })
 
       toast({
         title: 'Phase updated',
@@ -118,7 +138,7 @@ export function ConceptWorkflowPanel() {
       console.error('Phase transition error:', error)
       toast({
         title: 'Update failed',
-        description: error instanceof Error ? error.message : 'Could not update concept phase',
+        description: 'Could not update concept phase. Please try again.',
         variant: 'destructive',
       })
     } finally {
@@ -134,7 +154,7 @@ export function ConceptWorkflowPanel() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status: 'rejected',
+          phase: 'rejected',
           rejection_reason: reason,
           archived: archive,
         }),
@@ -147,7 +167,7 @@ export function ConceptWorkflowPanel() {
 
       // Optimistic update
       updateWorkItem({
-        status: 'rejected',
+        phase: 'rejected',
         rejection_reason: reason,
         archived: archive,
       })
@@ -166,7 +186,7 @@ export function ConceptWorkflowPanel() {
       console.error('Rejection error:', error)
       toast({
         title: 'Rejection failed',
-        description: error instanceof Error ? error.message : 'Could not reject concept',
+        description: 'Could not reject concept. Please try again.',
         variant: 'destructive',
       })
     } finally {
@@ -235,11 +255,11 @@ export function ConceptWorkflowPanel() {
           </div>
 
           {/* Rejection Reason (if rejected) */}
-          {currentPhase === 'rejected' && (workItem as any).rejection_reason && (
+          {currentPhase === 'rejected' && workItem.rejection_reason && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Rejection Reason:</strong> {(workItem as any).rejection_reason}
+                <strong>Rejection Reason:</strong> {workItem.rejection_reason}
               </AlertDescription>
             </Alert>
           )}
@@ -253,9 +273,8 @@ export function ConceptWorkflowPanel() {
                   onClick={() => {
                     const action = phaseConfig.actions.primary!
                     if (action.requiresConfirmation) {
-                      if (confirm(`Are you sure you want to ${action.label.toLowerCase()}?`)) {
-                        handlePhaseTransition(action.targetPhase)
-                      }
+                      setPendingPhase(action.targetPhase)
+                      setShowAdvanceDialog(true)
                     } else {
                       handlePhaseTransition(action.targetPhase)
                     }
@@ -285,7 +304,13 @@ export function ConceptWorkflowPanel() {
 
       {/* Dialogs */}
       <ConceptPromotionDialog
-        concept={workItem as any}
+        concept={{
+          id: workItem.id,
+          name: workItem.title, // WorkItemData uses 'title', DB uses 'name'
+          description: workItem.description,
+          workspace_id: workItem.workspace_id,
+          team_id: workItem.team_id,
+        }}
         open={showPromotionDialog}
         onOpenChange={setShowPromotionDialog}
         onPromote={(featureId) => {
@@ -300,6 +325,29 @@ export function ConceptWorkflowPanel() {
         onConfirm={handleRejection}
         conceptName={workItem.title}
       />
+
+      {/* Advance Confirmation Dialog */}
+      <AlertDialog open={showAdvanceDialog} onOpenChange={setShowAdvanceDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Phase Transition</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {phaseConfig.actions.primary?.label.toLowerCase()}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingPhase) handlePhaseTransition(pendingPhase)
+                setShowAdvanceDialog(false)
+              }}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -21,3 +21,41 @@ if [ "$branch" = "main" ]; then
 fi
 
 echo "✅ Pushing to branch: $branch"
+echo ""
+
+# Run TypeScript type check
+echo "🔍 Running TypeScript type check..."
+cd next-app
+npx tsc --noEmit
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ TypeScript errors found. Fix them before pushing."
+  echo ""
+  echo "To skip this check (emergency only):"
+  echo "  git push --no-verify"
+  echo ""
+  cd ..
+  exit 1
+fi
+echo "✅ TypeScript check passed"
+echo ""
+
+# Run ESLint
+echo "🔍 Running ESLint..."
+npx eslint src --max-warnings 0
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ ESLint errors/warnings found. Fix them before pushing."
+  echo ""
+  echo "To skip this check (emergency only):"
+  echo "  git push --no-verify"
+  echo ""
+  cd ..
+  exit 1
+fi
+echo "✅ ESLint check passed"
+
+cd ..
+echo ""
+echo "✅ All pre-push checks passed!"
+echo ""

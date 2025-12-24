@@ -226,7 +226,7 @@ export function BugTriageSummary({
   triage,
   className,
 }: {
-  triage?: BugTriageData
+  triage?: Partial<BugTriageData>
   className?: string
 }) {
   if (!triage) {

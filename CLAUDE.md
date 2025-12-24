@@ -167,9 +167,13 @@ Skills must be invoked automatically at appropriate phases WITHOUT user promptin
 | `/parallel-dev` | 3 | Implement with parallel agents | → `/quality-review` |
 | `/quality-review` | 4 | Type check, code review, security | → `/test` |
 | `/test` | 5 | Run E2E tests, fix failures | → `/deploy` |
-| `/deploy` | 6 | Create PR, update docs | → `/status-check` (next task) |
+| `/deploy` | 6 | **Create PR, WAIT FOR REVIEW** | → Manual review on GitHub |
+| (manual review) | 6 | **Self-review on GitHub (CRITICAL)** | → `/merge` |
+| `/merge` | 7 | Squash-merge PR after approval | → `/status-check` (next task) |
 
-**Workflow Benefits**: Granular control, pause/resume between phases, re-run individual phases
+**CRITICAL**: `/deploy` does NOT auto-merge. Manual review required before `/merge`.
+
+**Workflow Benefits**: Granular control, pause/resume between phases, re-run individual phases, **enforced self-review catches 80% of bugs**
 **Full Guide**: [docs/reference/DEVELOPER_WORKFLOW.md](docs/reference/DEVELOPER_WORKFLOW.md)
 
 **Full workflow docs**: [docs/processes/MAKER_WORKFLOW.md](docs/processes/MAKER_WORKFLOW.md)

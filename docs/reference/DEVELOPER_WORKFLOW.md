@@ -665,7 +665,7 @@ git push origin feat/test
 
 ## Integration with Phase Commands
 
-The 6 phase-specific commands (`/status-check`, `/research-plan`, `/parallel-dev`, `/quality-review`, `/test`, `/deploy`) automate parts of this workflow:
+The phase-specific commands automate parts of this workflow while preserving critical manual review steps:
 
 ### How Phase Commands Map to Workflow Steps
 
@@ -674,11 +674,12 @@ The 6 phase-specific commands (`/status-check`, `/research-plan`, `/parallel-dev
 | Step 1: Start fresh | `/status-check` | Reads current progress, selects next task |
 | Step 2: Create branch | `/research-plan` | **Creates feature branch automatically** |
 | Step 3: Develop | `/parallel-dev` | Implements with parallel agents, commits changes |
-| Step 4: Push | `/deploy` | Pushes to remote branch |
-| Step 5: Create PR | `/deploy` | Creates PR with `gh pr create` |
-| Step 6: Self-review | (Manual) | Review PR on GitHub |
-| Step 7: Merge | `/deploy` | Merges PR with `gh pr merge --squash` |
+| Step 4-5: Push + Create PR | `/deploy` | **Pushes to remote + Creates PR (STOPS HERE)** |
+| Step 6: Self-review | **(Manual)** | **Review PR on GitHub - CRITICAL!** |
+| Step 7: Merge | `/merge` | **Squash-merges PR after your approval** |
 | Step 8: Verify | (Manual) | Test on production URL |
+
+**IMPORTANT**: `/deploy` does NOT auto-merge! It creates the PR and waits for you to manually review (Step 6) before you run `/merge`.
 
 ### Example: Using Phase Commands
 
@@ -706,7 +707,7 @@ Claude:
 
 Changes:
 - Edited .github/workflows/playwright.yml
-- Uncommented push/PR triggers
+- Enabled automatic PR triggers
 
 Committed: "ci: enable automated E2E tests on push/PR"  ← Step 3 automated!
 
@@ -717,14 +718,43 @@ Committed: "ci: enable automated E2E tests on push/PR"  ← Step 3 automated!
 You: /deploy
 
 Claude:
-✅ Deployment Complete
+✅ PR Created Successfully
 
-PR created: https://github.com/.../pull/49  ← Steps 4-5 automated!
+PR URL: https://github.com/.../pull/49  ← Steps 4-5 automated!
 
-Next steps:
-1. Self-review PR on GitHub  ← Step 6 (manual)
-2. Merge when ready  ← Step 7 (can automate)
-3. Verify on production  ← Step 8 (manual)
+🛑 NEXT STEP: Manual Self-Review Required (Step 6)
+
+Go to the PR URL and:
+1. Review the full diff carefully
+2. Check all automated test results
+3. Verify merge criteria checklist
+4. Look for bugs, security issues, debug code
+
+When self-review complete, run: /merge
+
+---
+
+You: (Reviews PR on GitHub for 10 minutes, finds and fixes a typo)
+
+You: /merge
+
+Claude:
+🔍 Validating merge criteria...
+✅ All tests passing
+✅ Self-review completed
+✅ No merge conflicts
+✅ Branch up-to-date with main
+
+🔄 Squash-merging PR #49...
+✅ PR merged: feat: enable automated E2E tests on push/PR
+✅ Branch deleted: feat/enable-e2e-cicd
+✅ Switched to main
+✅ Pulled latest changes
+
+📝 New commit on main:
+   a1b2c3d - ci: enable automated E2E tests on push/PR (#49)
+
+Next step: Verify on production (Step 8)
 ```
 
 ### What Stays Manual vs Automated
@@ -734,13 +764,20 @@ Next steps:
 | 1. Start fresh | Automated (`/status-check`) | Safe to automate |
 | 2. Create branch | Automated (`/research-plan`) | Safe to automate |
 | 3. Develop | Automated (`/parallel-dev`) | Claude writes code |
-| 4. Push | Automated (`/deploy`) | Safe to automate |
-| 5. Create PR | Automated (`/deploy`) | Safe to automate |
-| 6. Self-review | **Manual** | Critical step - you need to review! |
-| 7. Merge | **Manual** (can automate) | Your decision when to merge |
+| 4-5. Push + Create PR | Automated (`/deploy`) | Safe to automate |
+| 6. Self-review | **MANUAL - REQUIRED** | **Critical step - catches 80% of bugs!** |
+| 7. Merge | Automated (`/merge`) | Only after you approve in Step 6 |
 | 8. Verify | **Manual** | You need to test live site |
 
-**Key Insight**: Phase commands handle the tedious parts (branch creation, commits, PR creation) but **YOU still do the critical thinking** (self-review, deciding when to merge, verifying production).
+**Key Insight**: Phase commands handle the tedious parts (branch creation, commits, PR creation) but **YOU still do the critical thinking** (self-review is MANDATORY before `/merge` command will work).
+
+**The Workflow Flow**:
+1. `/research-plan` → Creates branch (Step 2)
+2. `/parallel-dev` → Implements code (Step 3)
+3. `/deploy` → **Creates PR and STOPS** (Steps 4-5)
+4. **YOU manually review** on GitHub (Step 6) ← This is where bugs are caught!
+5. `/merge` → Only works if Step 6 complete (Step 7)
+6. **YOU manually verify** on production (Step 8)
 
 ---
 

@@ -1193,7 +1193,6 @@ Complete security hardening and UI consistency cleanup following the 4-type to 3
 | Form schema missing is_enhancement | Validation | 🟢 LOW | ✅ FIXED |
 
 **Related Documentation**:
-- [Plan File](C:\Users\harsh\.claude\plans\piped-imagining-hopper.md#phase-2-fix-remaining-issues) - Complete Phase 2 plan
 - [ARCHITECTURE_CONSOLIDATION.md](../ARCHITECTURE_CONSOLIDATION.md) - 3-type work item system architecture
 
 ---

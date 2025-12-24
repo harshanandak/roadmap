@@ -24,12 +24,12 @@ import { getWorkItemSchema } from '@/lib/schemas/work-item-form-schema'
 import { PhaseAwareFormFields } from './phase-aware-form-fields'
 import { PhaseContextBadge } from './phase-context-badge'
 import { PhaseUpgradeBanner } from './phase-upgrade-banner'
+import { VersionHistory } from './version-history'
 import { WorkspacePhase, WorkItemType } from '@/lib/constants/work-item-types'
 import type { WorkItemForReadiness } from '@/lib/phase/readiness-calculator'
 import { Loader2, AlertCircle, GitBranch } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { VersionHistory } from './version-history'
 
 interface EditWorkItemDialogProps {
   workItemId: string
@@ -87,11 +87,11 @@ export function EditWorkItemDialog({
   const [loadedWorkItem, setLoadedWorkItem] = useState<WorkItemForReadiness | null>(null)
   const [timelineItemsCount, setTimelineItemsCount] = useState(0)
 
-  // Enhancement state
+  // Enhancement tracking state
   const [isEnhancement, setIsEnhancement] = useState(false)
   const [enhancesWorkItemId, setEnhancesWorkItemId] = useState<string | null>(null)
   const [version, setVersion] = useState(1)
-  const [workItemType, setWorkItemType] = useState<WorkItemType>('feature')
+  const [workItemType, setWorkItemType] = useState<WorkItemType>('concept')
   const [workItemPhase, setWorkItemPhase] = useState<string | null>(null)
 
   // Get phase-appropriate schema
@@ -230,6 +230,13 @@ export function EditWorkItemDialog({
         progress_percent: data.progress_percent ?? undefined,
         blockers: [], // Blockers loaded separately
       })
+
+      // Populate enhancement tracking state
+      setIsEnhancement(!!data.is_enhancement)
+      setEnhancesWorkItemId(data.enhances_work_item_id)
+      setVersion(data.version ?? 1)
+      setWorkItemType(data.type)
+      setWorkItemPhase(data.phase)
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to load work item'
       console.error('Error in loadWorkItem:', error)
