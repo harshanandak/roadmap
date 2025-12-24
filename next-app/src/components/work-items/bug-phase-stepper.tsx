@@ -8,7 +8,6 @@ import {
   type BugPhase,
   getPhaseIndex,
   canTransitionTo,
-  getBugPhaseConfig,
 } from '@/lib/bug/workflow'
 import {
   Tooltip,
@@ -182,13 +181,13 @@ export function BugPhaseStepperInline({
   currentPhase: BugPhase
   className?: string
 }) {
-  const config = getBugPhaseConfig(currentPhase)
+  const config = BUG_PHASE_CONFIG[currentPhase]
   const currentIndex = getPhaseIndex(currentPhase)
 
   return (
     <div className={cn('flex items-center gap-1.5', className)}>
       {BUG_PHASES.map((phase, index) => {
-        const phaseConfig = getBugPhaseConfig(phase)
+        const phaseConfig = BUG_PHASE_CONFIG[phase]
         const isCompleted = index < currentIndex
         const isCurrent = phase === currentPhase
 
@@ -205,7 +204,7 @@ export function BugPhaseStepperInline({
                   )}
                   style={isCurrent ? {
                     backgroundColor: phaseConfig.color,
-                    ['--tw-ring-color' as string]: phaseConfig.color,
+                    ringColor: phaseConfig.color,
                   } : undefined}
                 />
               </TooltipTrigger>

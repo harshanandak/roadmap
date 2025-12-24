@@ -219,6 +219,11 @@ export function EditWorkItemDialog({
           actual_end_date: values.actual_end_date || null,
           actual_hours: values.actual_hours ?? null,
           progress_percent: values.progress_percent ?? null,
+          // Enhancement tracking fields
+          is_enhancement: isEnhancement,
+          enhances_work_item_id: enhancesWorkItemId,
+          version: version,
+          version_notes: values.version_notes || null,
           // Note: Tags, stakeholders, blockers handled separately via junction tables
         }),
       })
@@ -271,8 +276,14 @@ export function EditWorkItemDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Work Item</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="flex items-center gap-2">
             <PhaseContextBadge phase={phase} />
+            {isEnhancement && (
+              <Badge variant="outline" className="gap-1">
+                <GitBranch className="h-3 w-3" />
+                Enhancement v{version}
+              </Badge>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -313,6 +324,18 @@ export function EditWorkItemDialog({
                 phase={phase}
                 isEdit={true}
               />
+
+              {/* Version History - only show for features/enhancements */}
+              {(workItemType === 'feature' || workItemType === 'enhancement') && (
+                <VersionHistory
+                  workItemId={workItemId}
+                  currentVersion={version}
+                  enhancesWorkItemId={enhancesWorkItemId}
+                  type={workItemType}
+                  phase={workItemPhase ?? undefined}
+                  teamId={workspaceId}
+                />
+              )}
 
               <DialogFooter>
                 <Button

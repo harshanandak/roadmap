@@ -129,7 +129,9 @@ export function ParentFeatureSelector({
 
   // Calculate next version based on parent
   const calculateNextVersion = (parentVersion: number | null): number => {
-    return (parentVersion || 1) + 1
+    // If parent has no version set, treat as v1
+    const currentVersion = parentVersion ?? 1
+    return currentVersion + 1
   }
 
   // Handle selection

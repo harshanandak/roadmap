@@ -101,7 +101,7 @@ export function BugTriageForm({
                 )}
                 style={isSelected ? {
                   borderColor: config.color,
-                  ['--tw-ring-color' as string]: config.color,
+                  ringColor: config.color,
                 } : undefined}
               >
                 <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ export function BugTriageForm({
           </Label>
           <Textarea
             id="steps"
-            placeholder="1. Go to...&#10;2. Click on...&#10;3. Observe..."
+            placeholder="1. Go to...\n2. Click on...\n3. Observe..."
             value={localTriage.stepsToReproduce ?? ''}
             onChange={(e) => handleChange({ stepsToReproduce: e.target.value })}
             disabled={disabled}
