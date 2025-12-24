@@ -43,6 +43,8 @@ interface WorkItemUpdateData {
   archived?: boolean
   phase?: WorkspacePhase
   metadata?: Record<string, unknown>
+  review_enabled?: boolean
+  review_status?: string | null
 }
 
 /**

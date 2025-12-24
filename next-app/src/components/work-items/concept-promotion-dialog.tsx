@@ -24,14 +24,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Rocket } from 'lucide-react'
 
-interface ConceptPromotionDialogProps {
-  concept: {
-    id: string
-    title: string
-    description: string | null
-    workspace_id: string
-    team_id: string
-  }
+export interface ConceptForPromotion {
+  id: string
+  title: string
+  description: string | null
+  workspace_id: string
+  team_id: string
+}
+
+export interface ConceptPromotionDialogProps {
+  concept: ConceptForPromotion
   open: boolean
   onOpenChange: (open: boolean) => void
   onPromote: (featureId: string) => void
