@@ -16,10 +16,16 @@ import {
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
+import {
+  usePhaseReadiness,
+  wasBannerDismissed,
+} from '@/hooks/use-phase-readiness'
 import { getWorkItemSchema } from '@/lib/schemas/work-item-form-schema'
 import { PhaseAwareFormFields } from './phase-aware-form-fields'
 import { PhaseContextBadge } from './phase-context-badge'
+import { PhaseUpgradeBanner } from './phase-upgrade-banner'
 import { WorkspacePhase, WorkItemType } from '@/lib/constants/work-item-types'
+import type { WorkItemForReadiness } from '@/lib/phase/readiness-calculator'
 import { Loader2, AlertCircle, GitBranch } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -78,6 +84,8 @@ export function EditWorkItemDialog({
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadedWorkItem, setLoadedWorkItem] = useState<WorkItemForReadiness | null>(null)
+  const [timelineItemsCount, setTimelineItemsCount] = useState(0)
 
   // Enhancement state
   const [isEnhancement, setIsEnhancement] = useState(false)
@@ -88,6 +96,24 @@ export function EditWorkItemDialog({
 
   // Get phase-appropriate schema
   const schema = getWorkItemSchema(phase)
+
+  // Calculate phase readiness for the loaded work item
+  const { readiness, guidance, showBanner } = usePhaseReadiness({
+    workItem: loadedWorkItem || {
+      id: workItemId,
+      name: '',
+      purpose: null,
+      type: 'concept',
+      phase: phase,
+    },
+    timelineItemsCount,
+  })
+
+  // Determine if banner should be shown (readiness >= 80% and not dismissed)
+  const shouldShowBanner =
+    loadedWorkItem &&
+    showBanner &&
+    !wasBannerDismissed(workItemId, readiness.currentPhase as WorkspacePhase, readiness.readinessPercent)
 
   // Initialize form with default values
   // Note: Using 'any' for form type because different phases have different fields
@@ -137,6 +163,7 @@ export function EditWorkItemDialog({
 
       const supabase = createClient()
 
+      // Fetch work item
       const { data, error } = await supabase
         .from('work_items')
         .select('*')
@@ -151,6 +178,34 @@ export function EditWorkItemDialog({
       if (!data) {
         throw new Error('Work item not found')
       }
+
+      // Fetch timeline items count for readiness calculation
+      const { count: timelineCount } = await supabase
+        .from('timeline_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('work_item_id', workItemId)
+
+      setTimelineItemsCount(timelineCount || 0)
+
+      // Store loaded work item for readiness calculation
+      setLoadedWorkItem({
+        id: data.id,
+        name: data.name || '',
+        purpose: data.purpose,
+        type: data.type,
+        phase: data.phase || phase,
+        target_release: data.target_release,
+        acceptance_criteria: data.acceptance_criteria,
+        business_value: data.business_value,
+        customer_impact: data.customer_impact,
+        strategic_alignment: data.strategic_alignment,
+        estimated_hours: data.estimated_hours,
+        priority: data.priority,
+        actual_start_date: data.actual_start_date,
+        actual_end_date: data.actual_end_date,
+        actual_hours: data.actual_hours,
+        progress_percent: data.progress_percent,
+      })
 
       // Populate form with loaded data
       // Handle null values by converting to empty strings/undefined
@@ -175,12 +230,13 @@ export function EditWorkItemDialog({
         progress_percent: data.progress_percent ?? undefined,
         blockers: [], // Blockers loaded separately
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load work item'
       console.error('Error in loadWorkItem:', error)
-      setLoadError(error.message || 'Failed to load work item')
+      setLoadError(message)
       toast({
         title: 'Error',
-        description: error.message || 'Failed to load work item',
+        description: message,
         variant: 'destructive',
       })
     } finally {
@@ -286,6 +342,20 @@ export function EditWorkItemDialog({
             )}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Phase Upgrade Banner */}
+        {shouldShowBanner && (
+          <PhaseUpgradeBanner
+            workItemId={workItemId}
+            readiness={readiness}
+            guidance={guidance}
+            onUpgradeSuccess={() => {
+              router.refresh()
+              onSuccess?.()
+            }}
+            className="mb-4"
+          />
+        )}
 
         {/* Loading State */}
         {isLoadingData && (
