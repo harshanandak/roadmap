@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 // import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -37,6 +38,7 @@ export default function RootLayout({
         />
         {/* React Grab - DEV ONLY for Claude Code efficiency */}
         <ReactGrabWrapper />
+        <SpeedInsights />
       </body>
     </html>
   );
