@@ -63,9 +63,10 @@ export function BulkActionBar({
       })
       onClearSelection()
     } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to perform action'
       toast({
         title: 'Error',
-        description: error.message || 'Failed to perform action',
+        description: message,
         variant: 'destructive',
       })
     } finally {

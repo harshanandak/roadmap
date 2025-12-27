@@ -13,7 +13,7 @@ interface BoardCardProps {
   title: string
   description?: string | null
   priority?: string
-  _status?: string
+  status?: string
   dueDate?: string | null
   assignee?: {
     name: string
@@ -35,7 +35,7 @@ export function BoardCard({
   title,
   description,
   priority,
-  _status,
+  status: _status,
   dueDate,
   assignee,
   type,
