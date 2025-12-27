@@ -374,11 +374,8 @@ For E2E automation (can be configured later):
 
 ## Reference Documentation
 
-- [Complete Verification Checklist](COMPLETE_WORKFLOW_VERIFICATION.md)
 - [Organization Merge Strategy Guide](ORGANIZATIONAL_MERGE_STRATEGY.md)
 - [GitHub Setup Guide](GITHUB_SETUP.md)
-- [Implementation Summary](WORKFLOW_IMPLEMENTATION_SUMMARY.md)
-- [Previous Verification Results](BRANCH_PROTECTION_VERIFICATION.md)
 
 ---
 
