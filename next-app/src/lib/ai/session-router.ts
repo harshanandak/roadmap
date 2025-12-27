@@ -304,9 +304,14 @@ function createDecision(
 
 /**
  * Generate a unique session ID
+ * Uses crypto.randomUUID() for secure random generation
  */
 function generateSessionId(): string {
-  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  // Use crypto.randomUUID() for secure random IDs
+  const randomPart = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID().split('-')[0]
+    : Date.now().toString(36)
+  return `session_${Date.now()}_${randomPart}`
 }
 
 // =============================================================================

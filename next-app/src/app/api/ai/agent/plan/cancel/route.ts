@@ -39,6 +39,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Prevent prototype pollution by validating planId
+    const dangerousKeys = ['__proto__', 'constructor', 'prototype']
+    if (dangerousKeys.includes(planId)) {
+      return Response.json(
+        { error: 'Invalid planId' },
+        { status: 400 }
+      )
+    }
+
     // Get user session
     const supabase = await createClient()
     const {
@@ -68,9 +77,10 @@ export async function POST(req: NextRequest) {
       if (thread) {
         const metadata = thread.metadata as Record<string, unknown> | null
         const pendingPlans = (metadata?.pendingPlans || {}) as Record<string, TaskPlan>
-        const plan = pendingPlans[planId]
 
-        if (plan) {
+        // Safe property access to prevent prototype pollution
+        if (Object.hasOwn(pendingPlans, planId)) {
+          const plan = pendingPlans[planId]
           plan.status = 'cancelled'
           const updatedPlans = { ...pendingPlans, [planId]: plan }
 
