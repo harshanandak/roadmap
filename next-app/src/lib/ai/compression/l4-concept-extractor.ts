@@ -261,9 +261,7 @@ async function upsertConcept(
       for (const existing of existingConcepts) {
         if (existing.embedding) {
           try {
-            const embeddingArr = JSON.parse(
-              (existing.embedding as string).replace('[', '[').replace(']', ']')
-            )
+            const embeddingArr = JSON.parse(existing.embedding as string)
             const similarity = cosineSimilarity(embedding, embeddingArr)
 
             if (similarity > 0.9) {

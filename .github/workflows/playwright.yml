@@ -19,6 +19,9 @@ on:
       - '.github/workflows/playwright.yml'
   workflow_dispatch: # Manual trigger still available
 
+permissions:
+  contents: read
+
 jobs:
   test:
     # Skip E2E tests for Dependabot PRs (they can't access secrets, but Type Check & Build still validates them)

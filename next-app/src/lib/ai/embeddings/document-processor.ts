@@ -14,6 +14,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { chunkText, generateEmbeddings, formatEmbeddingForPgvector } from './embedding-service'
+import DOMPurify from 'isomorphic-dompurify'
 import type {
   DocumentFileType,
   DocumentStatus,
@@ -85,18 +86,14 @@ export async function extractText(
 
 /**
  * Extract text from HTML content
+ * Uses DOMPurify for secure sanitization to prevent XSS and script injection
  */
 export function extractTextFromHtml(html: string): string {
-  // Simple HTML to text conversion
-  return html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
+  // Use DOMPurify for secure HTML sanitization - removes all tags
+  const sanitized = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] })
+  // Clean up whitespace and decode common entities
+  return sanitized
     .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
     .replace(/\s+/g, ' ')
     .trim()
 }

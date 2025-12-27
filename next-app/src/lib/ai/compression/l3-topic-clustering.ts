@@ -149,7 +149,7 @@ export async function clusterTopics(options: ClusterTopicsOptions): Promise<Clus
         // Parse the embedding string back to array
         const embeddingStr = s.embedding as string
         const embedding = embeddingStr
-          ? JSON.parse(embeddingStr.replace('[', '[').replace(']', ']'))
+          ? JSON.parse(embeddingStr)
           : []
 
         return {
@@ -346,9 +346,7 @@ Generate a topic cluster that:
     if (existingTopics) {
       for (const existing of existingTopics) {
         if (existing.embedding) {
-          const embeddingArr = JSON.parse(
-            (existing.embedding as string).replace('[', '[').replace(']', ']')
-          )
+          const embeddingArr = JSON.parse(existing.embedding as string)
           const similarity = cosineSimilarity(topicEmbedding, embeddingArr)
 
           if (similarity > 0.85) {

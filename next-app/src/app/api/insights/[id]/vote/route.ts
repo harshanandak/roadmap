@@ -81,8 +81,9 @@ export async function POST(
         );
       }
 
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      // Validate email format (safe regex that avoids ReDoS)
+      // Uses HTML5 email pattern with bounded quantifiers
+      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
       if (!emailRegex.test(body.voter_email)) {
         return NextResponse.json(
           { error: 'Invalid email format' },

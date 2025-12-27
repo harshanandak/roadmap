@@ -1,0 +1,15 @@
+# CodeQL configuration
+# Ignore auto-generated files and test artifacts
+
+name: "CodeQL Config"
+
+paths-ignore:
+  # Playwright auto-generated report files
+  - next-app/playwright-report/
+  - next-app/test-results/
+  # Node modules (already ignored by default, but explicit)
+  - "**/node_modules/**"
+  # Build outputs
+  - next-app/.next/
+  - "**/dist/**"
+  - "**/build/**"

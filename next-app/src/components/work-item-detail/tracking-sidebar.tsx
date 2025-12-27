@@ -196,7 +196,7 @@ function StatusSection() {
               {STATUSES.map((status) => (
                 <SelectItem key={status.value} value={status.value}>
                   <div className="flex items-center gap-2">
-                    <div className={cn('w-2 h-2 rounded-full', status.color.split(' ')[0].replace('bg-', 'bg-'))} />
+                    <div className={cn('w-2 h-2 rounded-full', status.color.split(' ')[0])} />
                     {status.label}
                   </div>
                 </SelectItem>
