@@ -68,7 +68,7 @@ export function DashboardView({
 }: DashboardViewProps) {
   // Calculate stats - Use 'phase' field (phase IS the status for work items)
   const totalWorkItems = workItems?.length || 0;
-  const completedWorkItems = workItems?.filter((item) => item.phase === 'launch' || item.phase === 'verified' || item.phase === 'validated').length || 0;
+  const completedWorkItems = workItems?.filter((item) => item.phase === 'launch' || item.phase === 'verified' || item.phase === 'validated' || item.phase === 'rejected').length || 0;
   const inProgressWorkItems = workItems?.filter((item) =>
     // Feature/Enhancement phases (not 'launch' which is complete)
     item.phase === 'design' || item.phase === 'build' || item.phase === 'refine' ||

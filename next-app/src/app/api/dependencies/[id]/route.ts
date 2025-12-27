@@ -100,7 +100,9 @@ export async function PATCH(
     }
 
     // Verify user has access
-    const teamId = (existingConnection.workspaces as { team_id?: string } | null)?.team_id
+    const workspacesData = existingConnection.workspaces
+    const workspaceObj = Array.isArray(workspacesData) ? workspacesData[0] : workspacesData
+    const teamId = (workspaceObj as { team_id?: string } | null)?.team_id
 
     if (!teamId) {
       return NextResponse.json({ error: 'Invalid workspace' }, { status: 400 })

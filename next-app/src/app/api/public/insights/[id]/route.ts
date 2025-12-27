@@ -64,7 +64,8 @@ export async function GET(
     // Check if insight is publicly shareable
     if (!insight.public_share_enabled) {
       // Also check if workspace has public feedback enabled
-      const workspace = insight.workspaces as WorkspaceData
+      const workspacesData = insight.workspaces
+      const workspace = (Array.isArray(workspacesData) ? workspacesData[0] : workspacesData) as WorkspaceData
       if (!workspace?.public_feedback_enabled) {
         return NextResponse.json(
           { error: 'This insight is not available for public voting' },
@@ -73,7 +74,8 @@ export async function GET(
       }
     }
 
-    const workspace = insight.workspaces as WorkspaceData
+    const workspacesData = insight.workspaces
+    const workspace = (Array.isArray(workspacesData) ? workspacesData[0] : workspacesData) as WorkspaceData
 
     // Check if voting is enabled
     const votingSettings = workspace?.voting_settings || {
