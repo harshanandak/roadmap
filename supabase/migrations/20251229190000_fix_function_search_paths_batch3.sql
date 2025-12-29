@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Migration: Fix Function Search Path Vulnerabilities (Batch 3)
 -- Date: 2025-12-29
--- Purpose: Set search_path = '' on 7 remaining database functions for security
+-- Purpose: Set search_path = '' on 8 remaining database functions for security
 -- Description: Functions without immutable search_path are vulnerable to
 --              search path injection attacks. This migration fixes all
 --              remaining vulnerable functions identified by Supabase linter.
@@ -27,8 +27,9 @@ DO $$ BEGIN
 EXCEPTION WHEN undefined_function THEN NULL; END $$;
 
 -- search_documents - Vector similarity search for documents
+-- Note: Must use exact type signature extensions.vector(1536) to match function definition
 DO $$ BEGIN
-  ALTER FUNCTION public.search_documents(TEXT, extensions.vector, TEXT, TEXT, INTEGER, FLOAT) SET search_path = '';
+  ALTER FUNCTION public.search_documents(TEXT, extensions.vector(1536), TEXT, TEXT, INTEGER, FLOAT) SET search_path = '';
 EXCEPTION WHEN undefined_function THEN NULL; END $$;
 
 -- update_knowledge_updated_at - Trigger function for updated_at timestamps
@@ -60,10 +61,15 @@ DO $$ BEGIN
 EXCEPTION WHEN undefined_function THEN NULL; END $$;
 
 -- ============================================================================
--- SECTION 4: VERSION FUNCTION (from 20251222120000_add_missing_phase_columns.sql)
+-- SECTION 4: VERSION FUNCTIONS
 -- ============================================================================
 
--- get_next_version - Returns next version number for enhancement chains
+-- get_next_version(TEXT) - Original single-param version (from 20251216190751_add_type_specific_phases.sql)
+DO $$ BEGIN
+  ALTER FUNCTION public.get_next_version(TEXT) SET search_path = '';
+EXCEPTION WHEN undefined_function THEN NULL; END $$;
+
+-- get_next_version(TEXT, TEXT) - Two-param version with team_id (from 20251222120000_add_missing_phase_columns.sql)
 DO $$ BEGIN
   ALTER FUNCTION public.get_next_version(TEXT, TEXT) SET search_path = '';
 EXCEPTION WHEN undefined_function THEN NULL; END $$;
@@ -72,25 +78,28 @@ EXCEPTION WHEN undefined_function THEN NULL; END $$;
 -- MIGRATION COMPLETE
 -- ============================================================================
 -- Summary:
--- - Fixed 7 functions with search_path = '' for security
+-- - Fixed 8 functions with search_path = '' for security
 -- - Uses DO blocks with exception handling for safe execution
 -- - Addresses all function_search_path_mutable warnings from Supabase linter
 --
 -- Functions fixed:
 --   1. get_knowledge_base_stats(TEXT)
---   2. search_documents(TEXT, vector, TEXT, TEXT, INTEGER, FLOAT)
+--   2. search_documents(TEXT, vector(1536), TEXT, TEXT, INTEGER, FLOAT)
 --   3. update_knowledge_updated_at()
 --   4. get_team_integration_summary(TEXT)
 --   5. update_integration_updated_at()
 --   6. reorder_strategy_siblings(TEXT, TEXT, INTEGER)
---   7. get_next_version(TEXT, TEXT)
+--   7. get_next_version(TEXT) - single-param version
+--   8. get_next_version(TEXT, TEXT) - two-param version with team_id
 -- ============================================================================
 
 -- ============================================================================
 -- VERIFICATION QUERY (run after migration to confirm)
 -- ============================================================================
+-- Note: get_next_version appears twice (overloaded function with different signatures)
 -- SELECT
 --   p.proname as function_name,
+--   pg_get_function_identity_arguments(p.oid) as signature,
 --   CASE
 --     WHEN proconfig IS NULL THEN 'VULNERABLE'
 --     WHEN array_to_string(proconfig, ',') LIKE '%search_path=%' THEN 'SECURE'
@@ -104,5 +113,5 @@ EXCEPTION WHEN undefined_function THEN NULL; END $$;
 --     'get_team_integration_summary', 'update_integration_updated_at',
 --     'reorder_strategy_siblings', 'get_next_version'
 --   )
--- ORDER BY function_name;
--- Expected: All functions show 'SECURE'
+-- ORDER BY function_name, signature;
+-- Expected: All 8 function signatures show 'SECURE'
