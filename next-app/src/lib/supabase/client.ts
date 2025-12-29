@@ -32,9 +32,11 @@ export function createClient(): SupabaseClient {
     )
 
     // Auto-reset singleton on signout to prevent session bleed between users
+    // Note: Defer cleanup to avoid deadlock - unsubscribe() cannot be called
+    // synchronously from within the callback as it tries to acquire the same lock
     const { data } = browserClient.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        cleanupClient()
+        setTimeout(() => cleanupClient(), 0)
       }
     })
     authSubscription = data.subscription
