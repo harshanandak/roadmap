@@ -1,6 +1,6 @@
 # 📜 CHANGELOG
 
-**Last Updated**: 2025-12-28
+**Last Updated**: 2025-12-29
 **Project**: Product Lifecycle Management Platform
 **Format**: Based on [Keep a Changelog](https://keepachangelog.com/)
 
@@ -9,6 +9,28 @@ All notable changes, migrations, and feature implementations are documented in t
 ---
 
 ## [Unreleased]
+
+### Database
+
+#### Architecture Enforcement: Phase-Only Status for Work Items (2025-12-29)
+Restored architecture enforcement migration to ensure work_items table has no separate `status` column.
+
+**Migration**: `20251229180000_enforce_phase_only_status.sql`
+
+**Changes**:
+- Drops `status` column from `work_items` if it exists
+- Removes orphaned constraints: `features_status_check`, `work_items_status_check`
+- Removes orphaned indexes: `idx_features_status`, `idx_work_items_status`
+- Adds documentation comment to `phase` column
+
+**Architecture Rationale**:
+- Per CLAUDE.md: "Work items use `phase` as their status (phase IS the status)"
+- Work items have `phase` field only (lifecycle stage IS the status)
+- Timeline items have separate `status` field for task execution tracking
+- This migration was originally created as `20251223000000_drop_work_items_status_column.sql` but was deleted in commit b77208a
+- Restored to prevent schema violations in fresh deployments
+
+**Breaking Changes**: None (status column was never used in application code)
 
 ### Security
 

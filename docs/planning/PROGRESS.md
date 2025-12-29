@@ -577,6 +577,27 @@ Complete redesign of tool UI with glassmorphism, gradients, and micro-interactio
 
 ## Key Achievements Since Last Update
 
+### Architecture Enforcement: Phase-Only Status for Work Items ✅ (2025-12-29)
+Restored architecture enforcement migration that was incorrectly deleted:
+
+**Issue Fixed:**
+- Migration `20251223000000_drop_work_items_status_column.sql` was deleted in commit b77208a
+- This migration enforced the architecture constraint: "phase IS the status for work_items"
+- Without it, fresh deployments could have schema violations
+
+**Solution:**
+- Created new migration `20251229180000_enforce_phase_only_status.sql`
+- Drops `status` column from `work_items` if it exists
+- Removes orphaned constraints and indexes
+- Adds documentation comment to `phase` column
+
+**Architecture Reinforced:**
+- Work items: `phase` field IS the status (no separate status column)
+- Timeline items: `status` field for task execution tracking (separate from phase)
+- TypeScript types already correct (no status field on work_items)
+
+---
+
 ### Knowledge & Decision Intelligence System Research ✅ (2025-12-29)
 Complete architecture research and design for team decision intelligence:
 

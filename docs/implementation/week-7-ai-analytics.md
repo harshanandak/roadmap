@@ -1412,4 +1412,56 @@ Complete security hardening and UI consistency cleanup following the 4-type to 3
 
 ---
 
+### ✅ Architecture Enforcement: Phase-Only Status for Work Items (2025-12-29)
+
+**What Changed**:
+- Restored deleted migration `20251223000000_drop_work_items_status_column.sql` as new migration `20251229180000_enforce_phase_only_status.sql`
+- Migration drops `status` column from `work_items` if it exists (enforces architecture constraint)
+- Removed orphaned constraints and indexes: `features_status_check`, `work_items_status_check`, `idx_features_status`, `idx_work_items_status`
+- Added documentation comment to `phase` column explaining it IS the status field
+
+**Why**:
+- The architecture constraint (per CLAUDE.md) states: "Work items use `phase` as their status (phase IS the status)"
+- Original migration was deleted in commit b77208a with incorrect reasoning ("status column doesn't exist")
+- The original migration `20250111000005_add_features_tracking_columns.sql` DOES add a status column
+- Without the enforcement migration, fresh deployments could have schema violations
+- This ensures all environments consistently enforce the established two-layer architecture:
+  - **Work Items**: `phase` field IS the status (no separate status column)
+  - **Timeline Items**: `status` field for task execution tracking (separate from phase)
+
+**5-Question Validation**:
+| Q | Status | Notes |
+|---|--------|-------|
+| 1. Data Dependencies | ✅ | work_items table already exists |
+| 2. Integration Points | ✅ | TypeScript types already correct (no status field) |
+| 3. Standalone Value | ✅ | Enforces documented architecture, prevents schema drift |
+| 4. Schema Finalized | ✅ | Drops column, no new columns added |
+| 5. Can Test | ✅ | Migration can be tested with `npx supabase db push` |
+
+**Result**: ✅ PROCEED - Architecture enforcement restored
+
+**Progress**: Bug fix (no percentage change)
+
+**Dependencies Satisfied**:
+- ✅ Type-Aware Phase System (Week 7, 2025-12-23)
+- ✅ Phase = Status architecture decision (ARCHITECTURE_CONSOLIDATION.md)
+
+**Dependencies Created**:
+- None (cleanup/enforcement only)
+
+**Files Created**:
+- `supabase/migrations/20251229180000_enforce_phase_only_status.sql` - Architecture enforcement migration
+
+**Architecture Validation**:
+- ✅ Phase IS the status for work items (no separate status field)
+- ✅ Timeline items have separate status for execution tracking
+- ✅ TypeScript types already aligned with corrected schema
+- ✅ Test fixtures already use `.phase` instead of `.status`
+
+**Related Documentation**:
+- [ARCHITECTURE_CONSOLIDATION.md](../ARCHITECTURE_CONSOLIDATION.md) - Canonical architecture reference
+- [CLAUDE.md](../../CLAUDE.md) - Phase vs Status clarification section
+
+---
+
 [← Previous: Week 6](week-6-timeline-execution.md) | [Back to Plan](README.md) | [Next: Week 8 →](week-8-billing-testing.md)
