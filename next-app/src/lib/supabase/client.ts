@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient, Subscription } from '@supabase/supabase-js'
 
 /**
  * Singleton Supabase client for client-side (browser) usage
@@ -13,6 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * This client automatically handles cookies and auth state.
  */
 let browserClient: SupabaseClient | null = null
+let authSubscription: Subscription | null = null
 
 export function createClient(): SupabaseClient {
   if (typeof window === 'undefined') {
@@ -31,14 +32,27 @@ export function createClient(): SupabaseClient {
     )
 
     // Auto-reset singleton on signout to prevent session bleed between users
-    browserClient.auth.onAuthStateChange((event) => {
+    const { data } = browserClient.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        browserClient = null
+        cleanupClient()
       }
     })
+    authSubscription = data.subscription
   }
 
   return browserClient
+}
+
+/**
+ * Clean up the singleton client and its subscriptions
+ * Called internally when user signs out
+ */
+function cleanupClient(): void {
+  if (authSubscription) {
+    authSubscription.unsubscribe()
+    authSubscription = null
+  }
+  browserClient = null
 }
 
 /**
@@ -46,5 +60,5 @@ export function createClient(): SupabaseClient {
  * Call this when user logs out to ensure a fresh client on next login
  */
 export function resetClient(): void {
-  browserClient = null
+  cleanupClient()
 }
