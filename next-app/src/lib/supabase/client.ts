@@ -29,6 +29,13 @@ export function createClient(): SupabaseClient {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
+
+    // Auto-reset singleton on signout to prevent session bleed between users
+    browserClient.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        browserClient = null
+      }
+    })
   }
 
   return browserClient
