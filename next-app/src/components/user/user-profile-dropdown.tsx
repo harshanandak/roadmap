@@ -2,7 +2,7 @@
 
 import { LogOut, Settings, User, HelpCircle, KeyboardIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClient, resetClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 import { UserAvatar } from './user-avatar';
 import {
   DropdownMenu,
@@ -39,13 +39,6 @@ const roleLabels = {
 
 export function UserProfileDropdown({ user, teamRole = 'member' }: UserProfileDropdownProps) {
   const router = useRouter();
-  const supabase = createClient();
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    resetClient(); // Clear singleton immediately after signOut completes
-    router.push('/login');
-  };
 
   const handleProfileClick = () => {
     router.push('/profile');
@@ -117,9 +110,11 @@ export function UserProfileDropdown({ user, teamRole = 'member' }: UserProfileDr
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Sign Out</span>
+        <DropdownMenuItem asChild className="text-destructive focus:text-destructive">
+          <Link href="/api/auth/signout">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sign Out</span>
+          </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
