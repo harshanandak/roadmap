@@ -163,11 +163,19 @@ async function cleanupStrategyData(teamId: string): Promise<void> {
   if (!supabase) return;
 
   try {
-    // Delete work_item_strategies junction entries
-    await supabase
-      .from('work_item_strategies')
-      .delete()
-      .neq('id', '');
+    // Delete work_item_strategies junction entries for this team only
+    const { data: strategies } = await supabase
+      .from('product_strategies')
+      .select('id')
+      .eq('team_id', teamId);
+
+    if (strategies && strategies.length > 0) {
+      const strategyIds = strategies.map((s) => s.id);
+      await supabase
+        .from('work_item_strategies')
+        .delete()
+        .in('strategy_id', strategyIds);
+    }
 
     // Delete strategies (cascades children)
     await supabase.from('product_strategies').delete().eq('team_id', teamId);
