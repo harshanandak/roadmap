@@ -348,11 +348,28 @@ export const TEST_PATHS = {
   settings: (id: string) => `/workspaces/${id}/settings`,
   analytics: (id: string) => `/workspaces/${id}/analytics`,
   ai: (id: string) => `/workspaces/${id}/ai`,
+  timeline: (id: string) => `/workspaces/${id}/timeline`,
   // Resources API paths
   resourcesApi: (teamId: string) => `/api/resources?team_id=${teamId}`,
   resourcesSearchApi: (teamId: string, query: string) => `/api/resources/search?team_id=${teamId}&q=${encodeURIComponent(query)}`,
   resourceHistoryApi: (resourceId: string) => `/api/resources/${resourceId}/history`,
   workItemResourcesApi: (workItemId: string) => `/api/work-items/${workItemId}/resources`,
+  // Integrations paths
+  teamSettings: '/dashboard/settings',
+  integrations: '/dashboard/settings/integrations',
+  workspaceIntegrations: (workspaceId: string) => `/workspaces/${workspaceId}/settings/integrations`,
+  // Integrations API paths
+  integrationsApi: '/api/integrations',
+  integrationApi: (integrationId: string) => `/api/integrations/${integrationId}`,
+  integrationSyncApi: (integrationId: string) => `/api/integrations/${integrationId}/sync`,
+  workspaceIntegrationsApi: (workspaceId: string) => `/api/workspaces/${workspaceId}/integrations`,
+  // Product Tasks paths
+  tasks: (id: string) => `/workspaces/${id}/tasks`,
+  // Product Tasks API paths
+  productTasksApi: (workspaceId: string, teamId: string) => `/api/product-tasks?workspace_id=${workspaceId}&team_id=${teamId}`,
+  productTasksStatsApi: (workspaceId: string, teamId: string) => `/api/product-tasks/stats?workspace_id=${workspaceId}&team_id=${teamId}`,
+  productTaskApi: (taskId: string) => `/api/product-tasks/${taskId}`,
+  productTaskConvertApi: (taskId: string) => `/api/product-tasks/${taskId}/convert`,
 };
 
 /**

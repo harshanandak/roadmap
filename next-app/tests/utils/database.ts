@@ -695,6 +695,110 @@ export async function cleanupResourcesData(teamId: string): Promise<void> {
 }
 
 /**
+ * Create a test product task directly in the database
+ */
+export async function createProductTaskInDatabase(
+  taskData: {
+    title: string;
+    description?: string;
+    status?: 'todo' | 'in_progress' | 'done';
+    taskType?: 'research' | 'design' | 'development' | 'qa' | 'marketing' | 'ops' | 'admin';
+    priority?: 'low' | 'medium' | 'high' | 'critical';
+    workspaceId: string;
+    teamId: string;
+    workItemId?: string | null;
+    timelineItemId?: string | null;
+    assignedTo?: string | null;
+    dueDate?: string | null;
+    estimatedHours?: number | null;
+    createdBy?: string;
+  },
+): Promise<{ id: string; title: string }> {
+  try {
+    const taskId = `task_${Date.now()}`;
+
+    const { data, error } = await supabase
+      .from('product_tasks')
+      .insert([
+        {
+          id: taskId,
+          workspace_id: taskData.workspaceId,
+          team_id: taskData.teamId,
+          work_item_id: taskData.workItemId || null,
+          timeline_item_id: taskData.timelineItemId || null,
+          title: taskData.title,
+          description: taskData.description || null,
+          status: taskData.status || 'todo',
+          task_type: taskData.taskType || 'development',
+          priority: taskData.priority || 'medium',
+          assigned_to: taskData.assignedTo || null,
+          due_date: taskData.dueDate || null,
+          estimated_hours: taskData.estimatedHours || null,
+          order_index: 0,
+          created_by: taskData.createdBy || 'test-user',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating product task:', error);
+      throw error;
+    }
+
+    return {
+      id: data.id,
+      title: data.title,
+    };
+  } catch (error) {
+    console.error('Failed to create product task in database:', error);
+    throw error;
+  }
+}
+
+/**
+ * Cleanup product tasks for a team
+ */
+export async function cleanupProductTasks(teamId: string): Promise<void> {
+  try {
+    await supabase
+      .from('product_tasks')
+      .delete()
+      .eq('team_id', teamId);
+
+    console.log(`Cleaned up product tasks for team: ${teamId}`);
+  } catch (error) {
+    console.error('Error during product tasks cleanup:', error);
+  }
+}
+
+/**
+ * Get product task by ID
+ */
+export async function getProductTaskById(
+  taskId: string,
+): Promise<{ id: string; title: string; status: string } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('product_tasks')
+      .select('id, title, status')
+      .eq('id', taskId)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error getting product task:', error);
+    return null;
+  }
+}
+
+/**
  * Reset database to clean state (WARNING: only for test databases!)
  */
 export async function resetTestDatabase(): Promise<void> {
