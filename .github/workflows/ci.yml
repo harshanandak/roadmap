@@ -39,7 +39,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./next-app
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: TypeScript type checking
         working-directory: ./next-app

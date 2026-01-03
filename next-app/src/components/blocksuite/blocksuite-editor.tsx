@@ -1,0 +1,277 @@
+'use client'
+
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
+import { cn } from '@/lib/utils'
+import { safeValidateEditorProps } from './schema'
+
+// Types for BlockSuite modules (dynamically imported)
+type Doc = import('@blocksuite/store').Doc
+
+export interface BlockSuiteEditorProps {
+  /** Editor mode: 'page' for document editing, 'edgeless' for canvas/whiteboard */
+  mode?: 'page' | 'edgeless'
+  /** Additional CSS classes */
+  className?: string
+  /** Callback when editor is ready with doc */
+  onReady?: (doc: Doc) => void
+  /** Callback when document content changes */
+  onChange?: (doc: Doc) => void
+  /** Document ID for persistence */
+  documentId?: string
+  /** Whether the editor is read-only */
+  readOnly?: boolean
+}
+
+/**
+ * Safely clears all child nodes from a container element
+ * This avoids innerHTML which can be an XSS vector
+ */
+function clearContainer(container: HTMLElement): void {
+  while (container.firstChild) {
+    container.removeChild(container.firstChild)
+  }
+}
+
+/**
+ * BlockSuite Editor React Wrapper
+ *
+ * This component wraps BlockSuite's Web Components for use in React.
+ * It handles:
+ * - Dynamic imports to avoid SSR issues
+ * - Schema and DocCollection initialization
+ * - Editor mounting/unmounting lifecycle
+ * - Change event forwarding
+ *
+ * @example
+ * ```tsx
+ * <BlockSuiteEditor
+ *   mode="edgeless"
+ *   onReady={(doc) => console.log('Ready!', doc.id)}
+ *   onChange={(doc) => console.log('Changed', doc)}
+ * />
+ * ```
+ */
+export function BlockSuiteEditor({
+  mode = 'edgeless',
+  className,
+  onReady,
+  onChange,
+  documentId,
+  readOnly = false,
+}: BlockSuiteEditorProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<unknown>(null)
+  const docRef = useRef<Doc | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Validate props at runtime using Zod schema
+  const validationResult = useMemo(() => {
+    return safeValidateEditorProps({
+      mode,
+      className,
+      onReady,
+      onChange,
+      documentId,
+      readOnly,
+    })
+  }, [mode, className, onReady, onChange, documentId, readOnly])
+
+  // Cleanup function - must be before useEffect that uses it
+  const cleanup = useCallback(() => {
+    if (editorRef.current && containerRef.current) {
+      try {
+        // Remove editor from DOM
+        const editor = editorRef.current as { remove?: () => void }
+        if (typeof editor.remove === 'function') {
+          editor.remove()
+        } else if (containerRef.current.firstChild) {
+          containerRef.current.removeChild(containerRef.current.firstChild)
+        }
+      } catch (e) {
+        console.warn('BlockSuite cleanup warning:', e)
+      }
+      editorRef.current = null
+    }
+    docRef.current = null
+  }, [])
+
+  // Initialize editor effect - only runs if validation passes
+  useEffect(() => {
+    // Skip initialization if validation failed
+    if (!validationResult.success) return
+
+    let mounted = true
+    let disposable: { dispose: () => void } | null = null
+
+    const initEditor = async () => {
+      if (!containerRef.current) return
+
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        // Dynamic imports to avoid SSR issues
+        // BlockSuite uses browser APIs that aren't available during SSR
+        // Note: BlockSuite v0.18.7 requires manual Schema/DocCollection setup
+        const [presetsModule, blocksModule, storeModule] = await Promise.all([
+          import('@blocksuite/presets'),
+          import('@blocksuite/blocks'),
+          import('@blocksuite/store'),
+        ])
+
+        if (!mounted) return
+
+        const { EdgelessEditor, PageEditor } = presetsModule
+        const { AffineSchemas } = blocksModule
+        const { Schema, DocCollection } = storeModule
+
+        // Set up schema with Affine blocks
+        const schema = new Schema()
+        schema.register(AffineSchemas)
+
+        // Create document collection (workspace container) and doc
+        // Collection ID = workspace identifier, Doc ID = document identifier
+        const collectionId = `collection-${Date.now()}`
+        const docId = documentId || `doc-${Date.now()}`
+
+        const collection = new DocCollection({
+          schema,
+          id: collectionId,
+        })
+        const doc = collection.createDoc({ id: docId })
+
+        // Initialize with required root blocks
+        doc.load(() => {
+          const pageBlockId = doc.addBlock('affine:page', {})
+          doc.addBlock('affine:surface', {}, pageBlockId)
+          const noteBlockId = doc.addBlock('affine:note', {}, pageBlockId)
+          doc.addBlock('affine:paragraph', {}, noteBlockId)
+        })
+
+        docRef.current = doc
+
+        if (!mounted) return
+
+        // Create the appropriate editor
+        let editor: unknown
+
+        if (mode === 'edgeless') {
+          editor = new EdgelessEditor()
+        } else {
+          editor = new PageEditor()
+        }
+
+        // Set editor properties
+        const editorElement = editor as {
+          doc: Doc
+          mode: string
+          readonly: boolean
+        }
+        editorElement.doc = doc
+        editorElement.readonly = readOnly
+
+        // Mount to container
+        if (containerRef.current && mounted) {
+          // Safely clear any existing content using DOM methods
+          clearContainer(containerRef.current)
+
+          // Append the editor element
+          containerRef.current.appendChild(editor as Node)
+          editorRef.current = editor
+
+          // Set up change listener if doc has slots
+          const docWithSlots = doc as Doc & {
+            slots?: {
+              historyUpdated?: {
+                on: (callback: () => void) => { dispose: () => void }
+              }
+            }
+          }
+          if (docWithSlots.slots?.historyUpdated) {
+            disposable = docWithSlots.slots.historyUpdated.on(() => {
+              if (onChange && mounted) {
+                onChange(doc)
+              }
+            })
+          }
+
+          // Notify ready
+          if (onReady && mounted) {
+            onReady(doc)
+          }
+
+          setIsLoading(false)
+        }
+      } catch (e) {
+        console.error('Failed to initialize BlockSuite editor:', e)
+        if (mounted) {
+          setError(e instanceof Error ? e.message : 'Failed to load editor')
+          setIsLoading(false)
+        }
+      }
+    }
+
+    initEditor()
+
+    return () => {
+      mounted = false
+      if (disposable) {
+        disposable.dispose()
+      }
+      cleanup()
+    }
+  }, [mode, documentId, readOnly, onReady, onChange, cleanup, validationResult.success])
+
+  // Render validation error - after all hooks
+  if (!validationResult.success) {
+    const errorMessages = validationResult.error.issues
+      .map((e) => `${e.path.join('.')}: ${e.message}`)
+      .join(', ')
+
+    return (
+      <div className={cn('flex items-center justify-center h-full min-h-[400px] bg-destructive/10 rounded-lg', className)}>
+        <div className="text-center p-4">
+          <p className="text-destructive font-medium">Invalid Editor Configuration</p>
+          <p className="text-sm text-muted-foreground mt-1">{errorMessages}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className={cn('flex items-center justify-center h-full min-h-[400px] bg-destructive/10 rounded-lg', className)}>
+        <div className="text-center p-4">
+          <p className="text-destructive font-medium">Failed to load editor</p>
+          <p className="text-sm text-muted-foreground mt-1">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        'blocksuite-editor-container w-full h-full min-h-[400px]',
+        // Hide the loading state once editor is mounted
+        isLoading && 'opacity-0',
+        className
+      )}
+      style={{
+        // Ensure the container takes up full space
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    />
+  )
+}
+
+export default BlockSuiteEditor
