@@ -22,14 +22,16 @@ const nextConfig: NextConfig = {
   // Empty turbopack config to silence warning when using webpack
   turbopack: {},
 
-  // Webpack configuration to fix BlockSuite icon typo issue
+  // Webpack configuration for BlockSuite ESM compatibility
+  // Note: Icon typo bug (CheckBoxCkeckSolidIcon) is fixed via patch-package in patches/
   webpack: (config) => {
-    // Fix for BlockSuite icon typo: CheckBoxCkeckSolidIcon -> CheckBoxCheckSolidIcon
+    // Preserve existing aliases
     config.resolve.alias = {
       ...config.resolve.alias,
     };
 
-    // Ignore the typo'd exports in BlockSuite
+    // Fix ESM module resolution for BlockSuite packages
+    // Required because BlockSuite uses ESM with .js extensions
     config.module.rules.push({
       test: /\.m?js$/,
       include: /node_modules\/@blocksuite/,

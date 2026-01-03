@@ -113,18 +113,38 @@ export function BlockSuiteEditor({
 
         // Dynamic imports to avoid SSR issues
         // BlockSuite uses browser APIs that aren't available during SSR
-        const presetsModule = await import('@blocksuite/presets')
+        // Note: BlockSuite v0.18.7 requires manual Schema/DocCollection setup
+        const [presetsModule, blocksModule, storeModule] = await Promise.all([
+          import('@blocksuite/presets'),
+          import('@blocksuite/blocks'),
+          import('@blocksuite/store'),
+        ])
 
         if (!mounted) return
 
-        // Use the createEmptyDoc helper from presets which handles schema setup
-        const { createEmptyDoc, EdgelessEditor, PageEditor } = presetsModule
+        const { EdgelessEditor, PageEditor } = presetsModule
+        const { AffineSchemas } = blocksModule
+        const { Schema, DocCollection } = storeModule
 
-        // Create document with proper initialization
-        const { doc, init } = createEmptyDoc()
+        // Set up schema with Affine blocks
+        const schema = new Schema()
+        schema.register(AffineSchemas)
 
-        // Initialize the document with blocks
-        await init()
+        // Create document collection and doc
+        const collection = new DocCollection({
+          schema,
+          id: documentId || `doc-${Date.now()}`,
+        })
+        const doc = collection.createDoc({ id: documentId || `doc-${Date.now()}` })
+
+        // Initialize with required root blocks
+        doc.load(() => {
+          const pageBlockId = doc.addBlock('affine:page', {})
+          doc.addBlock('affine:surface', {}, pageBlockId)
+          const noteBlockId = doc.addBlock('affine:note', {}, pageBlockId)
+          doc.addBlock('affine:paragraph', {}, noteBlockId)
+        })
+
         docRef.current = doc
 
         if (!mounted) return

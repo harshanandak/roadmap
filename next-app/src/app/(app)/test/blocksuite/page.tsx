@@ -22,7 +22,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
  * Access at: /test/blocksuite (development only)
  */
 
-// Check development mode at module level - this is evaluated at build time
+/**
+ * Security check at build time.
+ * In Next.js, process.env.NODE_ENV is replaced at build time by webpack/turbopack.
+ * When building for production (NODE_ENV=production), this will be 'false'
+ * and the component will return notFound() immediately.
+ * This is safe because production builds always set NODE_ENV=production.
+ */
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
 
 export default function BlockSuiteTestPage() {
@@ -171,9 +177,9 @@ export default function BlockSuiteTestPage() {
         </CardHeader>
         <CardContent className="prose prose-sm dark:prose-invert">
           <ul>
-            <li>BlockSuite packages aligned to version 0.19.5</li>
+            <li>BlockSuite packages v0.18.7 with patch-package fixes</li>
             <li>SSR-safe via dynamic imports with ssr: false</li>
-            <li>Uses createEmptyDoc() helper from @blocksuite/presets</li>
+            <li>Uses Schema + DocCollection API from @blocksuite/store</li>
             <li>Web Components mounted to React refs</li>
             <li>Change events via historyUpdated slot</li>
           </ul>
