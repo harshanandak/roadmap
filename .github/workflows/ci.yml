@@ -39,6 +39,8 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./next-app
+        # --legacy-peer-deps: BlockSuite v0.18.7 declares React 18.x peer deps but works with React 19.x
+        # Peer dependencies are satisfied transitively. Safe to bypass strict checking.
         run: npm ci --legacy-peer-deps
 
       - name: TypeScript type checking

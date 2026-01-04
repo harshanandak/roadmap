@@ -77,6 +77,7 @@
 Framework:    Next.js 16.1.1 + TypeScript (App Router, Server Components)
 Database:     Supabase (PostgreSQL + Real-time + Auth + RLS)
 UI:           shadcn/ui + Tailwind CSS + Lucide React
+Rich Text:    BlockSuite v0.18.7 (Edgeless canvas, Document editing, Yjs collaboration)
 Mind Mapping: XYFlow/ReactFlow (custom nodes, AI-powered)
 Charts:       Recharts (10+ chart types)
 Testing:      Playwright (E2E, Chromium-only CI)
@@ -939,6 +940,41 @@ vercel --prod            # Deploy to production
 ### E2E Testing
 - Use Playwright with `test.describe()`
 - Test complete user flows end-to-end
+
+### BlockSuite Rich Text Editor
+```tsx
+// Generic editor (configurable mode)
+import { BlockSuiteEditor } from '@/components/blocksuite'
+
+<BlockSuiteEditor
+  mode="edgeless"  // or "page"
+  onReady={(doc) => console.log('Ready!', doc.id)}
+  onChange={(doc) => console.log('Changed', doc)}
+  documentId="my-doc-123"
+  readOnly={false}
+/>
+
+// Pre-configured canvas editor
+import { BlockSuiteCanvasEditor } from '@/components/blocksuite'
+
+<BlockSuiteCanvasEditor
+  onReady={(doc) => console.log('Canvas ready!')}
+/>
+
+// Pre-configured page editor
+import { BlockSuitePageEditor } from '@/components/blocksuite'
+
+<BlockSuitePageEditor
+  onReady={(doc) => console.log('Page ready!')}
+/>
+```
+
+**Important Notes**:
+- BlockSuite uses Web Components (requires client-side only)
+- Components are SSR-safe via dynamic imports
+- Test page: `/test/blocksuite` (development only)
+- Icon typo fix applied via patch-package
+- React 19.x requires `--legacy-peer-deps` flag
 
 **Full Patterns**: See [docs/reference/CODE_PATTERNS.md](docs/reference/CODE_PATTERNS.md)
 
