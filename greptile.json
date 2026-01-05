@@ -48,7 +48,7 @@
       },
       {
         "scope": ["next-app/src/lib/ai/**", "next-app/src/app/api/ai/**"],
-        "content": "AI uses capability-based model routing (reasoning=Kimi K2, fast=DeepSeek V3.2, creative=Grok 4, large_context=Claude Haiku). Tool categories: research (no approval), creation/modification/deletion (requires approval). Store pending actions in ai_action_history."
+        "content": "AI uses capability-based model routing via OpenRouter (reasoning=GLM 4.7, fast=DeepSeek V3.2, creative=Grok 4, large_context=Grok 4.1 Fast, default=Kimi K2). AVOID Claude Sonnet (too costly). Tool categories: research (no approval), creation/modification/deletion (requires approval). Store pending actions in ai_action_history."
       },
       {
         "scope": ["**/*"],
