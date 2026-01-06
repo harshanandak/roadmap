@@ -290,8 +290,8 @@ export const MigrationOptionsSchema = z.object({
  */
 export const MigrateSingleRequestSchema = z.object({
   dryRun: z.boolean().default(true),
-  skipLargeMaps: z.boolean().optional(),
-  maxSizeBytes: z.number().int().positive().optional(),
+  skipLargeMaps: z.boolean().optional().default(false), // Default false for single map (process by default)
+  maxSizeBytes: z.number().int().positive().optional().default(100 * 1024), // 100KB default
   force: z.boolean().optional().default(false), // Force re-migration of already migrated maps
 })
 
@@ -302,7 +302,7 @@ export const MigrateWorkspaceRequestSchema = z.object({
   dryRun: z.boolean().default(true),
   batchSize: z.number().int().min(1).max(50).default(10),
   skipLargeMaps: z.boolean().optional().default(true), // Default true for batch safety
-  maxSizeBytes: z.number().int().positive().optional(),
+  maxSizeBytes: z.number().int().positive().optional().default(100 * 1024), // 100KB default
   limit: z.number().int().min(1).max(100).optional(), // Max maps to process in one request
   force: z.boolean().optional().default(false), // Force re-migration of already migrated maps
 })
