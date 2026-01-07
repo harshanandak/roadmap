@@ -148,11 +148,14 @@ export class HybridProvider {
       )
 
       if (result.success) {
-        this.isDirty = false
         this.syncVersion++
 
         // Update metadata in PostgreSQL
-        await this.updateMetadata(result.size ?? state.length)
+        // Note: Only clear isDirty after metadata update succeeds to prevent stale metadata
+        const metadataSuccess = await this.updateMetadata(result.size ?? state.length)
+        if (metadataSuccess) {
+          this.isDirty = false
+        }
       } else {
         console.error('[HybridProvider] Failed to save:', result.error)
         this.onSyncError?.(new Error(result.error ?? 'Unknown save error'))
@@ -192,8 +195,9 @@ export class HybridProvider {
   /**
    * Update document metadata in PostgreSQL
    * Note: Explicit team_id filtering required per project conventions
+   * @returns true if update succeeded, false otherwise
    */
-  private async updateMetadata(sizeBytes: number): Promise<void> {
+  private async updateMetadata(sizeBytes: number): Promise<boolean> {
     try {
       const { error } = await this.supabase
         .from('blocksuite_documents')
@@ -208,9 +212,12 @@ export class HybridProvider {
 
       if (error) {
         console.warn('[HybridProvider] Failed to update metadata:', error)
+        return false
       }
+      return true
     } catch (error) {
       console.warn('[HybridProvider] Metadata update error:', error)
+      return false
     }
   }
 

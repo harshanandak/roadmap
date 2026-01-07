@@ -183,13 +183,22 @@ export function useBlockSuiteDocument(options: {
 
       try {
         // Check if document already exists for this mind map
+        // Note: Use maybeSingle() to return null on zero rows (not an error)
         if (mindMapId) {
-          const { data: existing } = await supabase
+          const { data: existing, error: existingError } = await supabase
             .from('blocksuite_documents')
             .select('id')
             .eq('mind_map_id', mindMapId)
             .eq('team_id', teamId)
-            .single()
+            .maybeSingle()
+
+          // Handle real database errors (not just "no rows found")
+          if (existingError) {
+            console.error('[useBlockSuiteDocument] Error checking existing document:', existingError)
+            setCreateError(existingError)
+            setIsCreating(false)
+            return
+          }
 
           if (existing) {
             setDocumentId(existing.id)
