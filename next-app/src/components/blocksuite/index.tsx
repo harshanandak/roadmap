@@ -285,10 +285,72 @@ export {
   YjsUpdatePayloadSchema,
   validateYjsUpdatePayload,
   safeValidateYjsUpdatePayload,
+  // RAG Layer schemas (Phase 5)
+  EmbeddingStatusSchema,
+  ExtractedNodeTypeSchema,
+  ExtractionOptionsSchema,
+  ChunkOptionsSchema,
+  EmbedMindMapRequestSchema,
+  MindMapChunkMetadataSchema,
+  validateExtractionOptions,
+  safeValidateExtractionOptions,
+  validateChunkOptions,
+  safeValidateChunkOptions,
+  validateEmbedMindMapRequest,
+  safeValidateEmbedMindMapRequest,
 } from './schema'
 export type {
   ValidatedDocumentCreate,
   ValidatedDocumentUpdate,
   ValidatedStateSave,
   ValidatedYjsUpdatePayload,
+  ValidatedExtractionOptions,
+  ValidatedChunkOptions,
+  ValidatedEmbedMindMapRequest,
+  ValidatedMindMapChunkMetadata,
 } from './schema'
+
+// ============================================================
+// RAG Layer Utilities (Phase 5: Embedding Integration)
+// ============================================================
+
+// Re-export RAG types
+export type {
+  MindMapEmbeddingStatusType,
+  MindMapEmbeddingStatus,
+  ExtractedTextNode,
+  ExtractionResult,
+  ExtractionOptions,
+  MindMapChunkForEmbedding,
+  MindMapChunkMetadata,
+  ChunkOptions,
+  EmbedMindMapRequest,
+  EmbedMindMapResponse,
+  MindMapWithEmbeddingStatus,
+  MindMapSearchResult,
+  MindMapEmbedJobType,
+  MindMapEmbedJobStatus,
+  TreeWalkCallback,
+  TreeHashResult,
+} from './rag-types'
+
+// Re-export text extraction utilities
+export {
+  extractTextFromBlockSuiteTree,
+  walkBlockSuiteTree,
+  getSubtreeText,
+  computeTreeHash,
+  getTreeStats,
+  estimateTokens,
+  estimateExtractionTokens,
+} from './text-extractor'
+
+// Re-export chunking utilities
+export {
+  chunkMindmapForEmbedding,
+  batchChunkMindmaps,
+  getChunkStats,
+  validateChunks,
+  DEFAULT_CHUNK_OPTIONS,
+} from './mindmap-chunker'
+export type { ChunkContext } from './mindmap-chunker'

@@ -1,28 +1,30 @@
-'use client'
+"use client";
 
-import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from "@/lib/utils";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
-  MindMapCanvasProps,
+  BlockSuiteLayoutType,
   BlockSuiteMindmapNode,
   BlockSuiteMindmapStyle,
-  BlockSuiteLayoutType,
-} from './mindmap-types'
-import { DEFAULT_SAMPLE_TREE } from './mindmap-types'
+  MindMapCanvasProps,
+} from "./mindmap-types";
+import { DEFAULT_SAMPLE_TREE } from "./mindmap-types";
 
 // Type for BlockSuite Doc (dynamically imported)
-type Doc = import('@blocksuite/store').Doc
+type Doc = import("@blocksuite/store").Doc;
 
 // Type for BlockSuite Store with slots (used for ready event)
 interface StoreWithSlots {
   slots?: {
     ready?: {
-      subscribe: (callback: () => void) => { unsubscribe: () => void }
-    }
+      subscribe: (callback: () => void) => { unsubscribe: () => void };
+    };
     blockUpdated?: {
-      subscribe: (callback: (payload: unknown) => void) => { unsubscribe: () => void }
-    }
-  }
+      subscribe: (callback: (payload: unknown) => void) => {
+        unsubscribe: () => void;
+      };
+    };
+  };
 }
 
 /**
@@ -31,7 +33,7 @@ interface StoreWithSlots {
  */
 function clearContainer(container: HTMLElement): void {
   while (container.firstChild) {
-    container.removeChild(container.firstChild)
+    container.removeChild(container.firstChild);
   }
 }
 
@@ -41,49 +43,51 @@ function clearContainer(container: HTMLElement): void {
  */
 function extractMindmapTree(
   surface: unknown,
-  mindmapId: string
+  mindmapId: string,
 ): BlockSuiteMindmapNode | null {
   try {
     const surfaceWithElements = surface as {
       getElementById?: (id: string) => {
-        tree?: { element?: { text?: string }; children?: unknown[] }
-        children?: BlockSuiteMindmapNode
-      } | null
-    }
+        tree?: { element?: { text?: string }; children?: unknown[] };
+        children?: BlockSuiteMindmapNode;
+      } | null;
+    };
 
     if (!surfaceWithElements.getElementById) {
-      return null
+      return null;
     }
 
-    const mindmapElement = surfaceWithElements.getElementById(mindmapId)
+    const mindmapElement = surfaceWithElements.getElementById(mindmapId);
     if (!mindmapElement) {
-      return null
+      return null;
     }
 
     // Try to access the tree structure - BlockSuite stores it in different ways
     // depending on the version
     if (mindmapElement.children) {
-      return mindmapElement.children as BlockSuiteMindmapNode
+      return mindmapElement.children as BlockSuiteMindmapNode;
     }
 
     if (mindmapElement.tree?.element?.text) {
       // Convert BlockSuite internal format to our format
       const convertNode = (node: {
-        element?: { text?: string }
-        children?: unknown[]
+        element?: { text?: string };
+        children?: unknown[];
       }): BlockSuiteMindmapNode => ({
-        text: node.element?.text || 'Untitled',
+        text: node.element?.text || "Untitled",
         children: node.children?.map((child) =>
-          convertNode(child as { element?: { text?: string }; children?: unknown[] })
+          convertNode(
+            child as { element?: { text?: string }; children?: unknown[] },
+          ),
         ),
-      })
-      return convertNode(mindmapElement.tree)
+      });
+      return convertNode(mindmapElement.tree);
     }
 
-    return null
+    return null;
   } catch (e) {
-    console.warn('Failed to extract mindmap tree:', e)
-    return null
+    console.warn("Failed to extract mindmap tree:", e);
+    return null;
   }
 }
 
@@ -144,260 +148,286 @@ export function MindMapCanvas({
   readOnly = false,
   className,
 }: MindMapCanvasProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const editorRef = useRef<unknown>(null)
-  const docRef = useRef<Doc | null>(null)
-  const mindmapIdRef = useRef<string | null>(null)
-  const hasWarnedAboutNodeSelect = useRef(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<unknown>(null);
+  const docRef = useRef<Doc | null>(null);
+  const mindmapIdRef = useRef<string | null>(null);
+  const hasWarnedAboutNodeSelect = useRef(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Memoize the tree to use - either provided or default
   const treeToRender = useMemo(() => {
-    return initialTree || DEFAULT_SAMPLE_TREE
-  }, [initialTree])
+    return initialTree || DEFAULT_SAMPLE_TREE;
+  }, [initialTree]);
 
   // Warn ONCE if onNodeSelect is provided but not yet implemented
   // Using ref to prevent duplicate warnings on re-renders with new callback references
   useEffect(() => {
     if (onNodeSelect && !hasWarnedAboutNodeSelect.current) {
-      hasWarnedAboutNodeSelect.current = true
+      hasWarnedAboutNodeSelect.current = true;
       console.warn(
-        'MindMapCanvas: onNodeSelect prop is not yet implemented. ' +
-          'Node selection events will not fire. This feature is planned for a future release.'
-      )
+        "MindMapCanvas: onNodeSelect prop is not yet implemented. " +
+          "Node selection events will not fire. This feature is planned for a future release.",
+      );
     }
-  }, [onNodeSelect])
+  }, [onNodeSelect]);
 
   // Cleanup function
   const cleanup = useCallback(() => {
     if (editorRef.current && containerRef.current) {
       try {
-        const editor = editorRef.current as { remove?: () => void }
-        if (typeof editor.remove === 'function') {
-          editor.remove()
+        const editor = editorRef.current as { remove?: () => void };
+        if (typeof editor.remove === "function") {
+          editor.remove();
         } else if (containerRef.current.firstChild) {
-          containerRef.current.removeChild(containerRef.current.firstChild)
+          containerRef.current.removeChild(containerRef.current.firstChild);
         }
       } catch (e) {
-        console.warn('MindMapCanvas cleanup warning:', e)
+        console.warn("MindMapCanvas cleanup warning:", e);
       }
-      editorRef.current = null
+      editorRef.current = null;
     }
-    docRef.current = null
-    mindmapIdRef.current = null
-  }, [])
+    docRef.current = null;
+    mindmapIdRef.current = null;
+  }, []);
 
   // Initialize editor effect
   useEffect(() => {
-    let mounted = true
-    const subscriptions: Array<{ unsubscribe: () => void }> = []
+    let mounted = true;
+    const subscriptions: Array<{ unsubscribe: () => void }> = [];
 
     const initMindMap = async () => {
-      if (!containerRef.current) return
+      if (!containerRef.current) return;
 
       try {
-        setIsLoading(true)
-        setError(null)
+        setIsLoading(true);
+        setError(null);
 
         // Dynamic imports to avoid SSR issues
         // BlockSuite uses browser APIs that aren't available during SSR
         const [presetsModule, blocksModule, storeModule] = await Promise.all([
-          import('@blocksuite/presets'),
-          import('@blocksuite/blocks'),
-          import('@blocksuite/store'),
-        ])
+          import("@blocksuite/presets"),
+          import("@blocksuite/blocks"),
+          import("@blocksuite/store"),
+        ]);
 
-        if (!mounted) return
+        if (!mounted) return;
 
-        const { EdgelessEditor } = presetsModule
-        const { AffineSchemas } = blocksModule
-        const { Schema, DocCollection } = storeModule
+        const { EdgelessEditor } = presetsModule;
+        const { AffineSchemas } = blocksModule;
+        const { Schema, DocCollection } = storeModule;
 
         // Set up schema with Affine blocks
-        const schema = new Schema()
-        schema.register(AffineSchemas)
+        const schema = new Schema();
+        schema.register(AffineSchemas);
 
         // Create document collection and doc
-        const collectionId = `mindmap-collection-${Date.now()}`
-        const docId = documentId || `mindmap-doc-${Date.now()}`
+        const collectionId = `mindmap-collection-${Date.now()}`;
+        const docId = documentId || `mindmap-doc-${Date.now()}`;
 
         const collection = new DocCollection({
           schema,
           id: collectionId,
-        })
-        const doc = collection.createDoc({ id: docId })
+        });
+        const doc = collection.createDoc({ id: docId });
 
         // Store surface block reference for mindmap creation
-        let surfaceId: string = ''
+        let surfaceId: string = "";
 
         // Initialize with required root blocks
         doc.load(() => {
-          const pageBlockId = doc.addBlock('affine:page', {})
-          surfaceId = doc.addBlock('affine:surface', {}, pageBlockId)
+          const pageBlockId = doc.addBlock("affine:page", {});
+          surfaceId = doc.addBlock("affine:surface", {}, pageBlockId);
           // Add a note block for any text content
-          const noteBlockId = doc.addBlock('affine:note', {}, pageBlockId)
-          doc.addBlock('affine:paragraph', {}, noteBlockId)
-        })
+          const noteBlockId = doc.addBlock("affine:note", {}, pageBlockId);
+          doc.addBlock("affine:paragraph", {}, noteBlockId);
+        });
 
-        docRef.current = doc
+        docRef.current = doc;
 
-        if (!mounted) return
+        if (!mounted) return;
 
         // Create the edgeless editor
-        const editor = new EdgelessEditor()
+        const editor = new EdgelessEditor();
 
         // Set editor properties using unknown cast for dynamic properties
         // EdgelessEditor may not expose all properties in its TypeScript definition
         const editorElement = editor as unknown as {
-          doc: Doc
-          readonly: boolean
-        }
-        editorElement.doc = doc
-        editorElement.readonly = readOnly
+          doc: Doc;
+          readonly: boolean;
+        };
+        editorElement.doc = doc;
+        editorElement.readonly = readOnly;
 
         // Mount to container
         if (containerRef.current && mounted) {
-          clearContainer(containerRef.current)
-          containerRef.current.appendChild(editor as Node)
-          editorRef.current = editor
+          clearContainer(containerRef.current);
+          containerRef.current.appendChild(editor as Node);
+          editorRef.current = editor;
 
           // Function to add mindmap once surface is ready
           const addMindmapToSurface = () => {
-            if (!mounted || !surfaceId) return false
+            if (!mounted || !surfaceId) return false;
 
             try {
-              const surface = doc.getBlockById(surfaceId)
+              const surface = doc.getBlockById(surfaceId);
 
-              if (surface && 'addElement' in surface) {
+              if (surface && "addElement" in surface) {
                 // Surface is ready - add mindmap element
                 const surfaceBlock = surface as {
                   addElement: (props: {
-                    type: string
-                    children?: BlockSuiteMindmapNode
-                    style?: number
-                    layoutType?: number
-                  }) => string
-                }
+                    type: string;
+                    children?: BlockSuiteMindmapNode;
+                    style?: number;
+                    layoutType?: number;
+                  }) => string;
+                };
 
                 const mindmapId = surfaceBlock.addElement({
-                  type: 'mindmap',
+                  type: "mindmap",
                   children: treeToRender,
                   style: style,
                   layoutType: layout, // 0=RIGHT, 1=LEFT, 2=BALANCE
-                })
+                });
 
-                mindmapIdRef.current = mindmapId
-                return true
+                mindmapIdRef.current = mindmapId;
+                return true;
               }
-              return false
+              return false;
             } catch (e) {
-              console.warn('Failed to add mindmap element:', e)
-              return false
+              console.warn("Failed to add mindmap element:", e);
+              return false;
             }
-          }
+          };
 
           // Use BlockSuite's store.slots.ready event for proper initialization
           // This is the recommended approach per BlockSuite documentation
-          const storeWithSlots = doc as unknown as StoreWithSlots
+          const storeWithSlots = doc as unknown as StoreWithSlots;
           if (storeWithSlots.slots?.ready) {
-            const readySubscription = storeWithSlots.slots.ready.subscribe(() => {
-              if (!mounted) return
+            const readySubscription = storeWithSlots.slots.ready.subscribe(
+              () => {
+                if (!mounted) return;
 
-              // Try to add mindmap now that store is ready
-              if (!addMindmapToSurface()) {
-                // If surface still not ready (rare edge case), use short polling as fallback
-                // This handles cases where ready fires before surface block is fully initialized
-                const MAX_FALLBACK_ATTEMPTS = 5
-                const FALLBACK_INTERVAL_MS = 100
-                let attempts = 0
+                // Try to add mindmap now that store is ready
+                if (!addMindmapToSurface()) {
+                  // If surface still not ready (rare edge case), use short polling as fallback
+                  // This handles cases where ready fires before surface block is fully initialized
+                  const MAX_FALLBACK_ATTEMPTS = 5;
+                  const FALLBACK_INTERVAL_MS = 100;
+                  let attempts = 0;
 
-                const fallbackTry = () => {
-                  if (!mounted) return
-                  if (addMindmapToSurface()) return
-                  if (attempts < MAX_FALLBACK_ATTEMPTS) {
-                    attempts++
-                    setTimeout(fallbackTry, FALLBACK_INTERVAL_MS)
-                  } else {
-                    console.warn('Surface not ready after ready event + fallback attempts')
-                    if (mounted) {
-                      setError('Mind map surface failed to initialize. Please try refreshing the page.')
+                  const fallbackTry = () => {
+                    if (!mounted) return;
+                    if (addMindmapToSurface()) return;
+                    if (attempts < MAX_FALLBACK_ATTEMPTS) {
+                      attempts++;
+                      setTimeout(fallbackTry, FALLBACK_INTERVAL_MS);
+                    } else {
+                      console.warn(
+                        "Surface not ready after ready event + fallback attempts",
+                      );
+                      if (mounted) {
+                        setError(
+                          "Mind map surface failed to initialize. Please try refreshing the page.",
+                        );
+                      }
                     }
-                  }
+                  };
+                  fallbackTry();
                 }
-                fallbackTry()
-              }
-            })
-            subscriptions.push(readySubscription)
+              },
+            );
+            subscriptions.push(readySubscription);
           } else {
             // Fallback for older BlockSuite versions without slots.ready
             // Use polling approach with clear timing rationale
-            const MAX_ATTEMPTS = 20 // 20 attempts × 100ms = 2000ms max wait
-            const POLL_INTERVAL_MS = 100
-            let attempts = 0
+            const MAX_ATTEMPTS = 20; // 20 attempts × 100ms = 2000ms max wait
+            const POLL_INTERVAL_MS = 100;
+            let attempts = 0;
 
             const pollForSurface = () => {
-              if (!mounted) return
-              if (addMindmapToSurface()) return
+              if (!mounted) return;
+              if (addMindmapToSurface()) return;
               if (attempts < MAX_ATTEMPTS) {
-                attempts++
-                setTimeout(pollForSurface, POLL_INTERVAL_MS)
+                attempts++;
+                setTimeout(pollForSurface, POLL_INTERVAL_MS);
               } else {
-                console.warn('Surface not ready after max polling attempts (2s)')
+                console.warn(
+                  "Surface not ready after max polling attempts (2s)",
+                );
                 if (mounted) {
-                  setError('Mind map surface failed to initialize. Please try refreshing the page.')
+                  setError(
+                    "Mind map surface failed to initialize. Please try refreshing the page.",
+                  );
                 }
               }
-            }
-            pollForSurface()
+            };
+            pollForSurface();
           }
 
           // Set up change listener using blockUpdated event
           if (storeWithSlots.slots?.blockUpdated) {
-            const updateSubscription = storeWithSlots.slots.blockUpdated.subscribe(() => {
-              if (onTreeChange && mounted) {
-                // Try to extract the actual current tree from BlockSuite
-                const surface = doc.getBlockById(surfaceId)
-                const mindmapId = mindmapIdRef.current
+            const updateSubscription =
+              storeWithSlots.slots.blockUpdated.subscribe(() => {
+                if (onTreeChange && mounted) {
+                  // Try to extract the actual current tree from BlockSuite
+                  const surface = doc.getBlockById(surfaceId);
+                  const mindmapId = mindmapIdRef.current;
 
-                if (surface && mindmapId) {
-                  const extractedTree = extractMindmapTree(surface, mindmapId)
-                  if (extractedTree) {
-                    onTreeChange(extractedTree)
-                    return
+                  if (surface && mindmapId) {
+                    const extractedTree = extractMindmapTree(
+                      surface,
+                      mindmapId,
+                    );
+                    if (extractedTree) {
+                      onTreeChange(extractedTree);
+                      return;
+                    }
                   }
-                }
 
-                // Known limitation: When BlockSuite tree extraction fails, we cannot
-                // retrieve the actual modified tree. Fallback notifies consumers that
-                // a change occurred, but tree data may be stale.
-                console.warn('Tree extraction failed - returning original tree. Actual changes may differ.')
-                onTreeChange(treeToRender)
-              }
-            })
-            subscriptions.push(updateSubscription)
+                  // Known limitation: When BlockSuite tree extraction fails, we cannot
+                  // retrieve the actual modified tree. Fallback notifies consumers that
+                  // a change occurred, but tree data may be stale.
+                  console.warn(
+                    "Tree extraction failed - returning original tree. Actual changes may differ.",
+                  );
+                  onTreeChange(treeToRender);
+                }
+              });
+            subscriptions.push(updateSubscription);
           }
 
-          setIsLoading(false)
+          setIsLoading(false);
         }
       } catch (e) {
-        console.error('Failed to initialize MindMapCanvas:', e)
+        console.error("Failed to initialize MindMapCanvas:", e);
         if (mounted) {
-          setError(e instanceof Error ? e.message : 'Failed to load mind map editor')
-          setIsLoading(false)
+          setError(
+            e instanceof Error ? e.message : "Failed to load mind map editor",
+          );
+          setIsLoading(false);
         }
       }
-    }
+    };
 
-    initMindMap()
+    initMindMap();
 
     return () => {
-      mounted = false
+      mounted = false;
       // Unsubscribe from all BlockSuite event subscriptions
-      subscriptions.forEach((sub) => sub.unsubscribe())
-      cleanup()
-    }
-  }, [documentId, treeToRender, style, layout, readOnly, onTreeChange, cleanup])
+      subscriptions.forEach((sub) => sub.unsubscribe());
+      cleanup();
+    };
+  }, [
+    documentId,
+    treeToRender,
+    style,
+    layout,
+    readOnly,
+    onTreeChange,
+    cleanup,
+  ]);
 
   // Handle node selection (would require more complex setup with BlockSuite events)
   // For now, this is a placeholder that can be enhanced later
@@ -406,12 +436,14 @@ export function MindMapCanvas({
     return (
       <div
         className={cn(
-          'flex items-center justify-center h-full min-h-[400px] bg-destructive/10 rounded-lg',
-          className
+          `flex items-center justify-center h-full min-h-[400px] bg-destructive/10 rounded-lg`,
+          className,
         )}
       >
         <div className="text-center p-4">
-          <p className="text-destructive font-medium">Failed to load mind map</p>
+          <p className="text-destructive font-medium">
+            Failed to load mind map
+          </p>
           <p className="text-sm text-muted-foreground mt-1">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -421,23 +453,23 @@ export function MindMapCanvas({
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        'blocksuite-mindmap-container w-full h-full min-h-[400px]',
-        isLoading && 'opacity-0',
-        className
+        "blocksuite-mindmap-container w-full h-full min-h-[400px]",
+        isLoading && "opacity-0",
+        className,
       )}
       style={{
-        display: 'flex',
-        flexDirection: 'column',
+        display: "flex",
+        flexDirection: "column",
       }}
     />
-  )
+  );
 }
 
-export default MindMapCanvas
+export default MindMapCanvas;

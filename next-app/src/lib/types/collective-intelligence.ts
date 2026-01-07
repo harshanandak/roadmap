@@ -216,11 +216,28 @@ export interface ConceptRelationshipInsert {
 // COMPRESSION JOBS
 // =============================================================================
 
-export type CompressionJobType =
-  | 'l2_summary'
-  | 'l3_clustering'
-  | 'l4_extraction'
-  | 'full_refresh'
+/**
+ * Valid compression job types - single source of truth for both type and validation
+ */
+export const COMPRESSION_JOB_TYPES = [
+  'l2_summary',
+  'l3_clustering',
+  'l4_extraction',
+  'full_refresh',
+  'mindmap_embed', // Phase 5: BlockSuite mind map embedding
+] as const
+
+/**
+ * Compression job type derived from const array - ensures type and validation stay in sync
+ */
+export type CompressionJobType = (typeof COMPRESSION_JOB_TYPES)[number]
+
+/**
+ * Type guard for runtime validation of compression job types
+ */
+export function isValidCompressionJobType(value: unknown): value is CompressionJobType {
+  return typeof value === 'string' && COMPRESSION_JOB_TYPES.includes(value as CompressionJobType)
+}
 
 export type CompressionJobStatus = 'pending' | 'running' | 'completed' | 'failed'
 
