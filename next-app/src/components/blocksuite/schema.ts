@@ -372,3 +372,137 @@ export function validateMigrateWorkspaceRequest(request: unknown): ValidatedMigr
 export function safeValidateMigrateWorkspaceRequest(request: unknown) {
   return MigrateWorkspaceRequestSchema.safeParse(request)
 }
+
+// ============================================================
+// Persistence Schemas (Phase 4: Supabase Persistence)
+// ============================================================
+
+/**
+ * Document type schema for BlockSuite documents
+ */
+export const BlockSuiteDocumentTypeSchema = z.enum(['mindmap', 'document', 'canvas'])
+
+/**
+ * BlockSuite document creation request schema
+ */
+export const BlockSuiteDocumentCreateSchema = z.object({
+  /** Optional mind map ID to link to */
+  mindMapId: z.string().max(100).optional(),
+  /** Optional workspace ID */
+  workspaceId: z.string().max(100).optional(),
+  /** Document type (default: mindmap) */
+  documentType: BlockSuiteDocumentTypeSchema.default('mindmap'),
+  /** Optional title */
+  title: z.string().max(255).optional(),
+  /** Optional initial Yjs state as base64 */
+  initialState: z.string().optional(),
+})
+
+/**
+ * BlockSuite document update request schema
+ */
+export const BlockSuiteDocumentUpdateSchema = z.object({
+  /** Optional title update */
+  title: z.string().max(255).optional(),
+  /** Optional document type update */
+  documentType: BlockSuiteDocumentTypeSchema.optional(),
+})
+
+/**
+ * BlockSuite Yjs state save schema (for metadata update)
+ * Note: The actual binary state is sent as request body
+ */
+export const BlockSuiteStateSaveSchema = z.object({
+  /** Sync version for optimistic concurrency */
+  syncVersion: z.number().int().positive().optional(),
+})
+
+/**
+ * Inferred types from schemas
+ */
+export type ValidatedDocumentCreate = z.infer<typeof BlockSuiteDocumentCreateSchema>
+export type ValidatedDocumentUpdate = z.infer<typeof BlockSuiteDocumentUpdateSchema>
+export type ValidatedStateSave = z.infer<typeof BlockSuiteStateSaveSchema>
+
+/**
+ * Validate document creation request and throw on error
+ */
+export function validateDocumentCreate(data: unknown): ValidatedDocumentCreate {
+  return BlockSuiteDocumentCreateSchema.parse(data)
+}
+
+/**
+ * Safe validation for document creation that returns result object
+ */
+export function safeValidateDocumentCreate(data: unknown) {
+  return BlockSuiteDocumentCreateSchema.safeParse(data)
+}
+
+/**
+ * Validate document update request and throw on error
+ */
+export function validateDocumentUpdate(data: unknown): ValidatedDocumentUpdate {
+  return BlockSuiteDocumentUpdateSchema.parse(data)
+}
+
+/**
+ * Safe validation for document update that returns result object
+ */
+export function safeValidateDocumentUpdate(data: unknown) {
+  return BlockSuiteDocumentUpdateSchema.safeParse(data)
+}
+
+/**
+ * Validate state save request and throw on error
+ */
+export function validateStateSave(data: unknown): ValidatedStateSave {
+  return BlockSuiteStateSaveSchema.parse(data)
+}
+
+/**
+ * Safe validation for state save that returns result object
+ */
+export function safeValidateStateSave(data: unknown) {
+  return BlockSuiteStateSaveSchema.safeParse(data)
+}
+
+// ============================================================
+// Realtime Payload Schemas (Phase 4: Security)
+// ============================================================
+
+/**
+ * Yjs update payload schema for Supabase Realtime broadcasts
+ * SECURITY: Validates all fields before applying remote updates
+ */
+export const YjsUpdatePayloadSchema = z.object({
+  /** Base64-encoded Yjs update binary */
+  // Note: Binary 10MB (10,485,760 bytes) becomes ~14MB when base64 encoded (4/3 ratio)
+  update: z.string().min(1).max(13981014), // Max 10MB binary → ~14MB base64
+  /** Document ID this update belongs to (supports timestamp IDs like Date.now().toString()) */
+  documentId: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'documentId must contain only alphanumeric characters, hyphens, or underscores'),
+  /** Origin of the update (for filtering own broadcasts) */
+  origin: z.string().max(50).optional(),
+})
+
+/**
+ * Inferred type from schema
+ */
+export type ValidatedYjsUpdatePayload = z.infer<typeof YjsUpdatePayloadSchema>
+
+/**
+ * Validate Yjs update payload and throw on error
+ */
+export function validateYjsUpdatePayload(data: unknown): ValidatedYjsUpdatePayload {
+  return YjsUpdatePayloadSchema.parse(data)
+}
+
+/**
+ * Safe validation for Yjs update payload that returns result object
+ */
+export function safeValidateYjsUpdatePayload(data: unknown) {
+  return YjsUpdatePayloadSchema.safeParse(data)
+}

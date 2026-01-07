@@ -219,3 +219,76 @@ export type {
   ValidatedMigrateSingleRequest,
   ValidatedMigrateWorkspaceRequest,
 } from './schema'
+
+// ============================================================
+// Persistence Utilities (Phase 4: Supabase Persistence)
+// ============================================================
+
+// Re-export persistence types
+export type {
+  BlockSuiteDocumentType,
+  BlockSuiteDocumentMetadata,
+  CreateDocumentInput,
+  UpdateDocumentInput,
+  StorageResult,
+  HybridProviderOptions,
+  HybridProviderState,
+  UseBlockSuiteSyncOptions,
+  UseBlockSuiteSyncReturn,
+  YjsUpdatePayload,
+  RealtimeEventType,
+  CreateDocumentResponse,
+  ListDocumentsResponse,
+  ApiErrorResponse,
+} from './persistence-types'
+
+// Re-export persistence constants and security utilities
+export {
+  BLOCKSUITE_STORAGE_BUCKET,
+  getStoragePath,
+  sanitizeId,
+  isValidId,
+  DEFAULT_DEBOUNCE_MS,
+  LARGE_DOCUMENT_THRESHOLD,
+  MAX_DOCUMENT_SIZE,
+} from './persistence-types'
+
+// Re-export storage client functions
+export {
+  saveYjsState,
+  loadYjsState,
+  deleteYjsState,
+  existsYjsState,
+  getYjsStateSize,
+  listTeamDocuments,
+} from './storage-client'
+
+// Re-export hybrid provider
+export { HybridProvider } from './hybrid-provider'
+
+// Re-export sync hooks
+export { useBlockSuiteSync, useBlockSuiteDocument } from './use-blocksuite-sync'
+
+// Re-export persistence schemas
+export {
+  BlockSuiteDocumentTypeSchema,
+  BlockSuiteDocumentCreateSchema,
+  BlockSuiteDocumentUpdateSchema,
+  BlockSuiteStateSaveSchema,
+  validateDocumentCreate,
+  safeValidateDocumentCreate,
+  validateDocumentUpdate,
+  safeValidateDocumentUpdate,
+  validateStateSave,
+  safeValidateStateSave,
+  // Realtime payload validation (Phase 4 Security)
+  YjsUpdatePayloadSchema,
+  validateYjsUpdatePayload,
+  safeValidateYjsUpdatePayload,
+} from './schema'
+export type {
+  ValidatedDocumentCreate,
+  ValidatedDocumentUpdate,
+  ValidatedStateSave,
+  ValidatedYjsUpdatePayload,
+} from './schema'
