@@ -63,11 +63,23 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get document metadata (RLS filters by team_id)
+    // Get user's team memberships for explicit filtering
+    const { data: memberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', user.id)
+
+    const teamIds = memberships?.map((m) => m.team_id) ?? []
+    if (teamIds.length === 0) {
+      return NextResponse.json({ error: 'No team access' }, { status: 403 })
+    }
+
+    // Get document metadata with explicit team_id filtering
     const { data: document, error } = await supabase
       .from('blocksuite_documents')
       .select('*')
       .eq('id', id)
+      .in('team_id', teamIds)
       .single()
 
     if (error || !document) {
@@ -126,6 +138,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get user's team memberships for explicit filtering
+    const { data: memberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', user.id)
+
+    const teamIds = memberships?.map((m) => m.team_id) ?? []
+    if (teamIds.length === 0) {
+      return NextResponse.json({ error: 'No team access' }, { status: 403 })
+    }
+
     // Build updates object
     const updates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -134,11 +157,12 @@ export async function PATCH(
     if (title !== undefined) updates.title = title
     if (documentType !== undefined) updates.document_type = documentType
 
-    // Update document metadata (RLS filters by team_id)
+    // Update document metadata with explicit team_id filtering
     const { data: document, error } = await supabase
       .from('blocksuite_documents')
       .update(updates)
       .eq('id', id)
+      .in('team_id', teamIds)
       .select()
       .single()
 
@@ -194,11 +218,23 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get document first to get storage_path (RLS filters by team_id)
+    // Get user's team memberships for explicit filtering
+    const { data: memberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', user.id)
+
+    const teamIds = memberships?.map((m) => m.team_id) ?? []
+    if (teamIds.length === 0) {
+      return NextResponse.json({ error: 'No team access' }, { status: 403 })
+    }
+
+    // Get document first to get storage_path with explicit team_id filtering
     const { data: document, error: fetchError } = await supabase
       .from('blocksuite_documents')
       .select('id, team_id, storage_path')
       .eq('id', id)
+      .in('team_id', teamIds)
       .single()
 
     if (fetchError || !document) {
@@ -222,11 +258,12 @@ export async function DELETE(
       // Continue even if storage delete fails - file may not exist yet
     }
 
-    // Delete document metadata
+    // Delete document metadata with explicit team_id filtering
     const { error: deleteError } = await supabase
       .from('blocksuite_documents')
       .delete()
       .eq('id', id)
+      .in('team_id', teamIds)
 
     if (deleteError) {
       console.error('Error deleting document:', deleteError)

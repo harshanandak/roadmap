@@ -111,11 +111,23 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get document metadata (validates team access via RLS)
+    // Get user's team memberships for explicit filtering
+    const { data: memberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', user.id)
+
+    const teamIds = memberships?.map((m) => m.team_id) ?? []
+    if (teamIds.length === 0) {
+      return NextResponse.json({ error: 'No team access' }, { status: 403 })
+    }
+
+    // Get document metadata with explicit team_id filtering
     const { data: doc, error: docError } = await supabase
       .from('blocksuite_documents')
       .select('id, team_id, storage_path')
       .eq('id', id)
+      .in('team_id', teamIds)
       .single()
 
     if (docError || !doc) {
@@ -209,11 +221,23 @@ export async function PUT(
       )
     }
 
-    // Get document metadata (validates team access via RLS)
+    // Get user's team memberships for explicit filtering
+    const { data: memberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', user.id)
+
+    const teamIds = memberships?.map((m) => m.team_id) ?? []
+    if (teamIds.length === 0) {
+      return NextResponse.json({ error: 'No team access' }, { status: 403 })
+    }
+
+    // Get document metadata with explicit team_id filtering
     const { data: doc, error: docError } = await supabase
       .from('blocksuite_documents')
       .select('id, team_id, storage_path, sync_version')
       .eq('id', id)
+      .in('team_id', teamIds)
       .single()
 
     if (docError || !doc) {
