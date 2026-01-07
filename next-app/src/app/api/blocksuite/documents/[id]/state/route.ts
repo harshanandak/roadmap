@@ -297,8 +297,10 @@ export async function PUT(
     }
 
     // Update metadata in PostgreSQL with explicit team_id filtering
+    // CRITICAL: Use .select() to verify rows were actually updated
+    // Without .select(), Supabase returns null error even when 0 rows match
     const newSyncVersion = (doc.sync_version ?? 0) + 1
-    const { error: updateError } = await supabase
+    const { data: updateData, error: updateError } = await supabase
       .from('blocksuite_documents')
       .update({
         storage_size_bytes: state.length,
@@ -308,8 +310,12 @@ export async function PUT(
       })
       .eq('id', id)
       .in('team_id', teamIds)
+      .select('id')
 
-    if (updateError) {
+    // Check for both explicit errors AND silent failures (0 rows updated)
+    const updateFailed = updateError || !updateData || updateData.length === 0
+
+    if (updateFailed) {
       // Rollback: Delete the uploaded state to maintain consistency
       console.error('Metadata update failed, rolling back storage upload:', updateError)
       const { error: cleanupError } = await supabase.storage

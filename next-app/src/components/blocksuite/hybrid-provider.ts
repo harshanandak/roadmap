@@ -207,7 +207,9 @@ export class HybridProvider {
     newSyncVersion: number
   ): Promise<boolean> {
     try {
-      const { error } = await this.supabase
+      // CRITICAL: Use .select() to verify rows were actually updated
+      // Without .select(), Supabase returns null error even when 0 rows match
+      const { data, error } = await this.supabase
         .from('blocksuite_documents')
         .update({
           storage_size_bytes: sizeBytes,
@@ -217,11 +219,19 @@ export class HybridProvider {
         })
         .eq('id', this.documentId)
         .eq('team_id', this.teamId)
+        .select('id')
 
       if (error) {
         console.warn('[HybridProvider] Failed to update metadata:', error)
         return false
       }
+
+      // Verify at least one row was updated
+      if (!data || data.length === 0) {
+        console.warn('[HybridProvider] Metadata update matched 0 rows - document may not exist or team access denied')
+        return false
+      }
+
       return true
     } catch (error) {
       console.warn('[HybridProvider] Metadata update error:', error)

@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import type { Doc } from 'yjs'
 import { createClient } from '@/lib/supabase/client'
 import { HybridProvider } from './hybrid-provider'
@@ -43,7 +43,11 @@ export function useBlockSuiteSync(
   options: UseBlockSuiteSyncOptions
 ): UseBlockSuiteSyncReturn {
   const providerRef = useRef<HybridProvider | null>(null)
-  const supabase = createClient()
+
+  // CRITICAL: Memoize supabase client to prevent effect re-runs on every render
+  // Without useMemo, createClient() returns a new instance each render,
+  // causing HybridProvider to be destroyed and recreated constantly
+  const supabase = useMemo(() => createClient(), [])
 
   const [isLoading, setIsLoading] = useState(true)
   const [isConnected, setIsConnected] = useState(false)
