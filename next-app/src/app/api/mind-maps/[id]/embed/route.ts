@@ -36,6 +36,19 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get user's team for explicit team_id filtering (multi-tenant safety)
+    const { data: membership, error: memberError } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (memberError || !membership) {
+      return NextResponse.json({ error: 'Team not found' }, { status: 404 })
+    }
+
+    const teamId = membership.team_id
+
     // Parse and validate request body
     let force = false
     try {
@@ -48,11 +61,12 @@ export async function POST(
       // Empty body is fine, use defaults
     }
 
-    // Verify mind map exists and user has access (RLS handles team check)
+    // Verify mind map exists and user has access (explicit team_id filter + RLS)
     const { data: mindMap, error: mindMapError } = await supabase
       .from('mind_maps')
       .select('id')
       .eq('id', mindMapId)
+      .eq('team_id', teamId)
       .single()
 
     if (mindMapError || !mindMap) {
@@ -115,11 +129,25 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get mind map embedding status
+    // Get user's team for explicit team_id filtering (multi-tenant safety)
+    const { data: membership, error: memberError } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (memberError || !membership) {
+      return NextResponse.json({ error: 'Team not found' }, { status: 404 })
+    }
+
+    const teamId = membership.team_id
+
+    // Get mind map embedding status (explicit team_id filter + RLS)
     const { data: mindMap, error } = await supabase
       .from('mind_maps')
       .select('id, name, embedding_status, embedding_error, last_embedded_at, embedding_version, chunk_count')
       .eq('id', mindMapId)
+      .eq('team_id', teamId)
       .single()
 
     if (error || !mindMap) {
