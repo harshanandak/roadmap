@@ -164,7 +164,10 @@ export function useBlockSuiteDocument(options: {
   title?: string
   enabled?: boolean
 }) {
-  const supabase = createClient()
+  // CRITICAL: Memoize supabase client to prevent effect re-runs on every render
+  // Without useMemo, createClient() returns a new instance each render,
+  // causing repeated database queries and state resets
+  const supabase = useMemo(() => createClient(), [])
   const [documentId, setDocumentId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<Error | null>(null)
