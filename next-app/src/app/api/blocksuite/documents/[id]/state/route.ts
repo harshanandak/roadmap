@@ -284,7 +284,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Failed to save state' }, { status: 500 })
     }
 
-    // Update metadata in PostgreSQL
+    // Update metadata in PostgreSQL with explicit team_id filtering
     const newSyncVersion = (doc.sync_version ?? 0) + 1
     const { error: updateError } = await supabase
       .from('blocksuite_documents')
@@ -295,6 +295,7 @@ export async function PUT(
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .in('team_id', teamIds)
 
     if (updateError) {
       // Rollback: Delete the uploaded state to maintain consistency
