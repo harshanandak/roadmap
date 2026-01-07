@@ -166,9 +166,12 @@ export async function PATCH(
       .select()
       .single()
 
-    if (error) {
+    if (error || !document) {
       console.error('Error updating document:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json(
+        { error: error?.message ?? 'Document not found' },
+        { status: error ? 500 : 404 }
+      )
     }
 
     // SECURITY: Audit log
