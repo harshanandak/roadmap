@@ -31,6 +31,5 @@ FOR ALL USING (
   )
 );
 
--- Comment
-COMMENT ON POLICY "blocksuite_storage_team_access" ON storage.objects IS
-  'Team members can access Yjs documents in their team folder. Path must match {team_id}/{doc_id}.yjs format with alphanumeric IDs only. Path traversal blocked.';
+-- Note: Cannot add COMMENT on storage.objects policy (owned by Supabase)
+-- Security documentation in file header comments above

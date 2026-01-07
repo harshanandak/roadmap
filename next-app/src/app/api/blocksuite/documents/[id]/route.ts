@@ -6,6 +6,7 @@
  * Yjs binary state is stored in Supabase Storage, not PostgreSQL.
  *
  * SECURITY:
+ * - Rate limiting prevents abuse (120 req/min/user)
  * - Document ID validation prevents path traversal
  * - Zod validation on all inputs
  * - RLS policies enforce team_id filtering
@@ -16,6 +17,55 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { isValidId } from '@/components/blocksuite/persistence-types'
 import { safeValidateDocumentUpdate } from '@/components/blocksuite/schema'
+
+// ============================================================================
+// Rate Limiting (In-memory, resets on cold start - acceptable for MVP)
+// ============================================================================
+
+interface RateLimitEntry {
+  count: number
+  resetAt: number
+}
+
+// Rate limit: 120 requests per minute per user (less strict than state upload)
+const RATE_LIMIT_MAX = 120
+const RATE_LIMIT_WINDOW_MS = 60 * 1000
+
+// In-memory rate limit store (per-user)
+const rateLimitStore = new Map<string, RateLimitEntry>()
+
+/**
+ * Check rate limit for a user
+ * Returns true if allowed, false if rate limited
+ */
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitStore.get(userId)
+
+  // Clean up old entries periodically (every 100th call)
+  if (Math.random() < 0.01) {
+    for (const [key, value] of rateLimitStore.entries()) {
+      if (value.resetAt < now) {
+        rateLimitStore.delete(key)
+      }
+    }
+  }
+
+  if (!entry || entry.resetAt < now) {
+    // New window or expired - reset
+    rateLimitStore.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return true
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    // Rate limited
+    return false
+  }
+
+  // Increment count
+  entry.count++
+  return true
+}
 
 /**
  * Audit log helper for security-relevant operations
@@ -138,6 +188,19 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // SECURITY: Rate limiting
+    if (!checkRateLimit(user.id)) {
+      auditLog('rate_limit_exceeded', {
+        userId: user.id,
+        documentId: id,
+        endpoint: 'document_update',
+      })
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     // Get user's team memberships for explicit filtering
     const { data: memberships } = await supabase
       .from('team_members')
@@ -219,6 +282,19 @@ export async function DELETE(
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // SECURITY: Rate limiting (DELETE is especially sensitive)
+    if (!checkRateLimit(user.id)) {
+      auditLog('rate_limit_exceeded', {
+        userId: user.id,
+        documentId: id,
+        endpoint: 'document_delete',
+      })
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429 }
+      )
     }
 
     // Get user's team memberships for explicit filtering
