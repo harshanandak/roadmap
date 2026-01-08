@@ -588,11 +588,16 @@ export function logSlowRequest(
   workspaceId: string
 ): void {
   if (duration > 60_000) {
-    console.warn(`[AI_SLOW_REQUEST] ${modelId} took ${duration}ms`, {
-      model: modelId,
-      tokens: usage,
-      workspaceId: redactId(workspaceId), // Redacted for security
-      durationMs: duration,
-    })
+    console.warn(
+      '[AI_SLOW_REQUEST] %s took %dms',
+      modelId,
+      duration,
+      {
+        model: modelId,
+        tokens: usage,
+        workspaceId: redactId(workspaceId), // Redacted for security
+        durationMs: duration,
+      }
+    )
   }
 }
