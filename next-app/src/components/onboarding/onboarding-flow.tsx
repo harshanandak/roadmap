@@ -97,7 +97,7 @@ export function OnboardingFlow({ user }: OnboardingFlowProps) {
         team_id: teamId,
         name: workspaceName,
         description: workspaceDescription || null,
-        phase: 'design',
+        mode: 'development', // Default workspace mode
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
