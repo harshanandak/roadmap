@@ -2,15 +2,15 @@
 
 **Last Updated**: 2026-01-07
 **Project**: Product Lifecycle Management Platform
-**Overall Progress**: ~95% Complete (Week 7 / 8-week timeline)
-**Status**: On Track - Security & Infrastructure Sprint Complete
+**Overall Progress**: ~96% Complete (Week 7 / 8-week timeline)
+**Status**: On Track - BlockSuite Phase 5 RAG Layer Complete
 
 ---
 
 ## Progress Overview
 
 ```
-Overall: [███████████████████████░] 95%
+Overall: [████████████████████████] 96%
 
 Week 1-2: [████████████████████] 100% ✅ Foundation Complete
 Week 3:   [████████████████████] 100% ✅ Mind Mapping Complete
@@ -571,7 +571,7 @@ Complete redesign of tool UI with glassmorphism, gradients, and micro-interactio
 | 7 | AI Integration & Analytics & Strategies | ✅ Complete | 100% |
 | 8 | Billing & Testing | ❌ Not Started | 0% |
 
-**Overall**: 95% Complete (7.6 of 8 weeks)
+**Overall**: 96% Complete (7.7 of 8 weeks)
 
 ---
 
@@ -658,6 +658,45 @@ Complete persistence layer for BlockSuite documents enabling real-time collabora
 
 **Files Created**: 9 files (~1,700 lines of code)
 **Migrations**: 2 (metadata table + storage bucket with RLS)
+
+---
+
+### BlockSuite Phase 5: RAG Layer Integration ✅ (2026-01-07) - PR #51
+Complete RAG (Retrieval-Augmented Generation) layer enabling semantic search across mind map content:
+
+**Core Service** (`lib/ai/embeddings/mindmap-embedding-service.ts`):
+- `embedMindMap()` - Shared service for API routes and background jobs
+- OpenAI `text-embedding-3-large` @ 1536 dimensions (best accuracy, matches existing schema)
+- Batched API calls (50 chunks max per request)
+- Exponential backoff retry (3 attempts: 1s, 2s, 4s delays)
+- SHA-256 hash for change detection (skips unchanged trees)
+- Optimistic locking (prevents concurrent embedding of same mind map)
+
+**Text Extraction & Chunking** (`components/blocksuite/`):
+- `text-extractor.ts` - Recursive tree walking with path context preservation
+- `mindmap-chunker.ts` - Path-preserving subtree chunks (300 token target)
+- `rag-types.ts` - TypeScript interfaces for extraction/chunking
+- Ancestor path context (max 3 levels) for semantic relevance
+
+**API Routes**:
+- `POST /api/mind-maps/[id]/embed` - Generate embeddings on demand
+- `GET /api/mind-maps/[id]/embed` - Check embedding status
+- Background job integration via `/api/knowledge/compression` route
+
+**Database Migration** (`20260107150000_add_mindmap_embedding_columns.sql`):
+- `embedding_status` - 'pending' | 'processing' | 'ready' | 'error' | 'skipped'
+- `embedding_error`, `last_embedded_at`, `embedding_version`, `chunk_count`
+- `last_embedded_hash` - SHA-256 for change detection
+- `source_type` and `mind_map_id` columns on `document_chunks`
+
+**Security Features**:
+- Zod validation with `safeValidateEmbedMindMapRequest()`
+- Explicit `team_id` filtering (multi-tenant safety)
+- Type guards for compression job types (runtime validation)
+- Serverless timeout detection (50s threshold)
+
+**Files Created**: 6 files (~1,200 lines of code)
+**Tests**: Comprehensive test suite for text-extractor and mindmap-chunker
 
 ---
 

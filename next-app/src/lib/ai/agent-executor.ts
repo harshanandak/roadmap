@@ -43,6 +43,33 @@ import "./tools/strategy-tools";
 // =============================================================================
 
 /**
+ * Interface for tools that have an execute function
+ * Used for type-safe tool execution without `as any` casts
+ */
+interface ExecutableTool {
+  execute: (
+    params: Record<string, unknown>,
+    context: { toolCallId: string; abortSignal: AbortSignal }
+  ) => Promise<unknown>
+}
+
+/**
+ * Safely execute a tool with runtime validation
+ * Returns the execute function if available, throws if not
+ *
+ * This provides type-safe access to the execute function that exists
+ * on AI SDK tools at runtime but isn't part of the AgenticTool type.
+ */
+function getToolExecutor(tool: AgenticTool, toolName: string): ExecutableTool['execute'] {
+  // Runtime check for execute function (exists on AI SDK tools)
+  const toolWithExecute = tool as unknown as ExecutableTool
+  if (typeof toolWithExecute.execute !== 'function') {
+    throw new Error(`Tool ${toolName} does not have an execute function`)
+  }
+  return toolWithExecute.execute.bind(toolWithExecute)
+}
+
+/**
  * Context for tool execution
  */
 export interface ExecutionContext {
@@ -161,13 +188,9 @@ export class AgentExecutor {
     const actionId = context.actionId || Date.now().toString();
 
     // Execute tool to get preview (no DB changes in tools)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const toolWithExecute = tool as any;
-    if (typeof toolWithExecute.execute !== "function") {
-      throw new Error(`Tool ${toolName} does not have an execute function`);
-    }
-
-    const result = await toolWithExecute.execute(params, {
+    // Type-safe execution with runtime validation
+    const executePreview = getToolExecutor(tool, toolName);
+    const result = await executePreview(params, {
       toolCallId: actionId,
       abortSignal: new AbortController().signal,
     });
@@ -789,17 +812,12 @@ export class AgentExecutor {
       case "summarizeWorkItem":
       case "extractRequirements": {
         // Analysis tools execute through their own execute function
-        // This just returns the preview-like result
         const analysisTool = toolRegistry.get(toolName);
         if (!analysisTool) throw new Error(`Tool not found: ${toolName}`);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const analysisToolWithExecute = analysisTool as any;
-        if (typeof analysisToolWithExecute.execute !== "function") {
-          throw new Error(`Tool ${toolName} does not have an execute function`);
-        }
-
-        const result = await analysisToolWithExecute.execute(params, {
+        // Type-safe execution with runtime validation
+        const executeAnalysis = getToolExecutor(analysisTool, toolName);
+        const result = await executeAnalysis(params, {
           toolCallId: context.actionId || Date.now().toString(),
           abortSignal: new AbortController().signal,
         });
@@ -817,13 +835,9 @@ export class AgentExecutor {
         const optimizationTool = toolRegistry.get(toolName);
         if (!optimizationTool) throw new Error(`Tool not found: ${toolName}`);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const optimizationToolWithExecute = optimizationTool as any;
-        if (typeof optimizationToolWithExecute.execute !== "function") {
-          throw new Error(`Tool ${toolName} does not have an execute function`);
-        }
-
-        const result = await optimizationToolWithExecute.execute(params, {
+        // Type-safe execution with runtime validation
+        const executeOptimization = getToolExecutor(optimizationTool, toolName);
+        const result = await executeOptimization(params, {
           toolCallId: context.actionId || Date.now().toString(),
           abortSignal: new AbortController().signal,
         });
@@ -841,13 +855,9 @@ export class AgentExecutor {
         const strategyTool = toolRegistry.get(toolName);
         if (!strategyTool) throw new Error(`Tool not found: ${toolName}`);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const strategyToolWithExecute = strategyTool as any;
-        if (typeof strategyToolWithExecute.execute !== "function") {
-          throw new Error(`Tool ${toolName} does not have an execute function`);
-        }
-
-        const result = await strategyToolWithExecute.execute(params, {
+        // Type-safe execution with runtime validation
+        const executeStrategy = getToolExecutor(strategyTool, toolName);
+        const result = await executeStrategy(params, {
           toolCallId: context.actionId || Date.now().toString(),
           abortSignal: new AbortController().signal,
         });

@@ -1801,4 +1801,108 @@ Complete implementation of BlockSuite persistence layer with Yjs CRDT for real-t
 
 ---
 
+### ✅ BlockSuite Phase 5: RAG Layer Integration (2026-01-07) - PR #51
+
+Complete RAG (Retrieval-Augmented Generation) layer for semantic search across BlockSuite mind map content.
+
+**What Changed**:
+- Built shared embedding service callable from API routes and background jobs
+- Implemented text extraction with path context preservation
+- Created path-preserving chunking strategy (300 token target)
+- Added embedding status tracking on mind_maps table
+- Integrated with existing document_chunks table and search_documents RPC
+
+**Why**:
+- Enable semantic search across mind map content
+- Leverage existing Knowledge Base embedding infrastructure
+- Match existing 1536-dimension pgvector schema (no migration needed for vectors)
+- Support future AI features requiring mind map understanding
+
+**Core Components**:
+
+1. **Embedding Service** (`lib/ai/embeddings/mindmap-embedding-service.ts`)
+   - `embedMindMap()` - Main entry point for API and background jobs
+   - OpenAI `text-embedding-3-large` @ 1536 dimensions
+   - Batched API calls (50 chunks per request max)
+   - Exponential backoff retry (3 attempts: 1s, 2s, 4s delays)
+   - SHA-256 hash change detection (skip unchanged trees)
+   - Optimistic locking (prevent concurrent embedding)
+
+2. **Text Extraction** (`components/blocksuite/text-extractor.ts`)
+   - `extractTextFromBlockSuiteTree()` - Recursive extraction with paths
+   - `computeTreeHash()` - SHA-256 for change detection
+   - `walkBlockSuiteTree()` - Generic tree traversal utility
+   - `getTreeStats()` - Statistics for validation
+   - Max depth: 50 (stack overflow protection)
+
+3. **Chunking** (`components/blocksuite/mindmap-chunker.ts`)
+   - `chunkMindmapForEmbedding()` - Path-preserving subtree chunks
+   - Target: 300 tokens per chunk (research-validated)
+   - Min chunk: 50 tokens (avoid noise)
+   - Max 3 ancestor path context (semantic relevance)
+
+4. **API Routes**
+   - `POST /api/mind-maps/[id]/embed` - Generate embeddings
+   - `GET /api/mind-maps/[id]/embed` - Check status
+   - Background job: `runMindmapEmbedJob()` in compression route
+
+5. **Database Migration** (`20260107150000_add_mindmap_embedding_columns.sql`)
+   - `embedding_status` - 'pending' | 'processing' | 'ready' | 'error' | 'skipped'
+   - `embedding_error`, `last_embedded_at`, `embedding_version`, `chunk_count`
+   - `last_embedded_hash` - SHA-256 for change detection
+   - `source_type` column on document_chunks ('document' | 'blocksuite_mindmap')
+   - `mind_map_id` foreign key on document_chunks
+
+**Security Features**:
+| Feature | Implementation |
+|---------|----------------|
+| **Input Validation** | Zod schemas with `safeValidateEmbedMindMapRequest()` |
+| **Multi-Tenant Safety** | Explicit `team_id` filtering on all queries |
+| **Type Guards** | Runtime validation for compression job types |
+| **Timeout Detection** | 50s threshold for serverless (60s limit) |
+| **Concurrent Protection** | Optimistic locking prevents duplicate embedding |
+
+**5-Question Validation**:
+| Q | Status | Notes |
+|---|--------|-------|
+| 1. Data Dependencies | ✅ | blocksuite_tree JSONB exists (Phase 3), document_chunks table ready |
+| 2. Integration Points | ✅ | Uses existing embedding infrastructure, search_documents RPC |
+| 3. Standalone Value | ✅ | Enables semantic search across mind maps |
+| 4. Schema Finalized | ✅ | Migration applied, matches existing vector schema |
+| 5. Can Test | ✅ | Comprehensive test suite, API endpoints verified |
+
+**Result**: ✅ PROCEED - Full implementation complete
+
+**Progress**: Knowledge Base: 95% → 100%, Overall: 95% → 96%
+
+**Dependencies Satisfied**:
+- ✅ [Phase 4] BlockSuite documents stored as JSONB
+- ✅ [Phase 3] blocksuite_tree column available
+- ✅ [Week 7] document_chunks table and pgvector
+
+**Dependencies Created**:
+- ⏳ [Future] Auto-trigger embedding on mind map save
+- ⏳ [Future] Mind map content in AI context
+
+**Files Created**:
+- `next-app/src/lib/ai/embeddings/mindmap-embedding-service.ts` (~375 lines)
+- `next-app/src/components/blocksuite/text-extractor.ts` (~350 lines)
+- `next-app/src/components/blocksuite/mindmap-chunker.ts` (~180 lines)
+- `next-app/src/components/blocksuite/rag-types.ts` (~70 lines)
+- `next-app/src/app/api/mind-maps/[id]/embed/route.ts` (~180 lines)
+- `next-app/src/components/blocksuite/__tests__/text-extractor.test.ts` (~190 lines)
+- `next-app/src/components/blocksuite/__tests__/mindmap-chunker.test.ts` (~175 lines)
+- `supabase/migrations/20260107150000_add_mindmap_embedding_columns.sql`
+
+**Files Modified**:
+- `next-app/src/app/api/knowledge/compression/route.ts` - Added mindmap_embed job type
+- `next-app/src/components/blocksuite/schema.ts` - Added embedding Zod schemas
+- `next-app/src/components/blocksuite/index.tsx` - Added RAG exports
+
+**Related Documentation**:
+- Plan: `C:\Users\harsh\.claude\plans\robust-squishing-quilt.md`
+- [PROGRESS.md](../planning/PROGRESS.md) - Updated to 96%
+
+---
+
 [← Previous: Week 6](week-6-timeline-execution.md) | [Back to Plan](README.md) | [Next: Week 8 →](week-8-billing-testing.md)

@@ -550,8 +550,19 @@ export async function callWithRetry<T>(
 }
 
 /**
+ * Redact sensitive ID for logging (shows first 4 chars + length)
+ * Prevents full workspace IDs from appearing in logs
+ * Example: "abc123xyz" -> "abc1...(9)"
+ */
+function redactId(id: string): string {
+  if (!id || id.length <= 4) return '***'
+  return `${id.substring(0, 4)}...(${id.length})`
+}
+
+/**
  * Monitoring for slow requests (Layer 6 - Observability)
  * Logs warning for requests taking longer than 60 seconds.
+ * Workspace ID is redacted for security (only first 4 chars shown).
  *
  * @example
  * ```typescript
@@ -570,7 +581,7 @@ export function logSlowRequest(
     console.warn(`[AI_SLOW_REQUEST] ${modelId} took ${duration}ms`, {
       model: modelId,
       tokens: usage,
-      workspaceId,
+      workspaceId: redactId(workspaceId), // Redacted for security
       durationMs: duration,
     })
   }
