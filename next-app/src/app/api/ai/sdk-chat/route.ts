@@ -96,15 +96,18 @@ export async function POST(request: Request) {
 
     // Determine which model to use
     let aiModel: LanguageModel = aiModels.claudeHaiku // Default
+    let resolvedModelId = 'anthropic/claude-haiku-4.5:nitro' // Default model ID for logging
 
     if (modelInput) {
       // Check if it's a model key from our config (e.g., 'claude-haiku-45')
       const configModel = getModelByKey(modelInput)
       if (configModel) {
         aiModel = getModelFromConfig(configModel.id)
+        resolvedModelId = configModel.id // Use the actual OpenRouter model ID
       } else {
         // Assume it's a direct OpenRouter model ID
         aiModel = openrouter(modelInput)
+        resolvedModelId = modelInput // Already a model ID
       }
     }
 
@@ -142,7 +145,6 @@ export async function POST(request: Request) {
 
     // Track request duration for slow request monitoring
     const streamStartTime = Date.now()
-    const modelId = modelInput || 'anthropic/claude-haiku-4.5:nitro'
 
     // Stream the response using AI SDK
     const result = streamText({
@@ -156,7 +158,7 @@ export async function POST(request: Request) {
           console.log(`[AI SDK Chat] Usage: ${usage.inputTokens} in, ${usage.outputTokens} out, ${duration}ms`)
           // Log slow requests for monitoring (>60s threshold)
           logSlowRequest(
-            modelId,
+            resolvedModelId,
             duration,
             { promptTokens: usage.inputTokens, completionTokens: usage.outputTokens },
             'sdk-chat-route' // Route identifier (no workspace context available)
