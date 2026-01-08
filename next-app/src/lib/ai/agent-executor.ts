@@ -26,6 +26,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { toolRegistry, type AgenticTool } from './tools/tool-registry'
 import type { ActionStatus, ActionPreview } from './schemas/agentic-schemas'
+import { getDefaultPhaseForType } from '@/lib/constants/workspace-phases'
+import type { WorkItemType } from '@/lib/constants/workspace-phases'
 
 // ============================================================================
 // IMPORTANT: Import all tool files to trigger registration with toolRegistry
@@ -635,7 +637,7 @@ export class AgentExecutor {
             purpose: params.purpose as string | null,
             priority: params.priority as string | null,
             tags: params.tags as string[] | null,
-            phase: (params.phase as string) || "research",
+            phase: (params.phase as string) || getDefaultPhaseForType(params.type as WorkItemType),
             created_by: context.userId,
           })
           .select()
