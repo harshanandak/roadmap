@@ -40,6 +40,7 @@ import {
 } from '@/lib/ai/image-analyzer'
 import { buildContext, buildSystemPrompt as buildContextSystemPrompt } from '@/lib/ai/context-builder'
 import { createTaskPlan } from '@/lib/ai/task-planner'
+import { logSlowRequest } from '@/lib/ai/openrouter'
 import fs from 'fs/promises'
 
 const DEBUG_ENDPOINT = 'http://127.0.0.1:7242/ingest/ebdf2fd5-9696-479e-b2f1-d72537069b93'
@@ -82,7 +83,8 @@ import '@/lib/ai/tools/analysis-tools'
 import '@/lib/ai/tools/optimization-tools'
 import '@/lib/ai/tools/strategy-tools'
 
-export const maxDuration = 60
+// Match vercel.json functions config for app/api/ai/**/*.ts
+export const maxDuration = 300
 
 /**
  * Base system prompt for chat-first agentic AI
@@ -552,8 +554,11 @@ export async function POST(request: Request) {
       : legacyContextPrompt
 
     // ─────────────────────────────────────────────────────────────────────────
-    // STREAM RESPONSE
+    // STREAM RESPONSE (with reliability monitoring)
     // ─────────────────────────────────────────────────────────────────────────
+
+    // Track request duration for slow request monitoring
+    const streamStartTime = Date.now()
 
     // Stream the response using the routed model and messages
     const result = streamText({
@@ -562,11 +567,21 @@ export async function POST(request: Request) {
       messages: routingDecision.messages, // May be compacted
       tools: hasToolUse ? tools : undefined,
       onFinish({ toolCalls, usage }) {
+        const duration = Date.now() - streamStartTime
+
         if (toolCalls && toolCalls.length > 0) {
           console.log('[Unified Chat] Tool calls:', toolCalls.map((t) => t.toolName))
         }
         if (usage) {
-          console.log(`[Unified Chat] Usage: ${usage.inputTokens} in, ${usage.outputTokens} out`)
+          console.log(`[Unified Chat] Usage: ${usage.inputTokens} in, ${usage.outputTokens} out, ${duration}ms`)
+
+          // Log slow requests for monitoring (>60s threshold)
+          logSlowRequest(
+            analysisResult.selectedModel.modelId,
+            duration,
+            { promptTokens: usage.inputTokens, completionTokens: usage.outputTokens },
+            workspaceContext?.workspaceId || 'unknown'
+          )
         }
       },
     })

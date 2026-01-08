@@ -18,8 +18,10 @@ import { createClient } from '@/lib/supabase/server'
 import { openrouter, aiModels, getModelFromConfig } from '@/lib/ai/ai-sdk-client'
 import { parallelAITools, parallelAIQuickTools } from '@/lib/ai/tools/parallel-ai-tools'
 import { getModelByKey } from '@/lib/ai/models'
+import { logSlowRequest } from '@/lib/ai/openrouter'
 
-export const maxDuration = 60 // Allow up to 60s for AI responses
+// Match vercel.json functions config for app/api/ai/**/*.ts
+export const maxDuration = 300
 
 /**
  * System prompt for the AI assistant
@@ -138,12 +140,29 @@ export async function POST(request: Request) {
         : parallelAITools
       : undefined
 
+    // Track request duration for slow request monitoring
+    const streamStartTime = Date.now()
+    const modelId = modelInput || 'anthropic/claude-haiku-4.5:nitro'
+
     // Stream the response using AI SDK
     const result = streamText({
       model: aiModel,
       system: fullSystemPrompt,
       messages: convertToCoreMessages(messages),
       tools,
+      onFinish({ usage }) {
+        const duration = Date.now() - streamStartTime
+        if (usage) {
+          console.log(`[AI SDK Chat] Usage: ${usage.inputTokens} in, ${usage.outputTokens} out, ${duration}ms`)
+          // Log slow requests for monitoring (>60s threshold)
+          logSlowRequest(
+            modelId,
+            duration,
+            { promptTokens: usage.inputTokens, completionTokens: usage.outputTokens },
+            'sdk-chat-route' // Route identifier (no workspace context available)
+          )
+        }
+      },
       // Optional: Handle tool execution errors gracefully
       onStepFinish({ toolCalls }) {
         // Log tool usage for debugging (can be removed in production)

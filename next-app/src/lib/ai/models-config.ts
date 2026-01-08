@@ -323,8 +323,9 @@ export const MODEL_REGISTRY: ModelConfig[] = [
   },
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Gemini 3 Flash - Upgraded Vision (NEW - Phase 6)
-  // 1M context, video analysis, fast multimodal
+  // Gemini 3 Flash - Multimodal Chat (NEW - Phase 6)
+  // 1M context, vision + chat capable, fast multimodal responses
+  // Used in MODEL_ROUTING fallback chains for user-facing capabilities
   // ─────────────────────────────────────────────────────────────────────────
   {
     key: "gemini-3-flash",
@@ -342,7 +343,7 @@ export const MODEL_REGISTRY: ModelConfig[] = [
     supportsReasoning: false,
     isSlowModel: false,
     priority: { vision: 1, tools: 3, reasoning: 3, default: 4 },
-    role: "vision", // Primary vision model (upgraded from Gemini 2.5)
+    role: "chat", // User-facing multimodal chat (NOT internal vision-only)
   },
 ];
 
