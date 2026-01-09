@@ -52,6 +52,19 @@ export async function GET(request: NextRequest) {
 
       if (upsertError) {
         console.error('Failed to create user record:', upsertError)
+        // Verify user exists (trigger may have succeeded even if our upsert failed)
+        const { data: verifyUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .single()
+
+        if (!verifyUser) {
+          // User record doesn't exist - cannot proceed safely
+          const errorUrl = new URL('/login', request.url)
+          errorUrl.searchParams.set('error', 'account_setup_failed')
+          return NextResponse.redirect(errorUrl)
+        }
       }
     }
 
