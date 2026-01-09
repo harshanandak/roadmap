@@ -45,7 +45,8 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
                      request.nextUrl.pathname.startsWith('/signup')
 
-  // Onboarding requires auth but shouldn't redirect to dashboard
+  // Onboarding: requires auth (unauthenticated → login), but authenticated users
+  // should stay on onboarding until they complete it (not redirected to dashboard)
   const isOnboardingPage = request.nextUrl.pathname.startsWith('/onboarding')
 
   const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') ||

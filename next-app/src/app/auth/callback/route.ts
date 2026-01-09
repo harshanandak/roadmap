@@ -31,9 +31,9 @@ async function ensureUserRecord(
     return { success: true }
   }
 
-  // Cannot create user without email
+  // Cannot create user without email - required by users table
   if (!user.email) {
-    return { success: true } // Let downstream handle this edge case
+    return { success: false, error: 'missing_email' }
   }
 
   // Create user record (handles trigger race condition)
@@ -52,11 +52,15 @@ async function ensureUserRecord(
   console.error('Failed to create user record:', upsertError)
 
   // Verify user exists (trigger may have succeeded)
-  const { data: verifyUser } = await supabase
+  const { data: verifyUser, error: verifyError } = await supabase
     .from('users')
     .select('id')
     .eq('id', user.id)
     .single()
+
+  if (verifyError && verifyError.code !== 'PGRST116') {
+    console.error('Failed to verify user record:', verifyError)
+  }
 
   return verifyUser
     ? { success: true }
@@ -93,7 +97,13 @@ export async function GET(request: NextRequest) {
   // Exchange auth code for session
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) {
+      console.error('Failed to exchange code for session:', error)
+      const errorUrl = new URL('/login', request.url)
+      errorUrl.searchParams.set('error', 'invalid_code')
+      return NextResponse.redirect(errorUrl)
+    }
   }
 
   const supabase = await createClient()
