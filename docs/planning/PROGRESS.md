@@ -1,9 +1,9 @@
 # Implementation Progress Tracker
 
-**Last Updated**: 2026-01-08
+**Last Updated**: 2026-01-09
 **Project**: Product Lifecycle Management Platform
 **Overall Progress**: ~96% Complete (Week 7 / 8-week timeline)
-**Status**: On Track - Phase 6 AI Integration Complete
+**Status**: On Track - Phase 6 AI Integration Merged (PR #54)
 
 ---
 
@@ -577,21 +577,23 @@ Complete redesign of tool UI with glassmorphism, gradients, and micro-interactio
 
 ## Key Achievements Since Last Update
 
-### AI Architecture Phase 1-2: Multi-Model Orchestration ✅ (2026-01-08)
-Complete multi-model AI infrastructure with capability-based routing and production reliability:
+### AI Architecture Phase 1-2: Multi-Model Orchestration ✅ (2026-01-09)
+Complete multi-model AI infrastructure with capability-based routing and production reliability.
+**Merged**: PR #54 → `2c72469`
 
 **New Models Added**:
 - **GLM 4.7** (`z-ai/glm-4.7`) - Best for strategic reasoning + agentic workflows
 - **MiniMax M2.1** (`minimax/minimax-m2.1`) - Leading coding benchmarks
-- **Gemini 3 Flash** (`google/gemini-3-flash-preview`) - Vision + 1M context (chat role)
+- **Gemini 3 Flash** (`google/gemini-3-flash-preview`) - Vision + 1M context (primary vision)
+- **Gemini 2.5 Flash** (`google/gemini-2.5-flash-preview`) - Vision fallback for Gemini 3 Flash
 
 **MODEL_ROUTING Capability Chains**:
 ```typescript
 strategic_reasoning: GLM 4.7 → DeepSeek V3.2 → Gemini 3 Flash
 agentic_tool_use:    GLM 4.7 → Claude Haiku → MiniMax M2.1
 coding:              MiniMax M2.1 → GLM 4.7 → Kimi K2
-visual_reasoning:    Gemini 3 Flash → Grok 4 Fast → Gemini 2.5 Flash
-large_context:       Grok 4 Fast → Gemini 3 Flash → Kimi K2
+visual_reasoning:    Gemini 3 Flash → Gemini 2.5 Flash → Grok 4.1 (text follow-up)
+large_context:       Grok 4.1 Fast → Gemini 3 Flash → Kimi K2
 default:             Kimi K2 → GLM 4.7 → MiniMax M2.1
 ```
 
@@ -606,20 +608,27 @@ default:             Kimi K2 → GLM 4.7 → MiniMax M2.1
 4. `callWithRetry()` - Exponential backoff for 429
 5. `logSlowRequest()` - Monitoring >60s
 
+**Security Fixes** (Greptile review):
+- `getToolExecutor()` - Added console.error before throwing for debugging
+- `redactId()` - Fixed edge case for IDs ≤4 chars (show fully instead of `***`)
+- `onboarding-flow.tsx` - Added `mode_changed_at` for consistency with create-workspace-dialog
+
 **Files Created**:
 - `lib/ai/fallback-chain.ts` - `executeWithFallback<T>()` helper
+- `components/ai/rag-context-badge.tsx` - RAG source indicator
+- `components/ai/source-citations.tsx` - Clickable source citations
 
 **Files Modified**:
-- `lib/ai/models-config.ts` - 3 new models, MODEL_ROUTING config
+- `lib/ai/models-config.ts` - 4 new models, MODEL_ROUTING config
 - `lib/ai/ai-sdk-client.ts` - Model exports, recommendedModels
 - `lib/ai/agent-executor.ts` - 10 tools wired, type-safe execution
 - `lib/ai/openrouter.ts` - Reliability utilities, `redactId()` export
 - `lib/ai/agent-loop.ts` - Type-safe `ExecutableTool` interface
 - 11 AI route files - `maxDuration = 300`
 - `vercel.json` - 300s AI function timeout
-- `unified-chat/route.ts` - Removed hardcoded debug code
+- `unified-chat/route.ts` - Updated debug info with current model keys
 
-**Commits**: 6 commits from `e9c550f` to `db84d78`
+**Commits**: PR #54 squash-merged as `2c72469` (combines 9 commits)
 
 ---
 
@@ -1134,8 +1143,8 @@ Major AI infrastructure consolidation: 38+ specialized tools → 7 generalized t
 
 | Phase | Branch | Scope | Duration | Status |
 |-------|--------|-------|----------|--------|
-| **Phase 1** | `feat/phase6-ai-integration` | Wire 10 missing tools in agent-executor.ts | 1-2 hours | ✅ Complete |
-| **Phase 2** | `feat/phase6-ai-integration` | Add GLM 4.7, MiniMax M2.1, Gemini 3 Flash + Routing | 2-3 hours | ✅ Complete |
+| **Phase 1** | `feat/phase6-ai-integration` | Wire 10 missing tools in agent-executor.ts | 1-2 hours | ✅ Merged |
+| **Phase 2** | `feat/phase6-ai-integration` | Add GLM 4.7, MiniMax M2.1, Gemini 3/2.5 Flash + Routing | 2-3 hours | ✅ Merged |
 | **Phase 3** | `feat/generalized-tools` | Consolidate 38 → 7 generalized tools | 1-2 days | 🔄 NEXT |
 | **Phase 4** | `feat/orchestration-system` | 4-tier routing, fallback chains, consensus | 1-2 days | ⏳ Pending |
 | **Phase 5** | `feat/agent-memory-system` | Memory UI, 10k token limit, learning | 1-2 days | ⏳ Pending |
@@ -1179,9 +1188,10 @@ Major AI infrastructure consolidation: 38+ specialized tools → 7 generalized t
 |-------|---------|------|---------|---------|
 | **GLM 4.7** | Strategic reasoning + Agentic | $0.40/$1.50 | 128K | Claude Haiku ($5/M) |
 | **MiniMax M2.1** | Coding | $0.30/$1.20 | 128K | N/A (new) |
-| **Gemini 3 Flash** | Visual reasoning | $0.50/$3.00 | 1M | Gemini 2.5 Flash |
+| **Gemini 3 Flash** | Visual reasoning (primary) | $0.50/$3.00 | 1M | N/A (new) |
+| **Gemini 2.5 Flash** | Visual reasoning (fallback) | $0.15/$0.60 | 1M | N/A (new) |
 | **Kimi K2** | Default chat | $0.15/$2.50 | 262K | (keep) |
-| **Grok 4.1 Fast** | Large context | $0.20/$0.50 | 1M | (keep) |
+| **Grok 4.1 Fast** | Large context | $0.20/$0.50 | 2M | (keep) |
 
 ### 4-Tier Orchestration System
 
@@ -1206,7 +1216,7 @@ Major AI infrastructure consolidation: 38+ specialized tools → 7 generalized t
 
 ---
 
-**Next Review Date**: 2026-01-15 (Weekly)
+**Next Review Date**: 2026-01-16 (Weekly)
 
 ---
 
