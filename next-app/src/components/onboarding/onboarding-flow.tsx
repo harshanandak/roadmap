@@ -25,9 +25,10 @@ interface UserInfo {
 
 interface OnboardingFlowProps {
   user: UserInfo
+  returnTo?: string
 }
 
-export function OnboardingFlow({ user }: OnboardingFlowProps) {
+export function OnboardingFlow({ user, returnTo }: OnboardingFlowProps) {
   const [step, setStep] = useState<'welcome' | 'team' | 'invite' | 'workspace'>('welcome')
   const [loading, setLoading] = useState(false)
   const [teamName, setTeamName] = useState('')
@@ -131,8 +132,8 @@ export function OnboardingFlow({ user }: OnboardingFlowProps) {
         })
       }
 
-      // Redirect to the new workspace
-      router.push(`/workspaces/${workspaceId}`)
+      // Redirect to returnTo destination or the new workspace
+      router.push(returnTo || `/workspaces/${workspaceId}`)
       router.refresh()
     } catch (error: unknown) {
       console.error('Error creating team and workspace:', error)

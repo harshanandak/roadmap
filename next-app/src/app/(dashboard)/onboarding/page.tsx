@@ -2,7 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { OnboardingFlow } from '@/components/onboarding/onboarding-flow'
 
-export default async function OnboardingPage() {
+interface OnboardingPageProps {
+  searchParams: Promise<{ returnTo?: string }>
+}
+
+export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {
+  const { returnTo } = await searchParams
   const supabase = await createClient()
 
   // Check authentication
@@ -28,7 +33,7 @@ export default async function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-      <OnboardingFlow user={user} />
+      <OnboardingFlow user={user} returnTo={returnTo} />
     </div>
   )
 }
