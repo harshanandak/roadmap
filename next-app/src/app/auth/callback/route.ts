@@ -102,6 +102,9 @@ export async function GET(request: NextRequest) {
       console.error('Failed to exchange code for session:', error)
       const errorUrl = new URL('/login', request.url)
       errorUrl.searchParams.set('error', 'invalid_code')
+      if (returnTo) {
+        errorUrl.searchParams.set('returnTo', returnTo)
+      }
       return NextResponse.redirect(errorUrl)
     }
   }
@@ -117,6 +120,9 @@ export async function GET(request: NextRequest) {
   if (!userResult.success) {
     const errorUrl = new URL('/login', request.url)
     errorUrl.searchParams.set('error', userResult.error)
+    if (returnTo) {
+      errorUrl.searchParams.set('returnTo', returnTo)
+    }
     return NextResponse.redirect(errorUrl)
   }
 
