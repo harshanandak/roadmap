@@ -117,6 +117,10 @@ export async function GET(request: NextRequest) {
   // Ensure user record exists in public.users (must happen before any redirects)
   const userResult = await ensureUserRecord(supabase, user)
   if (!userResult.success) {
+    // Sign out user to prevent middleware redirect loop
+    // (authenticated user on /login would be redirected to /dashboard)
+    await supabase.auth.signOut()
+
     const errorUrl = new URL('/login', request.url)
     errorUrl.searchParams.set('error', userResult.error)
     if (returnTo) {
