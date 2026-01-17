@@ -112,7 +112,7 @@ Razorpay integration (India-compatible), UI polish, production-ready
   - [ ] CODE_OF_CONDUCT.md
   - [ ] ARCHITECTURE.md (system design)
   - [ ] API.md (component API reference)
-  - [ ] DATABASE_SCHEMA.md
+  - [ ] database-schema.md (in docs/architecture/)
 - [ ] **Self-Hosting Guide:**
   - [ ] Docker Compose setup
   - [ ] Environment variables reference
