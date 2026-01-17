@@ -440,13 +440,17 @@ export class SonarCloudClient {
   }
 
   private async fetch<T>(endpoint: string, params: Record<string, unknown> = {}): Promise<T> {
-    // Filter out undefined/null values and convert arrays to comma-separated strings
+    // Filter out undefined/null values and convert to strings for URL params
     const cleanParams: Record<string, string> = {};
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null) {
         if (Array.isArray(value)) {
           cleanParams[key] = value.join(',');
+        } else if (typeof value === 'object') {
+          // Objects need JSON serialization for URL params
+          cleanParams[key] = JSON.stringify(value);
         } else {
+          // Primitives (string, number, boolean) can be safely converted
           cleanParams[key] = String(value);
         }
       }
