@@ -63,6 +63,18 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // SECURITY: Rate limiting with Upstash Redis (higher limit for reads)
+    const rateLimitId = getRateLimitIdentifier(user.id)
+    const rateLimitResult = await checkRateLimit(rateLimiters.blocksuiteDocuments, rateLimitId)
+
+    if (!rateLimitResult.success) {
+      const headers = createRateLimitHeaders(rateLimitResult)
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers }
+      )
+    }
+
     // Get user's team memberships for explicit filtering
     const { data: memberships } = await supabase
       .from('team_members')
@@ -173,7 +185,6 @@ export async function PUT(
       })
 
       const headers = createRateLimitHeaders(rateLimitResult)
-      headers['Retry-After'] = String(Math.ceil((rateLimitResult.reset - Date.now()) / 1000))
 
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please try again later.' },
