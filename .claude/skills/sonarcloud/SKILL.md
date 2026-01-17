@@ -12,38 +12,41 @@ tags: [sonarcloud, code-quality, issues, metrics, security]
 ## Quick Start
 
 ```bash
-# Set credentials
-export SONARCLOUD_TOKEN="your_token"  # Generate at https://sonarcloud.io/account/security
+# Set credentials (generate token at sonarcloud.io/account/security)
+export SONARCLOUD_TOKEN="your_token"
 export SONARCLOUD_ORG="your-org"
 export SONARCLOUD_PROJECT="your-project"
 
 # Common queries
-curl -H "Authorization: Bearer $TOKEN" "https://sonarcloud.io/api/issues/search?organization=$ORG&componentKeys=$PROJECT&resolved=false"
-curl -H "Authorization: Bearer $TOKEN" "https://sonarcloud.io/api/measures/component?component=$PROJECT&metricKeys=bugs,coverage"
-curl -H "Authorization: Bearer $TOKEN" "https://sonarcloud.io/api/qualitygates/project_status?projectKey=$PROJECT"
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://sonarcloud.io/api/issues/search?organization=$ORG&componentKeys=$PROJECT&resolved=false"
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://sonarcloud.io/api/measures/component?component=$PROJECT&metricKeys=bugs,coverage"
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://sonarcloud.io/api/qualitygates/project_status?projectKey=$PROJECT"
 ```
 
 ## Endpoints
 
-| Endpoint | Purpose | Key Params |
-|----------|---------|------------|
-| `/api/issues/search` | Bugs, vulnerabilities, smells | `types`, `severities`, `branch`, `pullRequest` |
-| `/api/measures/component` | Coverage, complexity, ratings | `metricKeys`, `branch`, `pullRequest` |
-| `/api/qualitygates/project_status` | Pass/fail status | `projectKey`, `branch`, `pullRequest` |
-| `/api/hotspots/search` | Security hotspots | `projectKey`, `status` |
-| `/api/projects/search` | List projects | `organization`, `q` |
-| `/api/project_analyses/search` | Analysis history | `project`, `from`, `to` |
-| `/api/measures/search_history` | Metrics over time | `component`, `metrics`, `from` |
-| `/api/components/tree` | Files with metrics | `qualifiers=FIL`, `metricKeys`, `metricSort` |
-| `/api/duplications/show` | Duplicate code blocks | `key` (file key), `branch` |
-| `/api/sources/raw` | Raw source code | `key` (file key), `branch` |
-| `/api/sources/scm` | SCM blame info | `key`, `from`, `to` |
-| `/api/ce/activity` | Background tasks | `component`, `status`, `type` |
-| `/api/qualityprofiles/search` | Quality profiles | `language`, `project` |
-| `/api/languages/list` | Supported languages | - |
-| `/api/project_branches/list` | Project branches | `project` |
-| `/api/project_badges/measure` | SVG badge | `project`, `metric`, `branch` |
-| `/api/rules/search` | Coding rules | `languages`, `severities`, `types` |
+| Endpoint                        | Purpose                  | Key Params                               |
+| ------------------------------- | ------------------------ | ---------------------------------------- |
+| `/api/issues/search`            | Bugs, vulnerabilities    | `types`, `severities`, `branch`, `pullRequest` |
+| `/api/measures/component`       | Coverage, complexity     | `metricKeys`, `branch`, `pullRequest`    |
+| `/api/qualitygates/project_status` | Pass/fail status      | `projectKey`, `branch`, `pullRequest`    |
+| `/api/hotspots/search`          | Security hotspots        | `projectKey`, `status`                   |
+| `/api/projects/search`          | List projects            | `organization`, `q`                      |
+| `/api/project_analyses/search`  | Analysis history         | `project`, `from`, `to`                  |
+| `/api/measures/search_history`  | Metrics over time        | `component`, `metrics`, `from`           |
+| `/api/components/tree`          | Files with metrics       | `qualifiers=FIL`, `metricKeys`           |
+| `/api/duplications/show`        | Duplicate code blocks    | `key` (file key), `branch`               |
+| `/api/sources/raw`              | Raw source code          | `key` (file key), `branch`               |
+| `/api/sources/scm`              | SCM blame info           | `key`, `from`, `to`                      |
+| `/api/ce/activity`              | Background tasks         | `component`, `status`, `type`            |
+| `/api/qualityprofiles/search`   | Quality profiles         | `language`, `project`                    |
+| `/api/languages/list`           | Supported languages      | -                                        |
+| `/api/project_branches/list`    | Project branches         | `project`                                |
+| `/api/project_badges/measure`   | SVG badge                | `project`, `metric`, `branch`            |
+| `/api/rules/search`             | Coding rules             | `languages`, `severities`, `types`       |
 
 ## Common Filters
 
@@ -56,6 +59,7 @@ curl -H "Authorization: Bearer $TOKEN" "https://sonarcloud.io/api/qualitygates/p
 ## Workflows
 
 ### Health Check
+
 ```bash
 curl ... "/api/qualitygates/project_status?projectKey=$PROJECT"
 curl ... "/api/measures/component?component=$PROJECT&metricKeys=bugs,vulnerabilities,coverage,sqale_rating"
@@ -63,6 +67,7 @@ curl ... "/api/issues/search?organization=$ORG&componentKeys=$PROJECT&resolved=f
 ```
 
 ### PR Analysis
+
 ```bash
 curl ... "/api/qualitygates/project_status?projectKey=$PROJECT&pullRequest=123"
 curl ... "/api/issues/search?organization=$ORG&componentKeys=$PROJECT&pullRequest=123&resolved=false"
@@ -70,12 +75,14 @@ curl ... "/api/measures/component?component=$PROJECT&pullRequest=123&metricKeys=
 ```
 
 ### Security Audit
+
 ```bash
 curl ... "/api/issues/search?organization=$ORG&componentKeys=$PROJECT&types=VULNERABILITY&resolved=false"
 curl ... "/api/hotspots/search?projectKey=$PROJECT&status=TO_REVIEW"
 ```
 
 ### Duplication Analysis
+
 ```bash
 # Get duplication metrics
 curl ... "/api/measures/component?component=$PROJECT&metricKeys=duplicated_lines,duplicated_lines_density,duplicated_blocks,duplicated_files"

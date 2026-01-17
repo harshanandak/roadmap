@@ -63,6 +63,7 @@ Pull code quality data from SonarCloud. Requires `SONARCLOUD_TOKEN` environment 
 ## Example Outputs
 
 ### Issues Query
+
 ```
 📋 Open Issues for my-project (branch: main)
 
@@ -87,6 +88,7 @@ Top Issues:
 ```
 
 ### Metrics Query
+
 ```
 📊 Metrics for my-project
 
@@ -105,6 +107,7 @@ Top Issues:
 ```
 
 ### Quality Gate Query
+
 ```
 🚦 Quality Gate: ❌ FAILED
 
