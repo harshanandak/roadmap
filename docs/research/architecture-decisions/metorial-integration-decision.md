@@ -323,7 +323,7 @@ Use this to feel confident about the decision:
 
 ### Project Documentation
 - `docs/reference/MCP_USAGE_GUIDE.md` - Current MCP usage (to be updated)
-- `docs/implementation/week-7-ai-analytics.md` - Current week (MCP Gateway built)
+- `docs/implementation/week-7/README.md` - Current week (MCP Gateway built)
 - `docs/implementation/week-11-12-metorial-integration.md` - Future implementation (to be created)
 
 ---

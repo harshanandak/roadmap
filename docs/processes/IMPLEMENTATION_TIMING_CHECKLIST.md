@@ -233,14 +233,14 @@ Use this checklist BEFORE implementing any feature:
 
 ### Final Decision
 - [ ] ✅ **PROCEED NOW**: All checks passed
-- [ ] ⏸️ **POSTPONE**: Document reason in docs/implementation/postponed-features.md, specify when to resume
+- [ ] ⏸️ **POSTPONE**: Document reason in docs/postponed/README.md, specify when to resume
 - [ ] 🔧 **PARTIAL IMPLEMENTATION**: Build foundation now, enhance later (document what's deferred)
 
 **If Postponing, Document**:
 - What: [Brief description]
 - Why: [Specific blocking dependencies]
 - When: [After Week/Phase X]
-- Link: [Add to docs/implementation/postponed-features.md]
+- Link: [Add to docs/postponed/README.md]
 ```
 
 ---
@@ -271,7 +271,7 @@ Use this checklist BEFORE implementing any feature:
 
 **Result**: ⏸️ POSTPONE to Week 8+ (after dependencies are met)
 
-**Documentation**: Created `docs/postponed/MIND_MAP_ENHANCEMENTS.md` and added to `docs/implementation/postponed-features.md`
+**Documentation**: Created `docs/postponed/MIND_MAP_ENHANCEMENTS.md` and added to `docs/postponed/README.md`
 
 ---
 
@@ -315,12 +315,12 @@ Use this checklist BEFORE implementing any feature:
 5. 🔄 Related module underwent major refactor, now easier to integrate
 
 **Manual Review Process**:
-1. Open `docs/implementation/postponed-features.md`
+1. Open `docs/postponed/README.md`
 2. Check all dependency checkboxes: are they ✅?
 3. Re-run 5-question framework with current state
 4. Estimate effort: has it changed since postponement?
 5. Decide: Implement now / Defer further / Split into phases
-6. Update `docs/implementation/postponed-features.md` status:
+6. Update `docs/postponed/README.md` status:
    - If proceeding: Move to active backlog, add to current week
    - If deferring: Update dependencies, adjust review trigger
    - If splitting: Document which parts to do now vs. later
@@ -344,7 +344,7 @@ Update IMPLEMENTATION_PLAN.md (mark as in-progress)
 
 If ANY question → NO:
     ↓
-Document in docs/implementation/postponed-features.md
+Document in docs/postponed/README.md
     ↓
 Specify:
 - What's blocking

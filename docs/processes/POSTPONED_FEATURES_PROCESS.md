@@ -18,7 +18,7 @@ When features are planned but postponed for later implementation, follow this st
 As soon as a feature is postponed:
 
 - **Create detailed spec**: Add a markdown file in `docs/postponed/` (e.g., `MIND_MAP_ENHANCEMENTS.md`)
-- **Add tracking entry**: Update `docs/implementation/postponed-features.md` under the appropriate section
+- **Add tracking entry**: Update `docs/postponed/README.md` under the appropriate section
 - **Include all required fields**: See table below
 
 ---
@@ -43,7 +43,7 @@ Every postponed feature entry MUST include these fields:
 
 ### 3. Entry Format Template
 
-Use this template when adding postponed features to `docs/implementation/postponed-features.md`:
+Use this template when adding postponed features to `docs/postponed/README.md`:
 
 ```markdown
 ### [Feature Name] ([X features/changes] - [Target Phase])
@@ -93,7 +93,7 @@ Use this template when adding postponed features to `docs/implementation/postpon
 
 **Review Process:**
 
-1. **Open tracking doc**: `docs/implementation/postponed-features.md`
+1. **Open tracking doc**: `docs/postponed/README.md`
 2. **Check dependencies**: Are all dependency checkboxes ✅?
 3. **Re-run validation**: Use the [5-question framework](IMPLEMENTATION_TIMING_CHECKLIST.md)
 4. **Re-estimate effort**: Has complexity changed since postponement?
@@ -168,7 +168,7 @@ Before marking a feature as postponed, ensure:
 
 - [ ] Decision is strategic (based on dependencies, not convenience)
 - [ ] Created detailed spec in `docs/postponed/FEATURE_NAME.md`
-- [ ] Added tracking entry to `docs/implementation/postponed-features.md`
+- [ ] Added tracking entry to `docs/postponed/README.md`
 - [ ] All required fields are filled out completely
 - [ ] Dependencies are listed with specific requirements
 - [ ] Review trigger is set (date or milestone)

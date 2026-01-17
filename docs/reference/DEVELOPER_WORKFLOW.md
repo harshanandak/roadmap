@@ -461,7 +461,7 @@ Teams needed a formal approval process before starting work on features to ensur
 ## Documentation
 - [x] PROGRESS.md updated (Week 7: 90% → 92%)
 - [x] CHANGELOG.md entry added (2025-12-23 - Database & Features sections)
-- [x] Week file updated (`docs/implementation/week-7-ai-analytics.md`)
+- [x] Week file updated (`docs/implementation/week-7/README.md`)
 - [x] API reference updated (added /api/work-items/[id]/review endpoint)
 
 ## Screenshots

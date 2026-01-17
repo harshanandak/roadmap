@@ -209,7 +209,7 @@ All postponed features follow the policy defined in [CLAUDE.md](../../CLAUDE.md#
 ## 📋 HOW TO ADD NEW POSTPONED FEATURES
 
 1. **Create detailed specification file** in this folder: `[FEATURE_NAME].md`
-2. **Add entry to** [docs/implementation/postponed-features.md](README.md)
+2. **Add entry to this README** (tracking section above)
 3. **Follow the template** defined in CLAUDE.md
 4. **Set review trigger** (when to revisit the decision)
 5. **Update CHANGELOG.md** with postponement decision
