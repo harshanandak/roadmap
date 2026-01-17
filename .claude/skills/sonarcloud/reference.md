@@ -311,6 +311,129 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 ---
 
+## Sources (`/api/sources/*`)
+
+### Raw Source Code (`/api/sources/raw`)
+
+| Parameter | Description |
+| --------- | ----------- |
+| `key` | File key (required) - format: `project:path/to/file.ts` |
+| `branch` | Branch name |
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://sonarcloud.io/api/sources/raw?key=my-project:src/utils/helpers.ts"
+```
+
+### SCM Blame (`/api/sources/scm`)
+
+| Parameter | Description |
+| --------- | ----------- |
+| `key` | File key (required) |
+| `from` | Start line |
+| `to` | End line |
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://sonarcloud.io/api/sources/scm?key=my-project:src/utils/helpers.ts"
+```
+
+**Response**: Returns author, date, and revision for each line.
+
+---
+
+## Compute Engine (`/api/ce/activity`)
+
+Get background task status (analysis jobs).
+
+| Parameter | Description |
+| --------- | ----------- |
+| `component` | Project key |
+| `status` | `SUCCESS`, `FAILED`, `CANCELED`, `PENDING`, `IN_PROGRESS` |
+| `type` | Task type (e.g., `REPORT`) |
+| `minSubmittedAt` | Filter by submission date |
+| `maxExecutedAt` | Filter by execution date |
+| `p` / `ps` | Pagination |
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://sonarcloud.io/api/ce/activity?component=my-project&status=FAILED"
+```
+
+---
+
+## Quality Profiles (`/api/qualityprofiles/search`)
+
+| Parameter | Description |
+| --------- | ----------- |
+| `language` | Filter by language |
+| `project` | Project key |
+| `qualityProfile` | Profile name |
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://sonarcloud.io/api/qualityprofiles/search?language=ts"
+```
+
+---
+
+## Languages (`/api/languages/list`)
+
+List all supported languages.
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://sonarcloud.io/api/languages/list"
+```
+
+**Response**: `{ "languages": [{ "key": "ts", "name": "TypeScript" }, ...] }`
+
+---
+
+## Branches (`/api/project_branches/list`)
+
+| Parameter | Description |
+| --------- | ----------- |
+| `project` | Project key (required) |
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://sonarcloud.io/api/project_branches/list?project=my-project"
+```
+
+**Response**: `{ "branches": [{ "name": "main", "isMain": true, "type": "LONG", "status": { "qualityGateStatus": "OK" } }] }`
+
+---
+
+## Badges (`/api/project_badges/*`)
+
+### Measure Badge (`/api/project_badges/measure`)
+
+| Parameter | Description |
+| --------- | ----------- |
+| `project` | Project key |
+| `metric` | `bugs`, `coverage`, `code_smells`, `vulnerabilities`, etc. |
+| `branch` | Branch name |
+
+Returns SVG badge image.
+
+```bash
+curl "https://sonarcloud.io/api/project_badges/measure?project=my-project&metric=coverage"
+```
+
+### Quality Gate Badge (`/api/project_badges/quality_gate`)
+
+| Parameter | Description |
+| --------- | ----------- |
+| `project` | Project key |
+| `branch` | Branch name |
+
+```bash
+curl "https://sonarcloud.io/api/project_badges/quality_gate?project=my-project"
+```
+
+---
+
 ## Pagination Example
 
 ```bash

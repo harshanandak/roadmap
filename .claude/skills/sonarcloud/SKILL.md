@@ -36,6 +36,14 @@ curl -H "Authorization: Bearer $TOKEN" "https://sonarcloud.io/api/qualitygates/p
 | `/api/measures/search_history` | Metrics over time | `component`, `metrics`, `from` |
 | `/api/components/tree` | Files with metrics | `qualifiers=FIL`, `metricKeys`, `metricSort` |
 | `/api/duplications/show` | Duplicate code blocks | `key` (file key), `branch` |
+| `/api/sources/raw` | Raw source code | `key` (file key), `branch` |
+| `/api/sources/scm` | SCM blame info | `key`, `from`, `to` |
+| `/api/ce/activity` | Background tasks | `component`, `status`, `type` |
+| `/api/qualityprofiles/search` | Quality profiles | `language`, `project` |
+| `/api/languages/list` | Supported languages | - |
+| `/api/project_branches/list` | Project branches | `project` |
+| `/api/project_badges/measure` | SVG badge | `project`, `metric`, `branch` |
+| `/api/rules/search` | Coding rules | `languages`, `severities`, `types` |
 
 ## Common Filters
 
