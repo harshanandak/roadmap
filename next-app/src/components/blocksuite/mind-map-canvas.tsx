@@ -201,7 +201,7 @@ export function MindMapCanvas({
   const selectionDisposableRef = useRef<Disposable | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [, setSelectedNodeId] = useState<string | null>(null);
+  const [_selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // Memoize the tree to use - either provided or default
   const treeToRender = useMemo(() => {
