@@ -25,14 +25,14 @@
 ## Phase 6C: Toolbar Migration
 
 - [x] 6C.1 Create `components/blocksuite/mindmap-toolbar.tsx` with shadcn/ui
-- [x] 6C.2 Implement add node UI (child and sibling buttons) ⚠️ *Placeholder*
-- [x] 6C.3 Implement delete node UI ⚠️ *Placeholder*
+- [x] 6C.2 Implement add node UI (child and sibling buttons) ✅ *Fully working*
+- [x] 6C.3 Implement delete node UI ✅ *Fully working*
 - [x] 6C.4 Implement zoom controls ✅ *Fully working*
 - [x] 6C.5 Implement style/layout selectors ✅ *Fully working*
 - [x] 6C.6 Export MindmapToolbar and MindmapToolbarProps
 
-> **Note:** Add/delete node buttons are placeholder implementations (console.log only).
-> Zoom and style/layout controls are fully functional. See Phase 6E for follow-up.
+> **Note:** All toolbar features are fully functional. Phase 6E completed the implementation
+> of add/delete node operations using BlockSuite's native APIs.
 
 ## Phase 6D: Storage Cleanup (Optional)
 
