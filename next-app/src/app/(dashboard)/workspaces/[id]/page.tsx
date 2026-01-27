@@ -195,7 +195,6 @@ export default async function WorkspacePage({
       workItems={mappedWorkItems}
       timelineItems={mappedTimelineItems}
       linkedItems={mappedLinkedItems}
-      mindMaps={mindMaps || []}
       tags={tags || []}
       departments={departments || []}
       teamSize={teamSize || 0}

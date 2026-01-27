@@ -9,7 +9,6 @@ import { TeamAnalyticsView } from './team-analytics-view';
 import { ProductTasksView } from './product-tasks-view';
 import { PermissionsProvider } from '@/providers/permissions-provider';
 import type { Department } from '@/lib/types/department';
-import type { MindMap } from '@/lib/types/mind-map';
 import type { Team } from '@/lib/types/team';
 import type { Database } from '@/lib/supabase/types';
 
@@ -87,7 +86,6 @@ interface WorkspaceContentProps {
   workItems: WorkItem[];
   timelineItems: TimelineItem[];
   linkedItems: LinkedItem[];
-  mindMaps: MindMap[];
   tags: Tag[];
   departments: Department[];
   teamSize: number;
@@ -105,7 +103,6 @@ export function WorkspaceContent({
   workItems,
   timelineItems,
   linkedItems,
-  mindMaps,
   tags,
   departments,
   teamSize,
