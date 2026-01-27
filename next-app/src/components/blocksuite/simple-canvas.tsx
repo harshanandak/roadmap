@@ -9,7 +9,8 @@ import { LoadingSkeleton } from './loading-skeleton'
 import { cleanupBlockSuiteEditor, cleanupEditorInterval } from './editor-utils'
 
 // Types for BlockSuite modules (dynamically imported)
-// BlockSuite version: 0.19.5 (upgraded from 0.18.7)
+// BlockSuite version: 0.18.7
+// NOTE: Version 0.19.5 has a bug (CheckBoxCkeckSolidIcon typo) that breaks the build
 type Doc = import('@blocksuite/store').Doc
 
 // Global flag to prevent multiple effect registrations
