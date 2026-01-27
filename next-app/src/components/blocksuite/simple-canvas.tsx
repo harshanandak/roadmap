@@ -9,10 +9,7 @@ import { LoadingSkeleton } from './loading-skeleton'
 import { cleanupBlockSuiteEditor, cleanupEditorInterval } from './editor-utils'
 
 // Types for BlockSuite modules (dynamically imported)
-// TODO: Upgrade BlockSuite from 0.18.7 to 0.19.x+ when:
-// 1. BlockSuite releases stable 1.0 with cleaner peer dependencies
-// 2. Vercel bundling conflict with @blocksuite/store override is resolved
-// Current downgrade was needed for Vercel deployment (commit 1ea92ed)
+// BlockSuite version: 0.19.5 (upgraded from 0.18.7)
 type Doc = import('@blocksuite/store').Doc
 
 // Global flag to prevent multiple effect registrations
