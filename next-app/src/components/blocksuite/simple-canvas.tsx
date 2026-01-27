@@ -9,6 +9,10 @@ import { LoadingSkeleton } from './loading-skeleton'
 import { cleanupBlockSuiteEditor, cleanupEditorInterval } from './editor-utils'
 
 // Types for BlockSuite modules (dynamically imported)
+// TODO: Upgrade BlockSuite from 0.18.7 to 0.19.x+ when:
+// 1. BlockSuite releases stable 1.0 with cleaner peer dependencies
+// 2. Vercel bundling conflict with @blocksuite/store override is resolved
+// Current downgrade was needed for Vercel deployment (commit 1ea92ed)
 type Doc = import('@blocksuite/store').Doc
 
 // Global flag to prevent multiple effect registrations
@@ -143,10 +147,6 @@ export function SimpleCanvas({
           }
         }
 
-        // Create Yjs doc for persistence
-        const yjsDoc = new Y.Doc()
-        docRef.current = yjsDoc
-
         // Set up schema and collection
         const schema = new Schema()
         schema.register(AffineSchemas)
@@ -158,6 +158,12 @@ export function SimpleCanvas({
 
         collection.meta.initialize()
         const doc = collection.createDoc({ id: documentId })
+
+        // Use BlockSuite's internal Y.Doc for persistence
+        // NOTE: collection.doc is the root Y.Doc that BlockSuite uses internally
+        // This ensures HybridProvider observes the same Y.Doc that BlockSuite modifies
+        const yjsDoc = collection.doc as Y.Doc
+        docRef.current = yjsDoc
 
         // Initialize document with required blocks FIRST (fast path)
         await doc.load(() => {
