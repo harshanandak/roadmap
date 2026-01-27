@@ -249,39 +249,34 @@ test.describe('Canvas Sidebar Navigation', () => {
 })
 
 test.describe('Security', () => {
-  test('API rejects requests without workspaceId', async ({ request }) => {
-    const { status } = await postDocument(request, {
-      documentType: 'mindmap',
-      title: 'Test',
-    })
-    expect([400, 401]).toContain(status)
-  })
+  // Data-driven security tests to reduce code duplication (SonarCloud)
+  const securityTestCases = [
+    {
+      name: 'rejects requests without workspaceId',
+      data: { documentType: 'mindmap', title: 'Test' },
+      expectedStatuses: [400, 401],
+    },
+    {
+      name: 'rejects invalid workspaceId format (path traversal)',
+      data: { workspaceId: '../../../etc/passwd', documentType: 'mindmap', title: 'Test' },
+      expectedStatuses: [400, 401],
+    },
+    {
+      name: 'rejects SQL injection attempts',
+      data: { workspaceId: "'; DROP TABLE users; --", documentType: 'mindmap', title: 'Test' },
+      expectedStatuses: [400, 401],
+    },
+    {
+      name: 'rejects XSS in title',
+      data: { workspaceId: 'test-workspace', documentType: 'mindmap', title: '<script>alert("xss")</script>' },
+      expectedStatuses: [200, 400, 401, 403], // Should sanitize or reject, not 500
+    },
+  ]
 
-  test('API rejects invalid workspaceId format', async ({ request }) => {
-    const { status } = await postDocument(request, {
-      workspaceId: '../../../etc/passwd', // Path traversal attempt
-      documentType: 'mindmap',
-      title: 'Test',
+  for (const { name, data, expectedStatuses } of securityTestCases) {
+    test(`API ${name}`, async ({ request }) => {
+      const { status } = await postDocument(request, data)
+      expect(expectedStatuses).toContain(status)
     })
-    expect([400, 401]).toContain(status)
-  })
-
-  test('API rejects SQL injection attempts', async ({ request }) => {
-    const { status } = await postDocument(request, {
-      workspaceId: "'; DROP TABLE users; --",
-      documentType: 'mindmap',
-      title: 'Test',
-    })
-    expect([400, 401]).toContain(status)
-  })
-
-  test('API rejects XSS in title', async ({ request }) => {
-    const { status } = await postDocument(request, {
-      workspaceId: 'test-workspace',
-      documentType: 'mindmap',
-      title: '<script>alert("xss")</script>',
-    })
-    // Should either sanitize or reject - either way, not 500
-    expect([200, 400, 401, 403]).toContain(status)
-  })
+  }
 })
