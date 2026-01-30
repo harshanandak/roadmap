@@ -1,9 +1,53 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"/c/Users/harsha_befach/.bun/bin/bun.exe\" install)",
-      "Bash(\"/c/Users/harsha_befach/.bun/bin/bun.exe\" run dev)",
-      "Bash(ls:*)"
+      "Bash(bun:*)",
+      "Bash(bunx:*)",
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(rm:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(echo:*)",
+      "Bash(pwd)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(curl:*)",
+      "Bash(where:*)",
+      "Bash(which:*)",
+      "Bash(supabase:*)",
+      "Bash(openspec:*)",
+      "Skill(parallel-ai)",
+      "Skill(parallel-ai:*)",
+      "Skill(sonarcloud)",
+      "Skill(sonarcloud:*)",
+      "Skill(nextjs-supabase)",
+      "Skill(nextjs-supabase:*)",
+      "mcp__context7__*",
+      "mcp__supabase__*",
+      "mcp__shadcn-ui__*",
+      "Bash(source c:/Users/harsha_befach/Downloads/Roadmap/.env)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(format:*)",
+      "Bash(del /s /q C:*)"
     ]
+  },
+  "model": {
+    "default": "claude-sonnet-4-20250514",
+    "fallback": "claude-3-5-sonnet-latest"
+  },
+  "features": {
+    "todoTracking": true,
+    "backgroundTasks": true,
+    "parallelAgents": true
   }
 }
