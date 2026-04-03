@@ -442,8 +442,8 @@ Copy-paste this template when creating PRs:
 [One paragraph: Why was this change necessary? What problem does it solve?]
 
 ## Testing
-- [ ] E2E tests passing (`npm run test:e2e`)
-- [ ] Type check clean (`npx tsc --noEmit`)
+- [ ] E2E tests passing (`bun run test:e2e`)
+- [ ] Type check clean (`bunx tsc --noEmit`)
 - [ ] Manual testing complete (describe what you tested)
 - [ ] Edge cases tested (describe edge cases)
 
@@ -481,7 +481,7 @@ Add work item review system allowing team members to approve/reject work items b
 Teams needed a formal approval process before starting work on features to ensure alignment and reduce wasted effort.
 
 ## Testing
-- [x] E2E tests passing (`npm run test:e2e:chrome -- e2e/review-process.spec.ts`)
+- [x] E2E tests passing (`bun run test:e2e:chrome -- e2e/review-process.spec.ts`)
 - [x] Type check clean
 - [x] Manual testing: Created work item, submitted for review, approved successfully
 - [x] Edge cases: Tested rejection with comments, tested permissions (only assigned reviewers can review)
@@ -516,7 +516,7 @@ Use this checklist when reviewing your own PR:
 - [ ] Proper error handling (try/catch, error states)
 - [ ] Functions have clear names and single responsibility
 - [ ] No hardcoded values (use constants or env vars)
-- [ ] TypeScript strict mode passes (`npx tsc --noEmit`)
+- [ ] TypeScript strict mode passes (`bunx tsc --noEmit`)
 
 ### 2. Security
 
@@ -549,7 +549,7 @@ Use this checklist when reviewing your own PR:
 - [ ] Database queries use indexes (team_id, workspace_id)
 - [ ] Images optimized and lazy-loaded
 - [ ] No memory leaks (subscriptions cleaned up)
-- [ ] Bundle size reasonable (check with `npm run build`)
+- [ ] Bundle size reasonable (check with `bun run build`)
 
 ### 6. User Experience
 
@@ -617,19 +617,21 @@ Even solo developers benefit from enforced workflows to prevent accidentally bre
 
 ```bash
 cd next-app
-npm install --save-dev husky
+bun add -d husky
 ```
 
 1. **Initialize Husky**:
 
 ```bash
-npx husky install
+bunx husky init
 ```
 
 1. **Create pre-push hook**:
 
+Create `.husky/pre-push` manually:
+
 ```bash
-npx husky add .husky/pre-push
+touch .husky/pre-push
 ```
 
 1. **Edit `.husky/pre-push` file**:
@@ -699,7 +701,7 @@ git push origin feat/test
 |--------|------------------|---------------|
 | **Enforcement** | GitHub-side | Local machine |
 | **Strictness** | Medium (can bypass) | High (blocks locally) |
-| **Setup** | 5 min (web interface) | 10 min (npm install) |
+| **Setup** | 5 min (web interface) | 10 min (bun add + hook setup) |
 | **Works offline** | No | Yes |
 | **Bypassing** | Easy (checkbox) | Requires `--no-verify` |
 | **Best for** | Solo devs wanting reminders | Solo devs wanting strict rules |

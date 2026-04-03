@@ -12,10 +12,15 @@ import { AIModel, calculateCost } from './models'
  * OpenRouter API configuration
  */
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
 
-if (!OPENROUTER_API_KEY) {
-  console.warn('OPENROUTER_API_KEY not set - AI features will not work')
+function getOpenRouterApiKey(): string {
+  const apiKey = process.env.OPENROUTER_API_KEY
+
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY not configured')
+  }
+
+  return apiKey
 }
 
 /**
@@ -84,9 +89,7 @@ export interface OpenRouterStreamChunk {
 export async function callOpenRouter(
   options: OpenRouterOptions
 ): Promise<OpenRouterResponse> {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error('OPENROUTER_API_KEY not configured')
-  }
+  const openRouterApiKey = getOpenRouterApiKey()
 
   const {
     model,
@@ -131,7 +134,7 @@ export async function callOpenRouter(
     const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${openRouterApiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
         'X-Title': 'Product Lifecycle Platform',
@@ -194,9 +197,7 @@ export async function callOpenRouter(
 export async function streamOpenRouter(
   options: OpenRouterOptions
 ): Promise<ReadableStream<Uint8Array>> {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error('OPENROUTER_API_KEY not configured')
-  }
+  const openRouterApiKey = getOpenRouterApiKey()
 
   const {
     model,
@@ -241,7 +242,7 @@ export async function streamOpenRouter(
     const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${openRouterApiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
         'X-Title': 'Product Lifecycle Platform',

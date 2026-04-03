@@ -185,62 +185,10 @@ export async function POST(
 
     // Check if verification is required
     if (votingSettings.requireEmailVerification && email) {
-      // TODO: Implement magic link verification
-      // For now, we'll just note that verification would be required
-      // In production, this would:
-      // 1. Create a pending vote record
-      // 2. Send verification email with magic link
-      // 3. On click, verify and count the vote
-
-      // Placeholder: Create vote as unverified
-      const voteId = Date.now().toString()
-
-      const { error: insertError } = await supabase
-        .from('insight_votes')
-        .insert({
-          id: voteId,
-          insight_id: insightId,
-          vote_type,
-          voter_email: email,
-          voter_ip_hash: ipHash,
-          is_verified: false, // Would need to add this column
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-
-      if (insertError) {
-        // If is_verified column doesn't exist, insert without it
-        const { error: retryError } = await supabase
-          .from('insight_votes')
-          .insert({
-            id: voteId,
-            insight_id: insightId,
-            vote_type,
-            voter_email: email,
-            voter_ip_hash: ipHash,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-
-        if (retryError) throw retryError
-      }
-
-      // Update counts immediately (in production, would wait for verification)
-      await supabase
-        .from('customer_insights')
-        .update({
-          upvote_count: vote_type === 'up' ? (insight.upvote_count || 0) + 1 : insight.upvote_count,
-          downvote_count: vote_type === 'down' ? (insight.downvote_count || 0) + 1 : insight.downvote_count,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', insightId)
-
       return NextResponse.json({
-        success: true,
-        vote_type,
-        verification_required: true,
-        message: 'Verification email sent',
-      }, { headers: rateLimitHeaders })
+        error: 'Email-verified public voting is not implemented yet',
+        code: 'EMAIL_VERIFICATION_NOT_IMPLEMENTED',
+      }, { status: 501, headers: rateLimitHeaders })
     }
 
     // Instant voting (no verification required)

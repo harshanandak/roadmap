@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { resolveActiveTeam } from '@/lib/teams/active-team'
 import { getTopics, getTopicDocuments } from '@/lib/ai/compression'
 
 /**
@@ -31,18 +32,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user's team
-    const { data: membership, error: memberError } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (memberError || !membership) {
+    const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
+    if (!activeTeamId) {
       return NextResponse.json({ error: 'Team not found' }, { status: 404 })
     }
-
-    const teamId = membership.team_id
 
     // Parse query params
     const { searchParams } = new URL(request.url)
@@ -50,7 +43,7 @@ export async function GET(request: NextRequest) {
     const includeDocuments = searchParams.get('includeDocuments') === 'true'
 
     // Get topics
-    const topics = await getTopics(teamId, workspaceId)
+    const topics = await getTopics(activeTeamId, workspaceId)
 
     // Optionally include documents for each topic
     if (includeDocuments) {

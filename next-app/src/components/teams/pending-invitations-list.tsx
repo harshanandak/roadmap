@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -39,7 +38,6 @@ export function PendingInvitationsList({
   const [loading, setLoading] = useState(false)
 
   const router = useRouter()
-  const supabase = createClient()
 
   // Ensure invitations is always an array
   const safeInvitations = Array.isArray(invitations) ? invitations : []
@@ -49,12 +47,14 @@ export function PendingInvitationsList({
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('invitations')
-        .delete()
-        .eq('id', deletingId)
+      const response = await fetch(`/api/team/invitations/${deletingId}`, {
+        method: 'DELETE',
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete invitation')
+      }
 
       setDeletingId(null)
       router.refresh()

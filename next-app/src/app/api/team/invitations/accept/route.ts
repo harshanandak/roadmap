@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+
+interface InvitationLookupRow {
+  accepted_at: string | null
+  email: string
+  expires_at: string
+  invitation_id: string
+  invited_by: string | null
+  phase_assignments: Array<{
+    workspace_id: string
+    phase: string
+    can_edit?: boolean
+    notes?: string | null
+  }> | null
+  role: string
+  team_id: string
+}
 
 // Validation schema for accepting invitations
 const acceptInvitationSchema = z.object({
@@ -14,6 +31,7 @@ const acceptInvitationSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -37,11 +55,8 @@ export async function POST(request: NextRequest) {
 
     const { token } = validation.data
 
-    // Get invitation by token
     const { data: invitation, error: invitationError } = await supabase
-      .from('invitations')
-      .select('*')
-      .eq('token', token)
+      .rpc('get_invitation_by_token', { p_token: token })
       .single()
 
     if (invitationError || !invitation) {
@@ -51,8 +66,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const invitationData = invitation as InvitationLookupRow
+
     // Check if invitation is already accepted
-    if (invitation.accepted_at) {
+    if (invitationData.accepted_at) {
       return NextResponse.json(
         { error: 'This invitation has already been accepted', success: false },
         { status: 400 }
@@ -61,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     // Check if invitation is expired
     const now = new Date()
-    const expiresAt = new Date(invitation.expires_at)
+    const expiresAt = new Date(invitationData.expires_at)
     if (now > expiresAt) {
       return NextResponse.json(
         { error: 'This invitation has expired', success: false },
@@ -69,23 +86,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user's email to verify it matches invitation
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('email')
-      .eq('id', user.id)
-      .single()
-
-    if (userError || !userData) {
-      console.error('Error fetching user data:', userError)
+    if (!user.email) {
       return NextResponse.json(
-        { error: 'Failed to verify user', details: userError?.message, success: false },
+        { error: 'Authenticated user is missing an email address', success: false },
         { status: 500 }
       )
     }
 
     // Verify email matches (case-insensitive)
-    if (userData.email.toLowerCase() !== invitation.email.toLowerCase()) {
+    if (user.email.toLowerCase() !== invitationData.email.toLowerCase()) {
       return NextResponse.json(
         { error: 'This invitation is for a different email address', success: false },
         { status: 403 }
@@ -96,7 +105,7 @@ export async function POST(request: NextRequest) {
     const { data: existingMember, error: existingMemberError } = await supabase
       .from('team_members')
       .select('id')
-      .eq('team_id', invitation.team_id)
+      .eq('team_id', invitationData.team_id)
       .eq('user_id', user.id)
       .maybeSingle()
 
@@ -115,15 +124,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const userName =
+      typeof user.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim().length > 0
+        ? user.user_metadata.full_name.trim()
+        : user.email.split('@')[0]
+
+    const { error: profileError } = await adminSupabase
+      .from('users')
+      .upsert(
+        {
+          id: user.id,
+          email: user.email,
+          name: userName,
+        },
+        { onConflict: 'id' }
+      )
+
+    if (profileError) {
+      console.error('Error upserting user profile:', profileError)
+      return NextResponse.json(
+        { error: 'Failed to prepare user profile', details: profileError.message, success: false },
+        { status: 500 }
+      )
+    }
+
     // Create team member record with timestamp-based ID
     const teamMemberId = Date.now().toString()
-    const { data: teamMember, error: teamMemberError } = await supabase
+    const { data: teamMember, error: teamMemberError } = await adminSupabase
       .from('team_members')
       .insert({
         id: teamMemberId,
-        team_id: invitation.team_id,
+        team_id: invitationData.team_id,
         user_id: user.id,
-        role: invitation.role
+        role: invitationData.role
       })
       .select()
       .single()
@@ -137,8 +170,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Create phase assignments if specified in invitation
-    if (invitation.phase_assignments && Array.isArray(invitation.phase_assignments) && invitation.phase_assignments.length > 0) {
-      const phaseAssignments = invitation.phase_assignments.map((assignment: { workspace_id: string; phase: string; can_edit?: boolean; notes?: string | null }) => ({
+    if (invitationData.phase_assignments && invitationData.phase_assignments.length > 0) {
+      const phaseAssignments = invitationData.phase_assignments.map((assignment) => ({
         id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         workspace_id: assignment.workspace_id,
         user_id: user.id,
@@ -147,7 +180,7 @@ export async function POST(request: NextRequest) {
         notes: assignment.notes || null
       }))
 
-      const { error: assignmentsError } = await supabase
+      const { error: assignmentsError } = await adminSupabase
         .from('user_phase_assignments')
         .insert(phaseAssignments)
 
@@ -159,10 +192,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark invitation as accepted
-    const { error: updateError } = await supabase
+    const { error: updateError } = await adminSupabase
       .from('invitations')
       .update({ accepted_at: now.toISOString() })
-      .eq('id', invitation.id)
+      .eq('id', invitationData.invitation_id)
 
     if (updateError) {
       console.error('Error updating invitation:', updateError)
@@ -170,28 +203,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Get team details for response
-    const { data: team, error: _teamError } = await supabase
+    const { data: team, error: _teamError } = await adminSupabase
       .from('teams')
       .select('id, name')
-      .eq('id', invitation.team_id)
+      .eq('id', invitationData.team_id)
       .single()
 
     // Get first workspace for redirect (if any)
-    const { data: workspaces } = await supabase
+    const { data: workspaces } = await adminSupabase
       .from('workspaces')
       .select('id')
-      .eq('team_id', invitation.team_id)
+      .eq('team_id', invitationData.team_id)
       .limit(1)
       .single()
 
     const redirectUrl = workspaces
       ? `/workspaces/${workspaces.id}`
-      : `/teams/${invitation.team_id}`
+      : `/teams/${invitationData.team_id}`
 
     return NextResponse.json({
       data: {
         team_member: teamMember,
-        team: team || { id: invitation.team_id },
+        team: team || { id: invitationData.team_id },
         redirect_url: redirectUrl,
         message: 'Successfully joined team'
       },

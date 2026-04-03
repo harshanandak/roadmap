@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sendTeamInvitationEmail } from '@/lib/email/team-invitations'
 import { createClient } from '@/lib/supabase/server'
+import { resolveActiveTeam } from '@/lib/teams/active-team'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 
@@ -23,7 +25,7 @@ function generateInvitationToken(): string {
 
 /**
  * GET /api/team/invitations?team_id=xxx
- * List all pending invitations for a team
+ * List all pending invitations for the requested or active team
  */
 export async function GET(request: NextRequest) {
   try {
@@ -40,12 +42,14 @@ export async function GET(request: NextRequest) {
 
     // Get team_id from query params
     const searchParams = request.nextUrl.searchParams
-    const team_id = searchParams.get('team_id')
+    const requestedTeamId = searchParams.get('team_id')
+    const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
+    const team_id = requestedTeamId || activeTeamId
 
     if (!team_id) {
       return NextResponse.json(
-        { error: 'team_id is required', success: false },
-        { status: 400 }
+        { error: 'No active team found', success: false },
+        { status: 404 }
       )
     }
 
@@ -254,16 +258,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Trigger email send (optional, fire and forget)
+    // Send invitation email directly from this server flow
     try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      await fetch(`${appUrl}/api/invitations/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token })
+      const { data: team } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', team_id)
+        .single()
+
+      await sendTeamInvitationEmail({
+        email,
+        expiresAt: expires_at.toISOString(),
+        invitationToken: token,
+        inviterEmail: user.email || null,
+        inviterName:
+          typeof user.user_metadata?.full_name === 'string'
+            ? user.user_metadata.full_name
+            : null,
+        role,
+        teamName: team?.name || 'Your team',
       })
     } catch (emailError) {
-      // Log but don't fail the request
       console.error('Failed to send invitation email:', emailError)
     }
 

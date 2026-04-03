@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { resolveActiveTeam } from '@/lib/teams/active-team'
 import { embedQuery, formatEmbeddingForPgvector } from '@/lib/ai/embeddings/embedding-service'
 import type { CompressedContext, CompressedContextItem, CompressionLayer } from '@/lib/types/collective-intelligence'
 
@@ -42,18 +43,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user's team
-    const { data: membership, error: memberError } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', user.id)
-      .single()
+    const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
 
-    if (memberError || !membership) {
+    if (!activeTeamId) {
       return NextResponse.json({ error: 'Team not found' }, { status: 404 })
     }
-
-    const teamId = membership.team_id
+    const teamId = activeTeamId
 
     // Parse request body
     const body = await request.json()

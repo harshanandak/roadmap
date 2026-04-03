@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-01-17
 **Status**: Active (3 workflows configured)
-**Package Manager**: Bun (migrated from npm in PR #61)
+**Package Manager**: Bun
 
 This document describes the GitHub Actions workflows configured for this project.
 
@@ -24,7 +24,7 @@ This document describes the GitHub Actions workflows configured for this project
 
 ### What it does
 
-- ✅ TypeScript type checking (`npx tsc --noEmit`)
+- ✅ TypeScript type checking (`bunx tsc --noEmit`)
 - ✅ ESLint linting (warnings don't fail build)
 - ✅ Next.js build validation
 - ✅ Build size reporting
@@ -63,7 +63,7 @@ PARALLEL_API_KEY: placeholder-parallel-key
 
 ### How to debug failures
 
-1. **TypeScript errors**: Run `npx tsc --noEmit` locally in `next-app/`
+1. **TypeScript errors**: Run `bunx tsc --noEmit` locally in `next-app/`
 2. **Build errors**: Run `bun run build` locally
 3. **Lint warnings**: Run `bun run lint` locally (warnings don't fail CI)
 
@@ -124,17 +124,16 @@ To enable automated testing, add these secrets to GitHub repo:
 
 | Secret Name | Where to Find | Description |
 |-------------|---------------|-------------|
-| `SUPABASE_URL` | Supabase Dashboard → Settings → API | Project URL |
-| `SUPABASE_ANON_KEY` | Supabase Dashboard → Settings → API | Anonymous key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard → Settings → API | Service role key (⚠️ keep secret!) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Dashboard → Settings → API | Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Dashboard → Settings → API | Anonymous key |
+| `TEST_USER_EMAIL` | Test account you control | E2E login email |
+| `TEST_USER_PASSWORD` | Test account you control | E2E login password |
 
 **Steps to enable**:
 
 1. Go to GitHub repo → Settings → Secrets and variables → Actions
-2. Add the 3 secrets above
-3. Edit `.github/workflows/playwright.yml`:
-   - Uncomment the `on: push/pull_request` triggers (lines 15-25)
-   - Comment out the `on: workflow_dispatch` trigger (lines 27-28)
+2. Add the 4 secrets above
+3. Keep `workflow_dispatch` available for manual runs and add push/PR secrets support if you want broader automatic coverage
 
 ### How to run manually
 
@@ -156,7 +155,7 @@ bun run test:e2e:ui     # With UI
 View local reports:
 
 ```bash
-npx playwright show-report
+bun run test:report
 ```
 
 ---
@@ -167,7 +166,7 @@ npx playwright show-report
 
 **Before pushing code**:
 
-1. ✅ Run `npx tsc --noEmit` (type checking)
+1. ✅ Run `bunx tsc --noEmit` (type checking)
 2. ✅ Run `bun run build` (build validation)
 3. ✅ Run `bun run check:links` (if you edited docs)
 4. ✅ Run `bun run test:e2e` (if you changed features)
@@ -224,7 +223,7 @@ npx playwright show-report
 **Cause**: Network issues or slow queries
 **Fix**:
 
-1. Increase timeout in workflow (currently 60 minutes)
+1. Increase timeout in workflow (currently 15 minutes)
 2. Optimize slow queries
 3. Use test database with smaller dataset
 
@@ -259,7 +258,7 @@ npx playwright show-report
 - [ ] Add deployment preview comments on PRs
 - [ ] Add code coverage reporting
 - [ ] Add performance benchmarking
-- [ ] Add security scanning (npm audit)
+- [ ] Add security scanning (`bun audit`)
 
 ### Under Consideration
 

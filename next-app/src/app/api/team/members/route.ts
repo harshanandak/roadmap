@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { resolveActiveTeam } from '@/lib/teams/active-team'
 
 /**
  * GET /api/team/members?team_id=xxx
- * List all team members with their phase assignments
+ * List all team members with their phase assignments for the requested or active team
  */
 export async function GET(request: NextRequest) {
   try {
@@ -20,12 +21,14 @@ export async function GET(request: NextRequest) {
 
     // Get team_id from query params
     const searchParams = request.nextUrl.searchParams
-    const team_id = searchParams.get('team_id')
+    const requestedTeamId = searchParams.get('team_id')
+    const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
+    const team_id = requestedTeamId || activeTeamId
 
     if (!team_id) {
       return NextResponse.json(
-        { error: 'team_id is required', success: false },
-        { status: 400 }
+        { error: 'No active team found', success: false },
+        { status: 404 }
       )
     }
 

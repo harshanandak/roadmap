@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { sendReviewLinkEmail } from '@/lib/email/review-links'
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 
@@ -175,16 +176,12 @@ export async function POST(request: Request) {
     // Send email invitation if requested and type is 'invite'
     if (send_email && type === 'invite' && email) {
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/review-links/send-invite`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            review_link_id: id,
-            email,
-            name,
-            workspace_name: workspace.name,
-            token,
-          }),
+        await sendReviewLinkEmail({
+          email,
+          name: name || null,
+          reviewToken: token,
+          workspaceName: workspace.name,
+          expiresAt: expires_at || null,
         })
       } catch (emailError) {
         console.error('Failed to send email:', emailError)

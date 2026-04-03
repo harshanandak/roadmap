@@ -41,7 +41,7 @@ jobs:
 
       - name: TypeScript type checking
         working-directory: ./next-app
-        run: npx tsc --noEmit
+        run: bunx tsc --noEmit
 
       - name: ESLint
         working-directory: ./next-app

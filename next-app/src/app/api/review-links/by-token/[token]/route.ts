@@ -18,7 +18,13 @@ export async function GET(
     const { data: reviewLink, error: linkError } = await supabase
       .from('review_links')
       .select(`
-        *,
+        id,
+        workspace_id,
+        type,
+        is_active,
+        expires_at,
+        allow_anonymous,
+        require_email,
         workspaces (
           id,
           name,
@@ -71,7 +77,7 @@ export async function GET(
 
     // Return review link with workspace and features
     return NextResponse.json({
-      ...reviewLink,
+      review_link: reviewLink,
       work_items: workItems || [],
     })
   } catch (error: unknown) {

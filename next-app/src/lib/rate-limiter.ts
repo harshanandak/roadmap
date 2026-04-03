@@ -73,9 +73,12 @@ function getRedisClient(): Redis | null {
  */
 class MockRatelimit {
   private readonly limitValue: number
+  private readonly prefix: string
+  private hasWarned = false
 
-  constructor(config: { limit: number }) {
+  constructor(config: { limit: number; prefix: string }) {
     this.limitValue = config.limit
+    this.prefix = config.prefix
   }
 
   async limit(_identifier: string): Promise<{
@@ -85,6 +88,15 @@ class MockRatelimit {
     reset: number
     pending: Promise<unknown>
   }> {
+    if (!this.hasWarned) {
+      this.hasWarned = true
+      console.warn(
+        `[Rate Limiter] Upstash not configured for "${this.prefix}". ` +
+          'Using mock limiter that allows all requests. ' +
+          'Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for production.'
+      )
+    }
+
     return {
       success: true,
       limit: this.limitValue,
@@ -120,13 +132,7 @@ function createRateLimiter(
   const redis = getRedisClient()
 
   if (!redis) {
-    // Return mock limiter for development
-    console.warn(
-      `[Rate Limiter] Upstash not configured for "${options.prefix}". ` +
-        'Using mock limiter that allows all requests. ' +
-        'Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for production.'
-    )
-    return new MockRatelimit({ limit: options.limit })
+    return new MockRatelimit({ limit: options.limit, prefix: options.prefix })
   }
 
   return new Ratelimit({

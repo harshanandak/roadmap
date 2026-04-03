@@ -21,7 +21,6 @@ interface WorkItem {
 
 interface ReviewLink {
   id: string
-  token: string
   workspace_id: string
   type: 'public' | 'invite' | 'embed'
   is_active: boolean

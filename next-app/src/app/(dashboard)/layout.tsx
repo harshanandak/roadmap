@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { resolveActiveTeam } from '@/lib/teams/active-team'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
@@ -26,14 +27,9 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
-  // Fetch user's team membership to get team ID
-  const { data: membership } = await supabase
-    .from('team_members')
-    .select('team_id')
-    .eq('user_id', user.id)
-    .single()
+  const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
 
-  if (!membership) {
+  if (!activeTeamId) {
     // Handle case where user has no team (shouldn't happen in normal flow)
     return <>{children}</>
   }
@@ -42,7 +38,7 @@ export default async function DashboardLayout({
   const { data: workspaces } = await supabase
     .from('workspaces')
     .select('id, name, team_id')
-    .eq('team_id', membership.team_id)
+    .eq('team_id', activeTeamId)
     .order('name')
 
   // Determine default workspace (first one)
@@ -58,7 +54,7 @@ export default async function DashboardLayout({
         workspaceId={defaultWorkspace?.id || ''}
         workspaceName={defaultWorkspace?.name || 'Workspace'}
         workspaces={workspaces || []}
-        teamId={membership.team_id}
+        teamId={activeTeamId}
         userEmail={user.email ?? ''}
         userName={userProfile?.name || user.user_metadata?.full_name || ''}
       />

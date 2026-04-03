@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { resolveActiveTeam } from '@/lib/teams/active-team'
 import type {
   TeamPerformanceData,
   PieChartData,
@@ -21,14 +22,14 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
 
     const workspaceId = searchParams.get('workspace_id')
-    const teamId = searchParams.get('team_id')
+    const requestedTeamId = searchParams.get('team_id')
     const scope = searchParams.get('scope') || 'workspace'
     const from = searchParams.get('from')
     const to = searchParams.get('to')
 
-    if (!workspaceId || !teamId) {
+    if (scope === 'workspace' && !workspaceId) {
       return NextResponse.json(
-        { error: 'workspace_id and team_id are required' },
+        { error: 'workspace_id is required for workspace scope' },
         { status: 400 }
       )
     }
@@ -41,6 +42,13 @@ export async function GET(req: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
+    const teamId = requestedTeamId || activeTeamId
+
+    if (!teamId) {
+      return NextResponse.json({ error: 'Team not found' }, { status: 404 })
     }
 
     // Verify team membership
@@ -61,7 +69,7 @@ export async function GET(req: NextRequest) {
       .select('id, title, status, task_type, assigned_to, due_date, created_at, updated_at')
       .eq('team_id', teamId)
 
-    if (scope === 'workspace') {
+    if (scope === 'workspace' && workspaceId) {
       tasksQuery = tasksQuery.eq('workspace_id', workspaceId)
     }
 

@@ -44,4 +44,4 @@ jobs:
       - name: Report broken links
         if: failure()
         run: |
-          echo "::error::Broken links found in documentation. Run 'npm run check:links' locally to see details."
+          echo "::error::Broken links found in documentation. Run 'bun run check:links' locally to see details."

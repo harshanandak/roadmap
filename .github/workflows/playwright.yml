@@ -48,7 +48,7 @@ jobs:
 
       - name: Install Playwright Browsers
         working-directory: ./next-app
-        run: npx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps chromium
 
       - name: Run Playwright tests
         working-directory: ./next-app

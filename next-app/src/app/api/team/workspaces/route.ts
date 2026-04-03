@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
+import { resolveActiveTeam } from '@/lib/teams/active-team'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * GET /api/team/workspaces
- * Fetch all workspaces for a team
+ * Fetch all workspaces for the requested or active team
  */
 export async function GET(request: NextRequest) {
   try {
@@ -21,10 +22,12 @@ export async function GET(request: NextRequest) {
 
     // Get team_id from query params
     const searchParams = request.nextUrl.searchParams
-    const teamId = searchParams.get('team_id')
+    const requestedTeamId = searchParams.get('team_id')
+    const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
+    const teamId = requestedTeamId || activeTeamId
 
     if (!teamId) {
-      return NextResponse.json({ error: 'team_id is required' }, { status: 400 })
+      return NextResponse.json({ error: 'No active team found' }, { status: 404 })
     }
 
     // Verify user is a member of this team

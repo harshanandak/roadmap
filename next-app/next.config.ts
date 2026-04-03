@@ -19,8 +19,9 @@ const nextConfig: NextConfig = {
     "@blocksuite/global",
   ],
 
-  // Empty turbopack config to silence warning when using webpack
-  turbopack: {},
+  turbopack: {
+    root: __dirname,
+  },
 
   // Webpack configuration for BlockSuite ESM compatibility
   // Note: Icon typo bug (CheckBoxCkeckSolidIcon) is fixed via patch-package in patches/

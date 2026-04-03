@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -17,6 +17,7 @@ import { InviteMemberDialog } from '@/components/team/invite-member-dialog'
 import { TeamMemberRow } from '@/components/team/team-member-row'
 import { PendingInvitationCard } from '@/components/team/pending-invitation-card'
 import { PhaseAssignmentMatrix } from '@/components/team/phase-assignment-matrix'
+import { useActiveTeam } from '@/lib/teams/use-active-team'
 import type { TeamMember, TeamRole } from '@/lib/types/team'
 
 interface PendingInvitation {
@@ -37,40 +38,36 @@ interface Workspace {
 }
 
 export default function TeamMembersPage() {
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [currentUserRole, setCurrentUserRole] = useState<TeamRole>('member')
-  const [teamId, setTeamId] = useState<string | null>(null)
   const [phaseMatrixOpen, setPhaseMatrixOpen] = useState(false)
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null)
 
   const supabase = createClient()
+  const {
+    activeMembership,
+    activeTeamId: teamId,
+    error: activeTeamError,
+    isLoading: loadingActiveTeam,
+  } = useActiveTeam()
 
-  // Get current user and team
-  useQuery({
-    queryKey: ['current-user-team'],
+  const {
+    data: currentUserId,
+    error: currentUserError,
+    isLoading: loadingCurrentUser,
+  } = useQuery({
+    queryKey: ['current-user'],
     queryFn: async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
-
-      setCurrentUserId(user.id)
-
-      // Get user's team membership
-      const { data: membership, error } = await supabase
-        .from('team_members')
-        .select('team_id, role')
-        .eq('user_id', user.id)
-        .single()
-
-      if (error || !membership) throw new Error('No team found')
-
-      setTeamId(membership.team_id)
-      setCurrentUserRole(membership.role)
-
-      return membership
+      return user.id
     },
   })
+
+  const currentUserRole = useMemo(
+    () => (activeMembership?.role as TeamRole | undefined) || 'member',
+    [activeMembership]
+  )
 
   // Fetch team members
   const {
@@ -80,8 +77,7 @@ export default function TeamMembersPage() {
   } = useQuery({
     queryKey: ['team-members', teamId],
     queryFn: async () => {
-      if (!teamId) return []
-      const response = await fetch(`/api/team/members?team_id=${teamId}`)
+      const response = await fetch('/api/team/members')
       if (!response.ok) {
         throw new Error('Failed to fetch team members')
       }
@@ -99,8 +95,7 @@ export default function TeamMembersPage() {
   } = useQuery({
     queryKey: ['pending-invitations', teamId],
     queryFn: async () => {
-      if (!teamId) return []
-      const response = await fetch(`/api/team/invitations?team_id=${teamId}`)
+      const response = await fetch('/api/team/invitations')
       if (!response.ok) {
         throw new Error('Failed to fetch invitations')
       }
@@ -114,8 +109,7 @@ export default function TeamMembersPage() {
   const { data: workspaces } = useQuery({
     queryKey: ['team-workspaces', teamId],
     queryFn: async () => {
-      if (!teamId) return []
-      const response = await fetch(`/api/team/workspaces?team_id=${teamId}`)
+      const response = await fetch('/api/team/workspaces')
       if (!response.ok) {
         throw new Error('Failed to fetch workspaces')
       }
@@ -133,10 +127,37 @@ export default function TeamMembersPage() {
     }
   }
 
-  if (!teamId) {
+  if (loadingActiveTeam || loadingCurrentUser) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (activeTeamError || currentUserError) {
+    const contextError = activeTeamError || currentUserError
+
+    return (
+      <div className="container max-w-5xl py-8">
+        <div className="text-center py-12">
+          <p className="text-red-600">Failed to load your organization context</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {contextError instanceof Error ? contextError.message : 'Unknown error'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!teamId) {
+    return (
+      <div className="container max-w-5xl py-8">
+        <div className="text-center py-12 text-muted-foreground">
+          <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+          <p>No active organization found</p>
+          <p className="text-sm mt-1">Join or create an organization to manage members.</p>
+        </div>
       </div>
     )
   }

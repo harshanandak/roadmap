@@ -1,5 +1,22 @@
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+
+interface InvitationLookupRow {
+  accepted_at: string | null
+  email: string
+  expires_at: string
+  inviter_email: string | null
+  inviter_name: string | null
+  phase_assignments: Array<{
+    workspace_id: string
+    phase: string
+    can_edit: boolean
+  }> | null
+  role: string
+  team_name: string | null
+  team_plan: string | null
+}
 
 /**
  * GET /api/team/invitations/details
@@ -8,6 +25,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
     // Get token from query params
     const searchParams = request.nextUrl.searchParams
@@ -17,50 +35,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'token is required' }, { status: 400 })
     }
 
-    // Fetch invitation with team details
     const { data: invitation, error: invitationError } = await supabase
-      .from('team_invitations')
-      .select(
-        `
-        id,
-        team_id,
-        email,
-        role,
-        expires_at,
-        created_at,
-        phase_assignments,
-        teams!inner (
-          name
-        ),
-        invited_by_user:users!team_invitations_invited_by_fkey (
-          name,
-          email
-        )
-      `
-      )
-      .eq('token', token)
+      .rpc('get_invitation_by_token', { p_token: token })
       .single()
 
     if (invitationError || !invitation) {
       return NextResponse.json({ error: 'Invalid invitation token' }, { status: 404 })
     }
 
+    const invitationData = invitation as InvitationLookupRow
+
     // Check if expired
-    const isExpired = new Date(invitation.expires_at) < new Date()
+    const isExpired = new Date(invitationData.expires_at) < new Date()
 
     // Parse phase assignments to group by workspace
-    const phaseAssignments = (invitation.phase_assignments || []) as Array<{
-      workspace_id: string
-      phase: string
-      can_edit: boolean
-    }>
+    const phaseAssignments = invitationData.phase_assignments || []
 
     // Fetch workspace details for phase assignments
     const workspaceIds = [...new Set(phaseAssignments.map((pa) => pa.workspace_id))]
-    const { data: workspaces } = await supabase
-      .from('workspaces')
-      .select('id, name')
-      .in('id', workspaceIds)
+    const { data: workspaces } = workspaceIds.length > 0
+      ? await adminSupabase
+          .from('workspaces')
+          .select('id, name')
+          .in('id', workspaceIds)
+      : { data: [] as Array<{ id: string; name: string }> }
 
     const workspaceMap = new Map(workspaces?.map((w) => [w.id, w.name]) || [])
 
@@ -72,18 +70,17 @@ export async function GET(request: NextRequest) {
         .map((pa) => pa.phase),
     }))
 
-    // Return invitation details
-    const team = Array.isArray(invitation.teams) ? invitation.teams[0] : invitation.teams
-    const inviter = Array.isArray(invitation.invited_by_user) ? invitation.invited_by_user[0] : invitation.invited_by_user
-
     return NextResponse.json({
-      team_name: team?.name || 'Unknown Team',
-      inviter_name: inviter?.name || null,
-      inviter_email: inviter?.email || '',
-      role: invitation.role,
+      team_name: invitationData.team_name || 'Unknown Team',
+      team_plan: invitationData.team_plan || 'free',
+      inviter_name: invitationData.inviter_name || null,
+      inviter_email: invitationData.inviter_email || '',
+      role: invitationData.role,
       workspaces: workspaceAccess,
-      expires_at: invitation.expires_at,
+      expires_at: invitationData.expires_at,
       is_expired: isExpired,
+      accepted_at: invitationData.accepted_at,
+      email: invitationData.email,
     })
   } catch (error) {
     console.error('Error in GET /api/team/invitations/details:', error)
