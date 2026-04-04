@@ -41,6 +41,28 @@ interface MemberCheckResult {
   errors?: Record<string, unknown>
 }
 
+interface ResultSectionProps {
+  children: React.ReactNode
+  title: string
+}
+
+function ResultSection({ children, title }: Readonly<ResultSectionProps>) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <h3 className="mb-2 font-semibold">{title}</h3>
+      {children}
+    </div>
+  )
+}
+
+function DetailItem({ label, value }: Readonly<{ label: string; value: React.ReactNode }>) {
+  return (
+    <p>
+      <strong>{label}:</strong> {value}
+    </p>
+  )
+}
+
 export function MemberCheckTool() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -127,27 +149,45 @@ export function MemberCheckTool() {
             <div className="space-y-4">
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <h3 className="mb-2 font-semibold">Search Details</h3>
-                <p><strong>Email:</strong> {result.email}</p>
-                <p><strong>Team ID:</strong> {result.teamId}</p>
-                <p><strong>Your Role:</strong> {result.currentUserRole}</p>
+                <DetailItem label="Email" value={result.email} />
+                <DetailItem label="Team ID" value={result.teamId} />
+                <DetailItem label="Your Role" value={result.currentUserRole} />
               </div>
 
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <h3 className="mb-2 font-semibold">
-                  Invitations ({result.invitations?.length || 0})
-                </h3>
+              <ResultSection title={`Invitations (${result.invitations?.length || 0})`}>
                 {result.invitations && result.invitations.length > 0 ? (
                   <div className="space-y-2">
-                    {result.invitations.map((inv, idx) => (
-                      <div key={idx} className="rounded border bg-white p-3">
-                        <p><strong>Status:</strong> {inv.accepted_at ? 'Accepted' : 'Pending'}</p>
-                        <p><strong>Role:</strong> {inv.role}</p>
-                        <p><strong>Created:</strong> {new Date(inv.created_at).toLocaleString()}</p>
+                    {result.invitations.map((inv) => (
+                      <div
+                        key={`${inv.created_at}-${inv.expires_at}-${inv.role}`}
+                        className="rounded border bg-white p-3"
+                      >
+                        <DetailItem
+                          label="Status"
+                          value={inv.accepted_at ? 'Accepted' : 'Pending'}
+                        />
+                        <DetailItem label="Role" value={inv.role} />
+                        <DetailItem
+                          label="Created"
+                          value={new Date(inv.created_at).toLocaleString()}
+                        />
                         {inv.accepted_at && (
-                          <p><strong>Accepted:</strong> {new Date(inv.accepted_at).toLocaleString()}</p>
+                          <DetailItem
+                            label="Accepted"
+                            value={new Date(inv.accepted_at).toLocaleString()}
+                          />
                         )}
-                        <p><strong>Expires:</strong> {new Date(inv.expires_at).toLocaleString()}</p>
-                        <p className={inv.expires_at > new Date().toISOString() ? 'text-green-600' : 'text-red-600'}>
+                        <DetailItem
+                          label="Expires"
+                          value={new Date(inv.expires_at).toLocaleString()}
+                        />
+                        <p
+                          className={
+                            inv.expires_at > new Date().toISOString()
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }
+                        >
                           {inv.expires_at > new Date().toISOString() ? 'Valid' : 'Expired'}
                         </p>
                       </div>
@@ -156,39 +196,41 @@ export function MemberCheckTool() {
                 ) : (
                   <p className="text-muted-foreground">No invitations found</p>
                 )}
-              </div>
+              </ResultSection>
 
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <h3 className="mb-2 font-semibold">
-                  User Account ({result.existingUsers?.length || 0})
-                </h3>
+              <ResultSection title={`User Account (${result.existingUsers?.length || 0})`}>
                 {result.existingUsers && result.existingUsers.length > 0 ? (
                   <div className="space-y-2">
-                    {result.existingUsers.map((user, idx) => (
-                      <div key={idx} className="rounded border bg-white p-3">
-                        <p><strong>User ID:</strong> {user.id}</p>
-                        <p><strong>Email:</strong> {user.email}</p>
+                    {result.existingUsers.map((user) => (
+                      <div key={user.id} className="rounded border bg-white p-3">
+                        <DetailItem label="User ID" value={user.id} />
+                        <DetailItem label="Email" value={user.email} />
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="text-muted-foreground">No user account found</p>
                 )}
-              </div>
+              </ResultSection>
 
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <h3 className="mb-2 font-semibold">Team Member Status</h3>
+              <ResultSection title="Team Member Status">
                 {result.memberWithEmail ? (
                   <div className="rounded border border-green-200 bg-green-50 p-3">
                     <p className="mb-2 font-semibold text-green-800">Member Found in Team</p>
-                    <p><strong>Member ID:</strong> {result.memberWithEmail.id}</p>
-                    <p><strong>User ID:</strong> {result.memberWithEmail.user_id}</p>
-                    <p><strong>Role:</strong> {result.memberWithEmail.role}</p>
-                    <p><strong>Joined:</strong> {new Date(result.memberWithEmail.joined_at).toLocaleString()}</p>
+                    <DetailItem label="Member ID" value={result.memberWithEmail.id} />
+                    <DetailItem label="User ID" value={result.memberWithEmail.user_id} />
+                    <DetailItem label="Role" value={result.memberWithEmail.role} />
+                    <DetailItem
+                      label="Joined"
+                      value={new Date(result.memberWithEmail.joined_at).toLocaleString()}
+                    />
                     {result.memberWithEmail.users && (
                       <>
-                        <p><strong>Name:</strong> {result.memberWithEmail.users.name || 'N/A'}</p>
-                        <p><strong>Email:</strong> {result.memberWithEmail.users.email}</p>
+                        <DetailItem
+                          label="Name"
+                          value={result.memberWithEmail.users.name || 'N/A'}
+                        />
+                        <DetailItem label="Email" value={result.memberWithEmail.users.email} />
                       </>
                     )}
                   </div>
@@ -198,16 +240,13 @@ export function MemberCheckTool() {
                     <p className="mt-2 text-sm">This user is not currently listed as a team member.</p>
                   </div>
                 )}
-              </div>
+              </ResultSection>
 
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <h3 className="mb-2 font-semibold">
-                  All Team Members ({result.teamMembers?.length || 0})
-                </h3>
+              <ResultSection title={`All Team Members (${result.teamMembers?.length || 0})`}>
                 {result.teamMembers && result.teamMembers.length > 0 ? (
                   <div className="max-h-60 space-y-1 overflow-y-auto">
-                    {result.teamMembers.map((member, idx) => (
-                      <div key={idx} className="rounded border bg-white p-2 text-sm">
+                    {result.teamMembers.map((member) => (
+                      <div key={member.id} className="rounded border bg-white p-2 text-sm">
                         <p>
                           <strong>{member.users?.email || 'Unknown'}</strong> ({member.role})
                         </p>
@@ -217,7 +256,7 @@ export function MemberCheckTool() {
                 ) : (
                   <p className="text-muted-foreground">No team members found</p>
                 )}
-              </div>
+              </ResultSection>
 
               {result.errors && Object.values(result.errors).some(Boolean) && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4">

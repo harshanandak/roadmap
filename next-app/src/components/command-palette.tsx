@@ -21,7 +21,7 @@ interface CommandPaletteProps {
   workspaceId?: string
 }
 
-export function CommandPalette({ workspaceId }: CommandPaletteProps) {
+export function CommandPalette({ workspaceId }: Readonly<CommandPaletteProps>) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()

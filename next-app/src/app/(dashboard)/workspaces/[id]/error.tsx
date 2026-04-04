@@ -4,13 +4,15 @@ import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+type WorkspaceErrorProps = Readonly<{
+  error: Error & { digest?: string }
+  reset: () => void
+}>
+
 export default function WorkspaceError({
   error,
   reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
+}: WorkspaceErrorProps) {
   useEffect(() => {
     console.error('Workspace route failed:', error)
   }, [error])
@@ -30,7 +32,7 @@ export default function WorkspaceError({
         </div>
         <div className="flex justify-center gap-3">
           <Button onClick={reset}>Try again</Button>
-          <Button variant="outline" onClick={() => window.location.assign('/dashboard')}>
+          <Button variant="outline" onClick={() => globalThis.location.assign('/dashboard')}>
             Back to dashboard
           </Button>
         </div>

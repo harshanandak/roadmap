@@ -93,6 +93,19 @@ COMMENT ON FUNCTION public.get_invitation_by_token(TEXT) IS
 -- TEAM-SCOPED SECURITY DEFINER FUNCTIONS
 -- ============================================================================
 
+CREATE OR REPLACE FUNCTION public.assert_team_membership(p_team_id TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public.user_is_team_member(p_team_id) THEN
+    RAISE EXCEPTION 'Not authorized for team %', p_team_id USING ERRCODE = '42501';
+  END IF;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.search_documents(
   p_team_id TEXT,
   p_query_embedding extensions.vector(1536),
@@ -115,9 +128,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT public.user_is_team_member(p_team_id) THEN
-    RAISE EXCEPTION 'Not authorized for team %', p_team_id USING ERRCODE = '42501';
-  END IF;
+  PERFORM public.assert_team_membership(p_team_id);
 
   RETURN QUERY
   SELECT
@@ -154,9 +165,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT public.user_is_team_member(p_team_id) THEN
-    RAISE EXCEPTION 'Not authorized for team %', p_team_id USING ERRCODE = '42501';
-  END IF;
+  PERFORM public.assert_team_membership(p_team_id);
 
   RETURN QUERY
   SELECT
@@ -211,9 +220,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT public.user_is_team_member(p_team_id) THEN
-    RAISE EXCEPTION 'Not authorized for team %', p_team_id USING ERRCODE = '42501';
-  END IF;
+  PERFORM public.assert_team_membership(p_team_id);
 
   RETURN QUERY
   SELECT
@@ -256,9 +263,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT public.user_is_team_member(p_team_id) THEN
-    RAISE EXCEPTION 'Not authorized for team %', p_team_id USING ERRCODE = '42501';
-  END IF;
+  PERFORM public.assert_team_membership(p_team_id);
 
   RETURN QUERY
   SELECT
@@ -360,9 +365,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT public.user_is_team_member(p_team_id) THEN
-    RAISE EXCEPTION 'Not authorized for team %', p_team_id USING ERRCODE = '42501';
-  END IF;
+  PERFORM public.assert_team_membership(p_team_id);
 
   RETURN QUERY
   WITH combined AS (
@@ -442,9 +445,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT public.user_is_team_member(p_team_id) THEN
-    RAISE EXCEPTION 'Not authorized for team %', p_team_id USING ERRCODE = '42501';
-  END IF;
+  PERFORM public.assert_team_membership(p_team_id);
 
   RETURN QUERY
   WITH top_concepts AS (
