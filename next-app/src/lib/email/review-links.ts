@@ -1,6 +1,7 @@
 import 'server-only'
 
 import {
+  escapeHtml,
   getEmailBaseUrl,
   getEmailFromAddress,
   renderEmailTemplate,
@@ -18,9 +19,10 @@ export interface ReviewLinkEmailPayload {
 export async function sendReviewLinkEmail(payload: ReviewLinkEmailPayload) {
   const baseUrl = getEmailBaseUrl()
   const reviewUrl = `${baseUrl}/review/${payload.reviewToken}`
-  const recipient = payload.name?.trim() || 'there'
+  const recipient = escapeHtml(payload.name?.trim() || 'there')
+  const workspaceName = escapeHtml(payload.workspaceName)
   const expiryHtml = payload.expiresAt
-    ? `<p style="font-size: 14px; color: #666;">This link expires on ${new Date(payload.expiresAt).toLocaleDateString()}.</p>`
+    ? `<p style="font-size: 14px; color: #666;">This link expires on ${escapeHtml(new Date(payload.expiresAt).toLocaleDateString())}.</p>`
     : ''
 
   return transporter.sendMail({
@@ -33,7 +35,7 @@ export async function sendReviewLinkEmail(payload: ReviewLinkEmailPayload) {
       actionUrl: reviewUrl,
       bodyHtml: `
         <p>Hello ${recipient},</p>
-        <p>You've been invited to review <strong>${payload.workspaceName}</strong>.</p>
+        <p>You've been invited to review <strong>${workspaceName}</strong>.</p>
         ${expiryHtml}
       `,
       footerHtml: `<p>If you weren't expecting this review request, you can safely ignore this email.</p>`,

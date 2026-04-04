@@ -83,10 +83,7 @@ export async function POST(request: NextRequest) {
   try {
     const teamContext = await requireTeamRouteContext({ verifyMembership: false })
     if (!teamContext.ok) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
+      return teamContext.response
     }
     const { supabase, user } = teamContext.context
 

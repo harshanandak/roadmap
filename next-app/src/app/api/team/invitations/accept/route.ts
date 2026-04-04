@@ -174,10 +174,12 @@ export async function POST(request: NextRequest) {
     if (invitationData.phase_assignments && invitationData.phase_assignments.length > 0) {
       const phaseAssignments = invitationData.phase_assignments.map((assignment) => ({
         id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        team_id: invitationData.team_id,
         workspace_id: assignment.workspace_id,
         user_id: user.id,
         phase: assignment.phase,
         can_edit: assignment.can_edit || false,
+        assigned_by: invitationData.invited_by || user.id,
         notes: assignment.notes || null
       }))
 

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import {
+  escapeHtml,
   getEmailBaseUrl,
   getEmailFromAddress,
   renderEmailTemplate,
@@ -20,12 +21,13 @@ export interface TeamInvitationEmailPayload {
 export async function sendTeamInvitationEmail(payload: TeamInvitationEmailPayload) {
   const baseUrl = getEmailBaseUrl()
   const invitationUrl = `${baseUrl}/accept-invite?token=${payload.invitationToken}`
-  const inviterDisplay = payload.inviterName || payload.inviterEmail || 'A team admin'
-  const roleLabel = payload.role === 'admin' ? 'Admin' : 'Member'
+  const inviterDisplay = escapeHtml(payload.inviterName || payload.inviterEmail || 'A team admin')
+  const roleLabel = escapeHtml(payload.role === 'admin' ? 'Admin' : 'Member')
   const roleDescription =
     payload.role === 'admin'
-      ? 'You will be able to manage team members and settings.'
-      : 'You will be able to view and edit workspaces.'
+      ? escapeHtml('You will be able to manage team members and settings.')
+      : escapeHtml('You will be able to view and edit workspaces.')
+  const teamName = escapeHtml(payload.teamName)
 
   return transporter.sendMail({
     from: getEmailFromAddress(),
@@ -37,7 +39,7 @@ export async function sendTeamInvitationEmail(payload: TeamInvitationEmailPayloa
       actionUrl: invitationUrl,
       bodyHtml: `
         <p>Hello!</p>
-        <p><strong>${inviterDisplay}</strong> has invited you to join <strong>${payload.teamName}</strong>.</p>
+        <p><strong>${inviterDisplay}</strong> has invited you to join <strong>${teamName}</strong>.</p>
         <div style="background: #f8f9fa; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0;">
           <strong>Role:</strong> ${roleLabel}<br>
           ${roleDescription}
