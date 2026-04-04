@@ -1,3 +1,4 @@
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { PublicReviewPageClient } from './review-client'
 
@@ -75,7 +76,9 @@ export default async function PublicReviewPage({
     )
   }
 
-  const { data: workItems, error: itemsError } = await supabase
+  const adminSupabase = createAdminClient()
+
+  const { data: workItems, error: itemsError } = await adminSupabase
     .from('work_items')
     .select(`
       id,

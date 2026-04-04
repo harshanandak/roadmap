@@ -5,6 +5,7 @@ import {
   getEmailBaseUrl,
   getEmailFromAddress,
   renderEmailTemplate,
+  sanitizeEmailSubject,
 } from '@/lib/email/templates'
 import { transporter } from '@/lib/email/transporter'
 
@@ -28,7 +29,7 @@ export async function sendReviewLinkEmail(payload: ReviewLinkEmailPayload) {
   return transporter.sendMail({
     from: getEmailFromAddress(),
     to: payload.email,
-    subject: `Review request for ${payload.workspaceName}`,
+    subject: sanitizeEmailSubject(`Review request for ${payload.workspaceName}`),
     html: renderEmailTemplate({
       title: 'Review Request',
       actionLabel: 'Open Review',

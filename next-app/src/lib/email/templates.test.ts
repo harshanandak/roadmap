@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { escapeHtml, renderEmailTemplate } from './templates'
+import { escapeHtml, renderEmailTemplate, sanitizeEmailSubject } from './templates'
 
 describe('escapeHtml', () => {
   it('escapes special HTML characters', () => {
@@ -22,5 +22,13 @@ describe('renderEmailTemplate', () => {
     expect(html).toContain('Open &lt;Invite&gt;')
     expect(html).toContain('https://example.com/?q=&lt;test&gt;&amp;name=&quot;demo&quot;')
     expect(html).not.toContain('<h1>Team <Invite></h1>')
+  })
+})
+
+describe('sanitizeEmailSubject', () => {
+  it('removes line breaks from dynamic subject values', () => {
+    expect(sanitizeEmailSubject('Review request\r\nfor Workspace')).toBe(
+      'Review request for Workspace'
+    )
   })
 })

@@ -25,6 +25,10 @@ export function escapeHtml(value: string) {
     .replace(/'/g, '&#39;')
 }
 
+export function sanitizeEmailSubject(value: string) {
+  return value.replace(/[\r\n]+/g, ' ').trim()
+}
+
 export function renderEmailTemplate({
   actionLabel,
   actionUrl,

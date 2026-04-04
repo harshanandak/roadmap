@@ -5,6 +5,7 @@ import {
   getEmailBaseUrl,
   getEmailFromAddress,
   renderEmailTemplate,
+  sanitizeEmailSubject,
 } from '@/lib/email/templates'
 import { transporter } from '@/lib/email/transporter'
 
@@ -32,7 +33,7 @@ export async function sendTeamInvitationEmail(payload: TeamInvitationEmailPayloa
   return transporter.sendMail({
     from: getEmailFromAddress(),
     to: payload.email,
-    subject: `You've been invited to join ${payload.teamName}`,
+    subject: sanitizeEmailSubject(`You've been invited to join ${payload.teamName}`),
     html: renderEmailTemplate({
       title: 'Team Invitation',
       actionLabel: 'Accept Invitation',
