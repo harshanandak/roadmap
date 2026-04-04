@@ -261,7 +261,6 @@ CREATE OR REPLACE FUNCTION public.search_resources(
 )
 RETURNS TABLE (
   id TEXT,
-  workspace_id TEXT,
   title TEXT,
   url TEXT,
   description TEXT,
@@ -285,7 +284,6 @@ BEGIN
   RETURN QUERY
   SELECT
     r.id,
-    r.workspace_id,
     r.title,
     r.url,
     r.description,
