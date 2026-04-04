@@ -32,6 +32,10 @@ export function renderEmailTemplate({
   footerHtml,
   title,
 }: Readonly<EmailTemplateOptions>) {
+  const escapedActionLabel = escapeHtml(actionLabel)
+  const escapedActionUrl = escapeHtml(actionUrl)
+  const escapedTitle = escapeHtml(title)
+
   return `
     <!DOCTYPE html>
     <html>
@@ -50,15 +54,15 @@ export function renderEmailTemplate({
       <body>
         <div class="container">
           <div class="header">
-            <h1>${title}</h1>
+            <h1>${escapedTitle}</h1>
           </div>
           ${bodyHtml}
           <div class="button-container">
-            <a href="${actionUrl}" class="button">${actionLabel}</a>
+            <a href="${escapedActionUrl}" class="button">${escapedActionLabel}</a>
           </div>
           <p style="font-size: 14px; color: #666;">
             Or copy and paste this URL into your browser:<br>
-            <a href="${actionUrl}" style="color: #2563eb; word-break: break-all;">${actionUrl}</a>
+            <a href="${escapedActionUrl}" style="color: #2563eb; word-break: break-all;">${escapedActionUrl}</a>
           </p>
           <div class="footer">
             ${footerHtml}

@@ -81,12 +81,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const teamContext = await requireTeamRouteContext({ verifyMembership: false })
-    if (!teamContext.ok) {
-      return teamContext.response
-    }
-    const { supabase, user } = teamContext.context
-
     // Parse and validate request body
     const body = await request.json()
     const validation = createInvitationSchema.safeParse(body)
@@ -99,6 +93,14 @@ export async function POST(request: NextRequest) {
     }
 
     const { team_id, email, role, phase_assignments } = validation.data
+    const teamContext = await requireTeamRouteContext({
+      requestedTeamId: team_id,
+      teamMissingMessage: 'No active team found',
+    })
+    if (!teamContext.ok) {
+      return teamContext.response
+    }
+    const { supabase, user } = teamContext.context
 
     // Check if user is owner or admin of the team
     const { data: membership, error: membershipError } = await supabase
