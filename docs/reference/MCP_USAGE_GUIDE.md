@@ -352,7 +352,7 @@ Suggest optimizations"
 
 - ✅ Simple file operations (read, write, edit)
 - ✅ Basic git commands (status, commit, push)
-- ✅ Simple npm commands (install, run dev)
+- ✅ Simple Bun commands (install, run dev)
 
 ### 2. Combining MCPs
 
@@ -428,7 +428,7 @@ To reduce token usage:
 **Solution**: Check team_members table exists and has correct structure
 
 **Problem**: TypeScript types not updating
-**Solution**: Run `npx supabase gen types typescript --local > lib/supabase/types.ts`
+**Solution**: Run `bunx supabase gen types typescript --local > lib/supabase/types.ts`
 
 ### Playwright MCP Issues
 

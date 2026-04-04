@@ -7,46 +7,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAnalyticsRouteContext } from '@/lib/api/analytics-route'
 import type { DependencyHealthData, PieChartData } from '@/lib/types/analytics'
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { searchParams } = new URL(req.url)
-
-    const workspaceId = searchParams.get('workspace_id')
-    const teamId = searchParams.get('team_id')
-    const scope = searchParams.get('scope') || 'workspace'
-
-    if (!workspaceId || !teamId) {
-      return NextResponse.json(
-        { error: 'workspace_id and team_id are required' },
-        { status: 400 }
-      )
+    const routeContext = await requireAnalyticsRouteContext(req)
+    if (!routeContext.ok) {
+      return routeContext.response
     }
-
-    // Auth check
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Verify team membership
-    const { data: membership } = await supabase
-      .from('team_members')
-      .select('id')
-      .eq('team_id', teamId)
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership) {
-      return NextResponse.json({ error: 'Not a team member' }, { status: 403 })
-    }
+    const { scope, supabase, teamId, workspaceId } = routeContext.context
 
     // Fetch work items
     let workItemsQuery = supabase
@@ -54,7 +24,7 @@ export async function GET(req: NextRequest) {
       .select('id, name, status')
       .eq('team_id', teamId)
 
-    if (scope === 'workspace') {
+    if (scope === 'workspace' && workspaceId) {
       workItemsQuery = workItemsQuery.eq('workspace_id', workspaceId)
     }
 

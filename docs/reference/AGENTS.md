@@ -36,13 +36,13 @@ All AI models are accessed through the **OpenRouter API** - a unified gateway fo
 
 ```bash
 # Core AI SDK
-npm install ai @ai-sdk/react
+bun add ai @ai-sdk/react
 
 # OpenRouter Provider
-npm install @openrouter/ai-sdk-provider
+bun add @openrouter/ai-sdk-provider
 
 # Assistant UI Components
-npm install @assistant-ui/react @assistant-ui/react-ai-sdk
+bun add @assistant-ui/react @assistant-ui/react-ai-sdk
 ```
 
 ### Package Details
@@ -61,7 +61,7 @@ npm install @assistant-ui/react @assistant-ui/react-ai-sdk
 ### Database & Authentication - Supabase
 
 ```bash
-npm install @supabase/supabase-js @supabase/ssr
+bun add @supabase/supabase-js @supabase/ssr
 ```
 
 | Package | Version | Purpose |
@@ -94,7 +94,7 @@ npm install @supabase/supabase-js @supabase/ssr
 ### Email - Zoho ZeptoMail
 
 ```bash
-npm install zeptomail
+bun add zeptomail
 ```
 
 | Package | Version | Purpose |
@@ -109,7 +109,7 @@ npm install zeptomail
 ### Payments - Razorpay
 
 ```bash
-npm install razorpay
+bun add razorpay
 ```
 
 | Package | Version | Purpose |
@@ -124,7 +124,7 @@ npm install razorpay
 ### Monitoring - Vercel Speed Insights
 
 ```bash
-npm install @vercel/speed-insights
+bun add @vercel/speed-insights
 ```
 
 | Package | Version | Purpose |
@@ -146,10 +146,10 @@ Only essential MCP. Other tools use CLI for context efficiency.
 **CLI-Based (No MCP - More Context Efficient):**
 
 - Supabase → `supabase` CLI
-- Playwright → `npx playwright` CLI
+- Playwright → `bunx playwright` CLI
 - GitHub → `gh` CLI
 - Vercel → `vercel` CLI
-- shadcn/ui → `npx shadcn-ui` CLI
+- shadcn/ui → `bunx shadcn@latest` CLI
 - Filesystem → Built-in tools
 
 - **MCP Documentation**: <https://modelcontextprotocol.io/>
@@ -208,16 +208,16 @@ These tools are built into the platform for AI-assisted workflows.
 
 ```bash
 # Mind Mapping & Graphs
-npm install @xyflow/react
+bun add @xyflow/react
 
 # Charts & Analytics
-npm install recharts
+bun add recharts
 
 # Rich Content Editing
-npm install @blocksuite/affine @blocksuite/presets
+bun add @blocksuite/affine @blocksuite/presets
 
 # AI Response Rendering
-npm install react-markdown react-syntax-highlighter
+bun add react-markdown react-syntax-highlighter
 ```
 
 ### Package Details
@@ -237,7 +237,7 @@ npm install react-markdown react-syntax-highlighter
 ### Installation
 
 ```bash
-npm install zustand @tanstack/react-query react-hook-form
+bun add zustand @tanstack/react-query react-hook-form
 ```
 
 ### Package Details
@@ -301,19 +301,19 @@ These are specialized Claude agents recommended for different implementation pha
 
 ```bash
 # AI-related packages
-npm install ai @ai-sdk/react @openrouter/ai-sdk-provider @assistant-ui/react @assistant-ui/react-ai-sdk
+bun add ai @ai-sdk/react @openrouter/ai-sdk-provider @assistant-ui/react @assistant-ui/react-ai-sdk
 
 # Database & Auth
-npm install @supabase/supabase-js @supabase/ssr
+bun add @supabase/supabase-js @supabase/ssr
 
 # External Services
-npm install razorpay zeptomail @vercel/speed-insights
+bun add razorpay zeptomail @vercel/speed-insights
 
 # UI & Visualization
-npm install @xyflow/react recharts @blocksuite/affine @blocksuite/presets react-markdown react-syntax-highlighter
+bun add @xyflow/react recharts @blocksuite/affine @blocksuite/presets react-markdown react-syntax-highlighter
 
 # State Management
-npm install zustand @tanstack/react-query react-hook-form
+bun add zustand @tanstack/react-query react-hook-form
 ```
 
 ---
@@ -433,7 +433,7 @@ PARALLEL_API_KEY=your_parallel_api_key
 ### Installation
 
 ```bash
-npm install -g @fission-ai/openspec@latest
+bun add -g @fission-ai/openspec@latest
 openspec init
 ```
 

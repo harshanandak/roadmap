@@ -1,18 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { validateInternalToolApiAccess } from '@/lib/internal-tools'
 
 export async function POST() {
   try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const access = await validateInternalToolApiAccess()
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status })
     }
+
+    const supabase = await createClient()
 
     // Run the SQL to create the users table
     const { data, error } = await supabase.rpc('exec_sql', {

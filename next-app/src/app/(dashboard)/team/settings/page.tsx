@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
@@ -8,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TeamGeneralSettings } from '@/components/team/settings/team-general-settings'
 import { TeamBillingSettings } from '@/components/team/settings/team-billing-settings'
 import { TeamIntegrationsSettings } from '@/components/team/settings/team-integrations-settings'
-import type { TeamRole } from '@/lib/types/team'
+import { useActiveTeam } from '@/lib/teams/use-active-team'
 
 interface Team {
   id: string
@@ -18,34 +17,14 @@ interface Team {
 }
 
 export default function TeamSettingsPage() {
-  const [currentUserRole, setCurrentUserRole] = useState<TeamRole>('member')
-  const [teamId, setTeamId] = useState<string | null>(null)
   const supabase = createClient()
-
-  // Get current user and team
-  useQuery({
-    queryKey: ['current-user-team'],
-    queryFn: async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
-      // Get user's team membership
-      const { data: membership, error } = await supabase
-        .from('team_members')
-        .select('team_id, role')
-        .eq('user_id', user.id)
-        .single()
-
-      if (error || !membership) throw new Error('No team found')
-
-      setTeamId(membership.team_id)
-      setCurrentUserRole(membership.role)
-
-      return membership
-    },
-  })
+  const {
+    activeMembership,
+    activeTeamId: teamId,
+    error: activeTeamError,
+    isLoading: loadingActiveTeam,
+  } = useActiveTeam()
+  const currentUserRole = activeMembership?.role || 'member'
 
   // Fetch team details
   const {
@@ -68,10 +47,34 @@ export default function TeamSettingsPage() {
     enabled: !!teamId,
   })
 
-  if (!teamId || loadingTeam) {
+  if (loadingActiveTeam || loadingTeam) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (activeTeamError) {
+    return (
+      <div className="container max-w-5xl py-8">
+        <div className="text-center py-12">
+          <p className="text-red-600">Failed to resolve your organization context</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {activeTeamError instanceof Error ? activeTeamError.message : 'Unknown error'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!teamId) {
+    return (
+      <div className="container max-w-5xl py-8">
+        <div className="text-center py-12 text-muted-foreground">
+          <p>No active organization found</p>
+          <p className="text-sm mt-1">Join or create an organization to manage settings.</p>
+        </div>
       </div>
     )
   }

@@ -12,10 +12,27 @@ import { AIModel, calculateCost } from './models'
  * OpenRouter API configuration
  */
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
 
-if (!OPENROUTER_API_KEY) {
-  console.warn('OPENROUTER_API_KEY not set - AI features will not work')
+interface OpenRouterRequestBody {
+  model: string
+  messages: ChatMessage[]
+  temperature: number
+  max_tokens: number
+  top_p: number
+  frequency_penalty: number
+  presence_penalty: number
+  stream: boolean
+  provider?: { ignore: string[] }
+}
+
+function getOpenRouterApiKey(): string {
+  const apiKey = process.env.OPENROUTER_API_KEY
+
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY not configured')
+  }
+
+  return apiKey
 }
 
 /**
@@ -78,15 +95,45 @@ export interface OpenRouterStreamChunk {
   }
 }
 
+function buildOpenRouterRequestBody(
+  options: Readonly<{
+    frequencyPenalty: number
+    maxTokens: number
+    messages: ChatMessage[]
+    model: AIModel
+    presencePenalty: number
+    stream: boolean
+    temperature: number
+    topP: number
+  }>
+): OpenRouterRequestBody {
+  const requestBody: OpenRouterRequestBody = {
+    model: options.model.id,
+    messages: options.messages,
+    temperature: options.temperature,
+    max_tokens: options.maxTokens,
+    top_p: options.topP,
+    frequency_penalty: options.frequencyPenalty,
+    presence_penalty: options.presencePenalty,
+    stream: options.stream,
+  }
+
+  if (options.model.excludeProviders && options.model.excludeProviders.length > 0) {
+    requestBody.provider = {
+      ignore: options.model.excludeProviders,
+    }
+  }
+
+  return requestBody
+}
+
 /**
  * Call OpenRouter API (non-streaming)
  */
 export async function callOpenRouter(
   options: OpenRouterOptions
 ): Promise<OpenRouterResponse> {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error('OPENROUTER_API_KEY not configured')
-  }
+  const openRouterApiKey = getOpenRouterApiKey()
 
   const {
     model,
@@ -99,39 +146,21 @@ export async function callOpenRouter(
   } = options
 
   try {
-    // Build request body
-    const requestBody: {
-      model: string;
-      messages: ChatMessage[];
-      temperature: number;
-      max_tokens: number;
-      top_p: number;
-      frequency_penalty: number;
-      presence_penalty: number;
-      stream: boolean;
-      provider?: { ignore: string[] };
-    } = {
-      model: model.id, // Already includes :nitro suffix for throughput optimization
+    const requestBody = buildOpenRouterRequestBody({
+      frequencyPenalty,
+      maxTokens,
       messages,
-      temperature,
-      max_tokens: maxTokens,
-      top_p: topP,
-      frequency_penalty: frequencyPenalty,
-      presence_penalty: presencePenalty,
+      model,
+      presencePenalty,
       stream: false,
-    }
-
-    // Handle provider exclusions (e.g., Kimi K2 excludes MoonshotAI/Turbo)
-    if (model.excludeProviders && model.excludeProviders.length > 0) {
-      requestBody.provider = {
-        ignore: model.excludeProviders,
-      }
-    }
+      temperature,
+      topP,
+    })
 
     const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${openRouterApiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
         'X-Title': 'Product Lifecycle Platform',
@@ -194,9 +223,7 @@ export async function callOpenRouter(
 export async function streamOpenRouter(
   options: OpenRouterOptions
 ): Promise<ReadableStream<Uint8Array>> {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error('OPENROUTER_API_KEY not configured')
-  }
+  const openRouterApiKey = getOpenRouterApiKey()
 
   const {
     model,
@@ -209,39 +236,21 @@ export async function streamOpenRouter(
   } = options
 
   try {
-    // Build request body
-    const requestBody: {
-      model: string;
-      messages: ChatMessage[];
-      temperature: number;
-      max_tokens: number;
-      top_p: number;
-      frequency_penalty: number;
-      presence_penalty: number;
-      stream: boolean;
-      provider?: { ignore: string[] };
-    } = {
-      model: model.id, // Already includes :nitro suffix for throughput optimization
+    const requestBody = buildOpenRouterRequestBody({
+      frequencyPenalty,
+      maxTokens,
       messages,
-      temperature,
-      max_tokens: maxTokens,
-      top_p: topP,
-      frequency_penalty: frequencyPenalty,
-      presence_penalty: presencePenalty,
+      model,
+      presencePenalty,
       stream: true,
-    }
-
-    // Handle provider exclusions (e.g., Kimi K2 excludes MoonshotAI/Turbo)
-    if (model.excludeProviders && model.excludeProviders.length > 0) {
-      requestBody.provider = {
-        ignore: model.excludeProviders,
-      }
-    }
+      temperature,
+      topP,
+    })
 
     const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${openRouterApiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
         'X-Title': 'Product Lifecycle Platform',

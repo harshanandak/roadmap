@@ -11,7 +11,6 @@ import {
   Calendar,
   BarChart3,
   Users,
-  Database,
   FileText,
   FileEdit,
   Settings,
@@ -97,9 +96,6 @@ function SidebarUserFooter({
             <DropdownMenuItem asChild>
               <Link href="/team/settings">Settings</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/team/billing">Billing</Link>
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/api/auth/signout" className="text-red-500 w-full">Log out</Link>
@@ -161,11 +157,11 @@ export function AppSidebar({ workspaceId: defaultWorkspaceId, workspaceName: def
     { icon: Users, label: 'Project Team', href: `/workspaces/${workspaceId}?view=team-analytics` }
   ]
 
-  // Documents section items
-  const documentsNavItems: NavItem[] = [
-    { icon: Database, label: 'Data Library', href: `/workspaces/${workspaceId}/data-library` },
-    { icon: FileText, label: 'Reports', href: `/workspaces/${workspaceId}/reports` },
-    { icon: FileEdit, label: 'Word Assistant', href: `/workspaces/${workspaceId}/assistant` }
+  // Workspace section items
+  const workspaceNavItems: NavItem[] = [
+    { icon: FileText, label: 'Review Portal', href: `/workspaces/${workspaceId}/review` },
+    { icon: FileEdit, label: 'Product Tasks', href: `/workspaces/${workspaceId}?view=product-tasks` },
+    { icon: Settings, label: 'Workspace Settings', href: `/workspaces/${workspaceId}/settings` }
   ]
 
   // Organization section items
@@ -285,14 +281,14 @@ export function AppSidebar({ workspaceId: defaultWorkspaceId, workspaceName: def
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Documents Group */}
+        {/* Workspace Group */}
         <SidebarGroup>
-          <SidebarGroupLabel>Documents</SidebarGroupLabel>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {documentsNavItems.map((item) => (
+              {workspaceNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.label}>
+                  <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
                     <Link href={item.href}>
                       <item.icon />
                       <span>{item.label}</span>

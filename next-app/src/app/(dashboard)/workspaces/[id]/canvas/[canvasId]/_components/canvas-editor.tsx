@@ -24,7 +24,7 @@ export function CanvasEditor({
   title,
   readOnly,
 }: CanvasEditorProps) {
-  const router = useRouter()
+  useRouter()
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isReady, setIsReady] = useState(false)
 

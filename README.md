@@ -28,12 +28,12 @@ Transform your product development process with an integrated platform that cove
 ## 🏗️ Tech Stack
 
 ```
-Framework:    Next.js 15 + TypeScript (App Router, Server Components)
+Framework:    Next.js 16 + TypeScript (App Router, Server Components)
 Database:     Supabase (PostgreSQL + Real-time + Auth + RLS)
 UI:           shadcn/ui + Tailwind CSS + Lucide React
 Mind Mapping: ReactFlow (custom nodes, AI-powered)
 Charts:       Recharts (10+ chart types)
-Testing:      Playwright (E2E) + Jest (Unit)
+Testing:      Playwright (E2E) + Vitest (Unit)
 Payments:     Razorpay (Orders + Subscriptions + Webhooks)
 Email:        Resend (Invitations, notifications)
 AI:           OpenRouter (Claude Haiku, Perplexity, Grok)
@@ -139,7 +139,7 @@ platform-test/
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Bun 1.2+ and Node.js 18+
 - Supabase account ([supabase.com](https://supabase.com))
 - Vercel account (optional, for deployment)
 
@@ -153,7 +153,7 @@ platform-test/
 2. **Install dependencies**
    ```bash
    cd next-app
-   npm install
+   bun install --frozen-lockfile
    ```
 
 3. **Set up Supabase**
@@ -168,13 +168,13 @@ platform-test/
 4. **Apply database migrations**
    ```bash
    cd ..
-   npx supabase db push
+   bunx supabase db push
    ```
 
 5. **Run development server**
    ```bash
    cd next-app
-   npm run dev
+   bun run dev
    ```
 
 6. **Open the app**
@@ -328,10 +328,10 @@ ai_usage          - Message count per user/month
 **Run Tests:**
 ```bash
 cd next-app
-npm run test:e2e          # Run all tests
-npm run test:e2e:ui       # Run with UI
-npm run test:e2e:headed   # Run in browser
-npm run test:report       # View test report
+bun run test:e2e          # Run all tests
+bun run test:e2e:ui       # Run with UI
+bun run test:e2e:headed   # Run in browser
+bun run test:report       # View test report
 ```
 
 **Planned (Week 8):**

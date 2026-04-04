@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -39,7 +38,6 @@ export function InviteMemberDialog({ teamId }: InviteMemberDialogProps) {
   } | null>(null)
 
   const router = useRouter()
-  const supabase = createClient()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -47,88 +45,22 @@ export function InviteMemberDialog({ teamId }: InviteMemberDialogProps) {
     setMessage(null)
 
     try {
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        throw new Error('Not authenticated')
-      }
-
-      // Check if a user with this email exists and is already a member
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .single()
-
-      if (existingUser) {
-        // User exists, check if they're already a team member
-        const { data: existingMember } = await supabase
-          .from('team_members')
-          .select('id')
-          .eq('team_id', teamId)
-          .eq('user_id', existingUser.id)
-          .single()
-
-        if (existingMember) {
-          throw new Error('This user is already a member of the team')
-        }
-      }
-
-      // Check if invitation already exists
-      const { data: existingInvite } = await supabase
-        .from('invitations')
-        .select('id')
-        .eq('team_id', teamId)
-        .eq('email', email)
-        .is('accepted_at', null)
-        .gt('expires_at', new Date().toISOString())
-        .single()
-
-      if (existingInvite) {
-        throw new Error('An invitation has already been sent to this email')
-      }
-
-      // Generate invitation token
-      const token = `invite_${Date.now()}_${Math.random().toString(36).substring(7)}`
-
-      // Set expiration to 7 days from now
-      const expiresAt = new Date()
-      expiresAt.setDate(expiresAt.getDate() + 7)
-
-      // Create invitation
-      const invitationId = `invitation_${Date.now()}`
-      const { error: inviteError } = await supabase.from('invitations').insert({
-        id: invitationId,
-        team_id: teamId,
-        email,
-        role,
-        token,
-        expires_at: expiresAt.toISOString(),
-        invited_by: user.id,
+      const response = await fetch('/api/team/invitations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          team_id: teamId,
+          email,
+          role,
+          phase_assignments: [],
+        }),
       })
 
-      if (inviteError) throw inviteError
-
-      // Send invitation email
-      try {
-        const emailResponse = await fetch('/api/invitations/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ invitationId }),
-        })
-
-        if (!emailResponse.ok) {
-          console.error('Failed to send email, but invitation created')
-          // Still show success since invitation was created
-        }
-      } catch (emailError) {
-        console.error('Error sending email:', emailError)
-        // Still show success since invitation was created
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to send invitation')
       }
 
       setMessage({

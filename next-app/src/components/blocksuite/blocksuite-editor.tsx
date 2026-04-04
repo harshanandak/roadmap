@@ -196,7 +196,7 @@ export function BlockSuiteEditor({
         // Fall back to individual editors for specific use cases
         console.log('[BlockSuiteEditor] Creating', mode, 'editor')
         let editor: unknown
-        let useContainer = true // Use container for better UI
+        const useContainer = true // Use container for better UI
 
         if (useContainer) {
           // AffineEditorContainer provides full editor UI with mode switching

@@ -1,9 +1,9 @@
 # Testing Documentation
 
-> **Purpose**: Quality assurance, E2E testing guides, and security audit reports
-> **Last Updated**: 2026-01-14
+> Purpose: Quality assurance, E2E testing guides, and security audit reports
+> Last Updated: 2026-04-03
 
-[← Back to Docs Index](../INDEX.md) | [← Back to Root](../../README.md)
+[Back to Docs Index](../INDEX.md) | [Back to Root](../../README.md)
 
 ---
 
@@ -22,21 +22,21 @@
 
 ```bash
 # Run all E2E tests
-cd next-app && npm run test:e2e
+cd next-app && bun run test:e2e
 
-# Run specific test file
-npx playwright test tests/e2e/auth.spec.ts
+# Run a specific test file
+cd next-app && bunx playwright test e2e/01-auth.spec.ts
 
 # Run with UI mode
-npx playwright test --ui
+cd next-app && bun run test:e2e:ui
 ```
 
 ### Test Configuration
 
-- **Framework**: Playwright
-- **Browser**: Chromium (CI), all browsers (local)
-- **Parallel**: 4 workers
+- Framework: Playwright
+- Browser: Chromium (CI), all browsers (local)
+- Parallel: Configured in `next-app/playwright.config.ts`
 
 ---
 
-[← Back to Docs Index](../INDEX.md) | [← Back to Root](../../README.md)
+[Back to Docs Index](../INDEX.md) | [Back to Root](../../README.md)

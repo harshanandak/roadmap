@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireTeamRouteContext } from '@/lib/api/team-route'
 import { runCompressionJob, listJobs } from '@/lib/ai/compression'
 import { embedMindMap } from '@/lib/ai/embeddings/mindmap-embedding-service'
 import {
@@ -38,30 +38,11 @@ const MINDMAP_EMBED_CONFIG = {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const teamContext = await requireTeamRouteContext()
+    if (!teamContext.ok) {
+      return teamContext.response
     }
-
-    // Get user's team
-    const { data: membership, error: memberError } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (memberError || !membership) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 })
-    }
-
-    const teamId = membership.team_id
+    const { supabase, teamId, user } = teamContext.context
 
     // Parse request body
     const body = await request.json()
@@ -129,30 +110,11 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const teamContext = await requireTeamRouteContext()
+    if (!teamContext.ok) {
+      return teamContext.response
     }
-
-    // Get user's team
-    const { data: membership, error: memberError } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (memberError || !membership) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 })
-    }
-
-    const teamId = membership.team_id
+    const { teamId } = teamContext.context
 
     // Parse query params
     const { searchParams } = new URL(request.url)

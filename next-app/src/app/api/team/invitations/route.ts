@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { sendTeamInvitationEmail } from '@/lib/email/team-invitations'
+import { requireTeamRouteContext } from '@/lib/api/team-route'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 
@@ -23,43 +24,40 @@ function generateInvitationToken(): string {
 
 /**
  * GET /api/team/invitations?team_id=xxx
- * List all pending invitations for a team
+ * List all pending invitations for the requested or active team
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
-    }
-
     // Get team_id from query params
     const searchParams = request.nextUrl.searchParams
-    const team_id = searchParams.get('team_id')
-
-    if (!team_id) {
-      return NextResponse.json(
-        { error: 'team_id is required', success: false },
-        { status: 400 }
-      )
+    const requestedTeamId = searchParams.get('team_id')
+    const teamContext = await requireTeamRouteContext({
+      notMemberMessage: 'You are not a member of this team',
+      requestedTeamId,
+      teamMissingMessage: 'No active team found',
+    })
+    if (!teamContext.ok) {
+      return teamContext.response
     }
+    const { supabase, teamId, user } = teamContext.context
 
-    // Check if user is a member of the team
     const { data: membership, error: membershipError } = await supabase
       .from('team_members')
-      .select('id')
-      .eq('team_id', team_id)
+      .select('role')
+      .eq('team_id', teamId)
       .eq('user_id', user.id)
       .single()
 
     if (membershipError || !membership) {
       return NextResponse.json(
         { error: 'You are not a member of this team', success: false },
+        { status: 403 }
+      )
+    }
+
+    if (membership.role !== 'owner' && membership.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Only owners and admins can view invitations', success: false },
         { status: 403 }
       )
     }
@@ -71,7 +69,7 @@ export async function GET(request: NextRequest) {
         *,
         invited_by:users!invitations_invited_by_fkey(id, email)
       `)
-      .eq('team_id', team_id)
+      .eq('team_id', teamId)
       .is('accepted_at', null)
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
@@ -104,17 +102,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
-    }
-
     // Parse and validate request body
     const body = await request.json()
     const validation = createInvitationSchema.safeParse(body)
@@ -127,6 +114,14 @@ export async function POST(request: NextRequest) {
     }
 
     const { team_id, email, role, phase_assignments } = validation.data
+    const teamContext = await requireTeamRouteContext({
+      requestedTeamId: team_id,
+      teamMissingMessage: 'No active team found',
+    })
+    if (!teamContext.ok) {
+      return teamContext.response
+    }
+    const { supabase, user } = teamContext.context
 
     // Check if user is owner or admin of the team
     const { data: membership, error: membershipError } = await supabase
@@ -254,16 +249,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Trigger email send (optional, fire and forget)
+    // Send invitation email directly from this server flow
     try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      await fetch(`${appUrl}/api/invitations/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token })
+      const { data: team } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', team_id)
+        .single()
+
+      await sendTeamInvitationEmail({
+        email,
+        expiresAt: expires_at.toISOString(),
+        invitationToken: token,
+        inviterEmail: user.email || null,
+        inviterName:
+          typeof user.user_metadata?.full_name === 'string'
+            ? user.user_metadata.full_name
+            : null,
+        role,
+        teamName: team?.name || 'Your team',
       })
     } catch (emailError) {
-      // Log but don't fail the request
       console.error('Failed to send invitation email:', emailError)
     }
 
