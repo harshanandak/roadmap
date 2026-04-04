@@ -214,15 +214,15 @@ export async function POST(request: NextRequest) {
       .single()
 
     // Get first workspace for redirect (if any)
-    const { data: workspaces } = await adminSupabase
+    const { data: workspace } = await adminSupabase
       .from('workspaces')
       .select('id')
       .eq('team_id', invitationData.team_id)
       .limit(1)
-      .single()
+      .maybeSingle()
 
-    const redirectUrl = workspaces
-      ? `/workspaces/${workspaces.id}`
+    const redirectUrl = workspace
+      ? `/workspaces/${workspace.id}`
       : `/teams/${invitationData.team_id}`
 
     const response = NextResponse.json({

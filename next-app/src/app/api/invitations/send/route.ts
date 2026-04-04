@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     if (!invitationId && !token) {
       return NextResponse.json(
-        { error: 'Invitation ID or token is required' },
+        { error: 'Invitation ID or token is required', success: false },
         { status: 400 }
       )
     }
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'Not authenticated', success: false }, { status: 401 })
     }
 
     const invitationQuery = supabase
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     if (inviteError || !invitation) {
       return NextResponse.json(
-        { error: 'Invitation not found' },
+        { error: 'Invitation not found', success: false },
         { status: 404 }
       )
     }
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
       return NextResponse.json(
-        { error: 'Permission denied' },
+        { error: 'Permission denied', success: false },
         { status: 403 }
       )
     }
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     console.error('Error sending invitation:', error)
     const message = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json(
-      { error: message },
+      { error: message, success: false },
       { status: 500 }
     )
   }
