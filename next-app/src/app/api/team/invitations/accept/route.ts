@@ -20,6 +20,46 @@ interface InvitationLookupRow {
   team_id: string
 }
 
+async function insertPhaseAssignmentsWithRetries(
+  adminSupabase: ReturnType<typeof createAdminClient>,
+  invitationData: InvitationLookupRow,
+  userId: string
+) {
+  const assignments = invitationData.phase_assignments || []
+
+  for (const assignment of assignments) {
+    let attempts = 0
+
+    while (attempts < 5) {
+      attempts += 1
+      const { error } = await adminSupabase
+        .from('user_phase_assignments')
+        .insert({
+          id: Date.now().toString(),
+          team_id: invitationData.team_id,
+          workspace_id: assignment.workspace_id,
+          user_id: userId,
+          phase: assignment.phase,
+          can_edit: assignment.can_edit || false,
+          assigned_by: invitationData.invited_by || userId,
+          notes: assignment.notes || null,
+        })
+
+      if (!error) {
+        break
+      }
+
+      const isUniqueViolation = error.code === '23505'
+      if (isUniqueViolation && attempts < 5) {
+        await new Promise((resolve) => setTimeout(resolve, 1))
+        continue
+      }
+
+      throw error
+    }
+  }
+}
+
 // Validation schema for accepting invitations
 const acceptInvitationSchema = z.object({
   token: z.string()
@@ -189,26 +229,10 @@ export async function POST(request: NextRequest) {
 
     // Create phase assignments if specified in invitation
     if (invitationData.phase_assignments && invitationData.phase_assignments.length > 0) {
-      const baseTimestamp = Date.now()
-      const phaseAssignments = invitationData.phase_assignments.map((assignment, index) => ({
-        id: `${baseTimestamp + index}`,
-        team_id: invitationData.team_id,
-        workspace_id: assignment.workspace_id,
-        user_id: user.id,
-        phase: assignment.phase,
-        can_edit: assignment.can_edit || false,
-        assigned_by: invitationData.invited_by || user.id,
-        notes: assignment.notes || null
-      }))
-
-      const { error: assignmentsError } = await adminSupabase
-        .from('user_phase_assignments')
-        .insert(phaseAssignments)
-
-      if (assignmentsError) {
+      try {
+        await insertPhaseAssignmentsWithRetries(adminSupabase, invitationData, user.id)
+      } catch (assignmentsError) {
         console.error('Error creating phase assignments:', assignmentsError)
-        // Don't fail the whole operation, just log the error
-        // The user is still added to the team successfully
       }
     }
 

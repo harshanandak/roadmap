@@ -56,7 +56,7 @@ describe('POST /api/invitations/send', () => {
 
     expect(response.status).toBe(401)
     expect(payload).toEqual({
-      error: 'Not authenticated',
+      error: 'Unauthorized',
       success: false,
     })
   })

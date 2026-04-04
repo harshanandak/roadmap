@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendTeamInvitationEmail } from '@/lib/email/team-invitations'
-import { createClient } from '@/lib/supabase/server'
+import { requireTeamRouteContext } from '@/lib/api/team-route'
 
 interface InvitationEmailLookup {
   email: string
@@ -32,15 +32,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated', success: false }, { status: 401 })
+    const teamContext = await requireTeamRouteContext()
+    if (!teamContext.ok) {
+      return teamContext.response
     }
+    const { supabase, teamId } = teamContext.context
 
     const invitationQuery = supabase
       .from('invitations')
@@ -55,6 +51,7 @@ export async function POST(request: NextRequest) {
         inviter:users!invitations_invited_by_fkey(name, email)
       `
       )
+      .eq('team_id', teamId)
 
     const { data: invitation, error: inviteError } = invitationId
       ? await invitationQuery.eq('id', invitationId).single()
@@ -68,20 +65,6 @@ export async function POST(request: NextRequest) {
     }
 
     const invitationData = invitation as InvitationEmailLookup
-
-    const { data: membership } = await supabase
-      .from('team_members')
-      .select('role')
-      .eq('team_id', invitationData.team_id)
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
-      return NextResponse.json(
-        { error: 'Permission denied', success: false },
-        { status: 403 }
-      )
-    }
 
     const team = Array.isArray(invitationData.teams) ? invitationData.teams[0] : invitationData.teams
     const inviter = Array.isArray(invitationData.inviter) ? invitationData.inviter[0] : invitationData.inviter

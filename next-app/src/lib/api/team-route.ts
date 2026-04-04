@@ -42,6 +42,13 @@ export async function requireTeamRouteContext(
     }
   }
 
+  if (typeof requestedTeamId === 'string' && requestedTeamId.trim().length === 0) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'team_id is required', success: false }, { status: 400 }),
+    }
+  }
+
   const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
   const teamId = requestedTeamId || activeTeamId
 
