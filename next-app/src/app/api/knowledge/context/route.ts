@@ -12,8 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { resolveActiveTeam } from '@/lib/teams/active-team'
+import { requireTeamRouteContext } from '@/lib/api/team-route'
 import { embedQuery, formatEmbeddingForPgvector } from '@/lib/ai/embeddings/embedding-service'
 import type { CompressedContext, CompressedContextItem, CompressionLayer } from '@/lib/types/collective-intelligence'
 
@@ -31,24 +30,11 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const teamContext = await requireTeamRouteContext()
+    if (!teamContext.ok) {
+      return teamContext.response
     }
-
-    const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
-
-    if (!activeTeamId) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 })
-    }
-    const teamId = activeTeamId
+    const { supabase, teamId } = teamContext.context
 
     // Parse request body
     const body = await request.json()

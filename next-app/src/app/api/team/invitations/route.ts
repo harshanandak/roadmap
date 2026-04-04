@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendTeamInvitationEmail } from '@/lib/email/team-invitations'
-import { createClient } from '@/lib/supabase/server'
-import { resolveActiveTeam } from '@/lib/teams/active-team'
+import { requireTeamRouteContext } from '@/lib/api/team-route'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 
@@ -29,44 +28,18 @@ function generateInvitationToken(): string {
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', success: false },
-        { status: 401 }
-      )
-    }
-
     // Get team_id from query params
     const searchParams = request.nextUrl.searchParams
     const requestedTeamId = searchParams.get('team_id')
-    const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
-    const team_id = requestedTeamId || activeTeamId
-
-    if (!team_id) {
-      return NextResponse.json(
-        { error: 'No active team found', success: false },
-        { status: 404 }
-      )
+    const teamContext = await requireTeamRouteContext({
+      notMemberMessage: 'You are not a member of this team',
+      requestedTeamId,
+      teamMissingMessage: 'No active team found',
+    })
+    if (!teamContext.ok) {
+      return teamContext.response
     }
-
-    // Check if user is a member of the team
-    const { data: membership, error: membershipError } = await supabase
-      .from('team_members')
-      .select('id')
-      .eq('team_id', team_id)
-      .eq('user_id', user.id)
-      .single()
-
-    if (membershipError || !membership) {
-      return NextResponse.json(
-        { error: 'You are not a member of this team', success: false },
-        { status: 403 }
-      )
-    }
+    const { supabase, teamId } = teamContext.context
 
     // Get all pending invitations for the team
     const { data: invitations, error: invitationsError } = await supabase
@@ -75,7 +48,7 @@ export async function GET(request: NextRequest) {
         *,
         invited_by:users!invitations_invited_by_fkey(id, email)
       `)
-      .eq('team_id', team_id)
+      .eq('team_id', teamId)
       .is('accepted_at', null)
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
@@ -108,16 +81,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const teamContext = await requireTeamRouteContext({ verifyMembership: false })
+    if (!teamContext.ok) {
       return NextResponse.json(
         { error: 'Unauthorized', success: false },
         { status: 401 }
       )
     }
+    const { supabase, user } = teamContext.context
 
     // Parse and validate request body
     const body = await request.json()
