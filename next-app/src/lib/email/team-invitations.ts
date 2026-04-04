@@ -45,7 +45,7 @@ export async function sendTeamInvitationEmail(payload: TeamInvitationEmailPayloa
           ${roleDescription}
         </div>
         <p style="font-size: 14px; color: #666;">
-          This invitation will expire on ${new Date(payload.expiresAt).toLocaleDateString()}.
+          This invitation will expire on ${escapeHtml(new Date(payload.expiresAt).toLocaleDateString())}.
         </p>
       `,
       footerHtml: `<p>If you weren't expecting this invitation, you can safely ignore this email.</p>`,

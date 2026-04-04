@@ -124,6 +124,13 @@ export async function POST(
       )
     }
 
+    if (votingSettings.requireEmailVerification && !email) {
+      return NextResponse.json(
+        { error: 'Email is required for verified voting' },
+        { status: 400, headers: rateLimitHeaders }
+      )
+    }
+
     // Check for duplicate votes (by email or IP)
     const ipHash = hashIp(clientIp)
     const _voterIdentifier = email || ipHash
@@ -183,13 +190,8 @@ export async function POST(
       }, { headers: rateLimitHeaders })
     }
 
-    // Check if verification is required
-    if (votingSettings.requireEmailVerification && email) {
-      return NextResponse.json({
-        error: 'Email-verified public voting is not implemented yet',
-        code: 'EMAIL_VERIFICATION_NOT_IMPLEMENTED',
-      }, { status: 501, headers: rateLimitHeaders })
-    }
+    // Temporary compatibility fallback: until the verification flow exists end-to-end,
+    // preserve voting for workspaces that already enabled the setting.
 
     // Instant voting (no verification required)
     const voteId = Date.now().toString()

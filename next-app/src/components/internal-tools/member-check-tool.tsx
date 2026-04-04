@@ -14,11 +14,6 @@ interface InvitationRecord {
   expires_at: string
 }
 
-interface UserRecord {
-  id: string
-  email: string
-}
-
 interface TeamMemberRecord {
   id: string
   user_id: string
@@ -35,8 +30,6 @@ interface MemberCheckResult {
   teamId: string
   currentUserRole: string
   invitations?: InvitationRecord[]
-  existingUsers?: UserRecord[]
-  memberWithEmail?: TeamMemberRecord
   teamMembers?: TeamMemberRecord[]
   errors?: Record<string, unknown>
 }
@@ -195,50 +188,6 @@ export function MemberCheckTool() {
                   </div>
                 ) : (
                   <p className="text-muted-foreground">No invitations found</p>
-                )}
-              </ResultSection>
-
-              <ResultSection title={`User Account (${result.existingUsers?.length || 0})`}>
-                {result.existingUsers && result.existingUsers.length > 0 ? (
-                  <div className="space-y-2">
-                    {result.existingUsers.map((user) => (
-                      <div key={user.id} className="rounded border bg-white p-3">
-                        <DetailItem label="User ID" value={user.id} />
-                        <DetailItem label="Email" value={user.email} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No user account found</p>
-                )}
-              </ResultSection>
-
-              <ResultSection title="Team Member Status">
-                {result.memberWithEmail ? (
-                  <div className="rounded border border-green-200 bg-green-50 p-3">
-                    <p className="mb-2 font-semibold text-green-800">Member Found in Team</p>
-                    <DetailItem label="Member ID" value={result.memberWithEmail.id} />
-                    <DetailItem label="User ID" value={result.memberWithEmail.user_id} />
-                    <DetailItem label="Role" value={result.memberWithEmail.role} />
-                    <DetailItem
-                      label="Joined"
-                      value={new Date(result.memberWithEmail.joined_at).toLocaleString()}
-                    />
-                    {result.memberWithEmail.users && (
-                      <>
-                        <DetailItem
-                          label="Name"
-                          value={result.memberWithEmail.users.name || 'N/A'}
-                        />
-                        <DetailItem label="Email" value={result.memberWithEmail.users.email} />
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="rounded border border-yellow-200 bg-yellow-50 p-3">
-                    <p className="font-semibold text-yellow-800">Member not found in team</p>
-                    <p className="mt-2 text-sm">This user is not currently listed as a team member.</p>
-                  </div>
                 )}
               </ResultSection>
 

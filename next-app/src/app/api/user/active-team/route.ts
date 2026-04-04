@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveTeam, setActiveTeamCookie } from '@/lib/teams/active-team'
+import { z } from 'zod'
+
+const setActiveTeamSchema = z.object({
+  teamId: z.string().min(1, 'teamId must be a non-empty string'),
+})
 
 export async function GET() {
   try {
@@ -40,11 +45,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized', success: false }, { status: 401 })
     }
 
-    const { teamId } = await request.json() as { teamId?: string }
+    const rawBody = await request.json()
+    const parsedBody = setActiveTeamSchema.safeParse(rawBody)
 
-    if (!teamId) {
+    if (!parsedBody.success) {
       return NextResponse.json({ error: 'teamId is required', success: false }, { status: 400 })
     }
+    const { teamId } = parsedBody.data
 
     const { memberships } = await resolveActiveTeam(supabase, user.id)
     const hasMembership = memberships.some((membership) => membership.team_id === teamId)
