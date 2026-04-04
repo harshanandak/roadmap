@@ -36,7 +36,10 @@ export async function requireTeamRouteContext(
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Unauthorized', success: false }, { status: 401 }),
+    }
   }
 
   const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
@@ -45,7 +48,7 @@ export async function requireTeamRouteContext(
   if (!teamId) {
     return {
       ok: false,
-      response: NextResponse.json({ error: teamMissingMessage }, { status: 404 }),
+      response: NextResponse.json({ error: teamMissingMessage, success: false }, { status: 404 }),
     }
   }
 
@@ -60,7 +63,7 @@ export async function requireTeamRouteContext(
     if (!membership) {
       return {
         ok: false,
-        response: NextResponse.json({ error: notMemberMessage }, { status: 403 }),
+        response: NextResponse.json({ error: notMemberMessage, success: false }, { status: 403 }),
       }
     }
   }
@@ -81,7 +84,7 @@ export function requireWorkspaceScope(
   message: string = 'workspace_id is required for workspace scope'
 ) {
   if (scope === 'workspace' && !workspaceId) {
-    return NextResponse.json({ error: message }, { status: 400 })
+    return NextResponse.json({ error: message, success: false }, { status: 400 })
   }
 
   return null

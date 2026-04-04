@@ -130,13 +130,30 @@ export async function POST(request: NextRequest) {
         ? user.user_metadata.full_name.trim()
         : user.email.split('@')[0]
 
+    const { data: existingProfile, error: existingProfileError } = await adminSupabase
+      .from('users')
+      .select('name')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (existingProfileError) {
+      console.error('Error fetching existing user profile:', existingProfileError)
+      return NextResponse.json(
+        { error: 'Failed to prepare user profile', details: existingProfileError.message, success: false },
+        { status: 500 }
+      )
+    }
+
     const { error: profileError } = await adminSupabase
       .from('users')
       .upsert(
         {
           id: user.id,
           email: user.email,
-          name: userName,
+          name:
+            typeof existingProfile?.name === 'string' && existingProfile.name.trim().length > 0
+              ? existingProfile.name
+              : userName,
         },
         { onConflict: 'id' }
       )

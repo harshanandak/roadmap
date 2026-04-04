@@ -14,6 +14,7 @@ interface InvitationLookupRow {
     can_edit: boolean
   }> | null
   role: string
+  team_id: string
   team_name: string | null
   team_plan: string | null
 }
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
           .from('workspaces')
           .select('id, name')
           .in('id', workspaceIds)
+          .eq('team_id', invitationData.team_id)
       : { data: [] as Array<{ id: string; name: string }> }
 
     const workspaceMap = new Map(workspaces?.map((w) => [w.id, w.name]) || [])
