@@ -10,7 +10,7 @@ export async function GET() {
     } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized', success: false }, { status: 401 })
     }
 
     const { activeTeamId, memberships } = await resolveActiveTeam(supabase, user.id)
@@ -18,11 +18,12 @@ export async function GET() {
     return NextResponse.json({
       activeTeamId,
       memberships,
+      success: true,
     })
   } catch (error: unknown) {
     console.error('Error in GET /api/user/active-team:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error', success: false },
       { status: 500 }
     )
   }
@@ -36,29 +37,29 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized', success: false }, { status: 401 })
     }
 
     const { teamId } = await request.json() as { teamId?: string }
 
     if (!teamId) {
-      return NextResponse.json({ error: 'teamId is required' }, { status: 400 })
+      return NextResponse.json({ error: 'teamId is required', success: false }, { status: 400 })
     }
 
     const { memberships } = await resolveActiveTeam(supabase, user.id)
     const hasMembership = memberships.some((membership) => membership.team_id === teamId)
 
     if (!hasMembership) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Forbidden', success: false }, { status: 403 })
     }
 
-    const response = NextResponse.json({ activeTeamId: teamId })
+    const response = NextResponse.json({ activeTeamId: teamId, success: true })
     setActiveTeamCookie(response, teamId)
     return response
   } catch (error: unknown) {
     console.error('Error in POST /api/user/active-team:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error', success: false },
       { status: 500 }
     )
   }

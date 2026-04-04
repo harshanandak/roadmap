@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { validateInternalToolApiAccess } from '@/lib/internal-tools'
+import { resolveActiveTeam } from '@/lib/teams/active-team'
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,18 +20,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Email parameter required' }, { status: 400 })
     }
 
-    // Get user's team to scope the search
-    const { data: userTeamMember } = await supabase
-      .from('team_members')
-      .select('team_id, role')
-      .eq('user_id', access.user.id)
-      .single()
+    const { activeTeamId, memberships } = await resolveActiveTeam(supabase, access.user.id)
 
-    if (!userTeamMember) {
-      return NextResponse.json({ error: 'User not in any team' }, { status: 403 })
+    if (!activeTeamId) {
+      return NextResponse.json({ error: 'User not in any team', success: false }, { status: 403 })
     }
 
-    const teamId = userTeamMember.team_id
+    const activeMembership = memberships.find((membership) => membership.team_id === activeTeamId)
+    const teamId = activeTeamId
 
     // Check invitations for this email in the user's team
     const { data: invitations, error: invError } = await supabase
@@ -63,7 +60,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       email,
       teamId,
-      currentUserRole: userTeamMember.role,
+      currentUserRole: activeMembership?.role || null,
       invitations: invitations || [],
       teamMembers: teamMembers || [],
       note: "Team members show user_id instead of email because there's no public.users table",
@@ -71,11 +68,12 @@ export async function GET(request: NextRequest) {
         invError: invError?.message,
         memberError: memberError?.message,
       },
+      success: true,
     })
   } catch (error: unknown) {
     console.error('Debug API error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error', success: false },
       { status: 500 }
     )
   }

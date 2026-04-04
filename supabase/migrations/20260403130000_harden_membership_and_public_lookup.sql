@@ -16,7 +16,24 @@ DROP POLICY IF EXISTS "Users can join teams or admins can add members" ON public
 
 CREATE POLICY "Team admins can add members" ON public.team_members
 FOR INSERT
-WITH CHECK (public.user_is_team_admin(team_id));
+WITH CHECK (
+  public.user_is_team_admin(team_id)
+  OR (
+    user_id = (SELECT auth.uid())
+    AND role = 'owner'
+    AND EXISTS (
+      SELECT 1
+      FROM public.teams
+      WHERE public.teams.id = public.team_members.team_id
+        AND public.teams.owner_id = (SELECT auth.uid())
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.team_members existing_members
+      WHERE existing_members.team_id = public.team_members.team_id
+    )
+  )
+);
 
 DROP POLICY IF EXISTS "Users can view teams" ON public.teams;
 
