@@ -1,19 +1,16 @@
 name: Playwright E2E Tests
 
-# Required secrets in GitHub repo settings:
-# - NEXT_PUBLIC_SUPABASE_URL
-# - NEXT_PUBLIC_SUPABASE_ANON_KEY
-# - TEST_USER_EMAIL
-# - TEST_USER_PASSWORD
+# Required configuration:
+# - Repository variables: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+# - Repository secrets for full E2E: TEST_USER_EMAIL, TEST_USER_PASSWORD
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch: # Manual trigger still available
+  workflow_dispatch:
 
-# Cancel in-progress runs when a new commit is pushed
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -23,10 +20,11 @@ permissions:
 
 jobs:
   test:
-    # Skip E2E tests for Dependabot PRs (they can't access secrets, but Type Check & Build still validates them)
-    if: github.actor != 'dependabot[bot]'
     timeout-minutes: 15
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
     steps:
       - uses: actions/checkout@v6
@@ -44,14 +42,21 @@ jobs:
         working-directory: ./next-app
         run: bunx playwright install --with-deps chromium
 
+      - name: Run Playwright smoke tests
+        if: github.actor == 'dependabot[bot]'
+        working-directory: ./next-app
+        run: bun run test:e2e:smoke
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
       - name: Run Playwright tests
+        if: github.actor != 'dependabot[bot]'
         working-directory: ./next-app
         run: bun run test:e2e
         env:
-          # Supabase configuration (add these secrets in GitHub: Settings → Secrets and variables → Actions)
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          # Test user credentials
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
 
