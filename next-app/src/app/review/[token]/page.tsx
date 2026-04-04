@@ -61,7 +61,21 @@ export default async function PublicReviewPage({
   const workspace = Array.isArray(reviewLink.workspaces) ? reviewLink.workspaces[0] : reviewLink.workspaces
   const effectiveTeamId = reviewLink.team_id || workspace?.team_id
 
-  let workItemsQuery = supabase
+  if (!effectiveTeamId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="text-center space-y-4">
+          <div className="text-6xl">Link</div>
+          <h1 className="text-2xl font-bold">Review Link Not Found</h1>
+          <p className="text-muted-foreground">
+            This review link is not valid or has been deactivated
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  const { data: workItems, error: itemsError } = await supabase
     .from('work_items')
     .select(`
       id,
@@ -74,14 +88,8 @@ export default async function PublicReviewPage({
       created_at
     `)
     .eq('workspace_id', reviewLink.workspace_id)
-
-  if (effectiveTeamId) {
-    workItemsQuery = workItemsQuery.eq('team_id', effectiveTeamId)
-  }
-
-  const { data: workItems, error: itemsError } = await workItemsQuery.order('created_at', {
-    ascending: false,
-  })
+    .eq('team_id', effectiveTeamId)
+    .order('created_at', { ascending: false })
 
   if (itemsError) {
     console.error('Error fetching work items for review page:', itemsError)
