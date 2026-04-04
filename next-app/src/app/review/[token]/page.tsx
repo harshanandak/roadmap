@@ -13,6 +13,7 @@ export default async function PublicReviewPage({
     .from('review_links')
     .select(`
       id,
+      team_id,
       workspace_id,
       type,
       is_active,
@@ -69,6 +70,7 @@ export default async function PublicReviewPage({
       created_at
     `)
     .eq('workspace_id', reviewLink.workspace_id)
+    .eq('team_id', reviewLink.team_id)
     .order('created_at', { ascending: false })
 
   if (itemsError) {

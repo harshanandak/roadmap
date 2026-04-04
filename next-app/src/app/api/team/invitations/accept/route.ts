@@ -172,8 +172,8 @@ export async function POST(request: NextRequest) {
 
     // Create phase assignments if specified in invitation
     if (invitationData.phase_assignments && invitationData.phase_assignments.length > 0) {
-      const phaseAssignments = invitationData.phase_assignments.map((assignment) => ({
-        id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      const phaseAssignments = invitationData.phase_assignments.map((assignment, index) => ({
+        id: `${Date.now() + index}`,
         team_id: invitationData.team_id,
         workspace_id: assignment.workspace_id,
         user_id: user.id,
