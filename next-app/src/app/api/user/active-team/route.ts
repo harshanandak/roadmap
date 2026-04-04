@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { ACTIVE_TEAM_COOKIE, resolveActiveTeam } from '@/lib/teams/active-team'
+import { resolveActiveTeam, setActiveTeamCookie } from '@/lib/teams/active-team'
 
 export async function GET() {
   try {
@@ -53,16 +52,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const cookieStore = await cookies()
-    cookieStore.set(ACTIVE_TEAM_COOKIE, teamId, {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 30,
-    })
-
-    return NextResponse.json({ activeTeamId: teamId })
+    const response = NextResponse.json({ activeTeamId: teamId })
+    setActiveTeamCookie(response, teamId)
+    return response
   } catch (error: unknown) {
     console.error('Error in POST /api/user/active-team:', error)
     return NextResponse.json(

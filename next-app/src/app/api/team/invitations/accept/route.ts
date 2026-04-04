@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { setActiveTeamCookie } from '@/lib/teams/active-team'
 import { z } from 'zod'
 
 interface InvitationLookupRow {
@@ -221,7 +222,7 @@ export async function POST(request: NextRequest) {
       ? `/workspaces/${workspaces.id}`
       : `/teams/${invitationData.team_id}`
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       data: {
         team_member: teamMember,
         team: team || { id: invitationData.team_id },
@@ -230,6 +231,9 @@ export async function POST(request: NextRequest) {
       },
       success: true
     })
+
+    setActiveTeamCookie(response, invitationData.team_id)
+    return response
 
   } catch (error) {
     console.error('Error in POST /api/team/invitations/accept:', error)

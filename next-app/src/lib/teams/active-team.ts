@@ -1,9 +1,20 @@
 import 'server-only'
 
 import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const ACTIVE_TEAM_COOKIE = 'active_team_id'
+
+export function setActiveTeamCookie(response: NextResponse, teamId: string) {
+  response.cookies.set(ACTIVE_TEAM_COOKIE, teamId, {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 30,
+  })
+}
 
 export interface TeamMembership {
   joined_at: string
