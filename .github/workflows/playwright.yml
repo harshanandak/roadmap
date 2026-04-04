@@ -9,14 +9,8 @@ name: Playwright E2E Tests
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'next-app/**'
-      - '.github/workflows/playwright.yml'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'next-app/**'
-      - '.github/workflows/playwright.yml'
   workflow_dispatch: # Manual trigger still available
 
 # Cancel in-progress runs when a new commit is pushed

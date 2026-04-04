@@ -39,7 +39,28 @@ export async function GET(request: NextRequest) {
     if (!teamContext.ok) {
       return teamContext.response
     }
-    const { supabase, teamId } = teamContext.context
+    const { supabase, teamId, user } = teamContext.context
+
+    const { data: membership, error: membershipError } = await supabase
+      .from('team_members')
+      .select('role')
+      .eq('team_id', teamId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (membershipError || !membership) {
+      return NextResponse.json(
+        { error: 'You are not a member of this team', success: false },
+        { status: 403 }
+      )
+    }
+
+    if (membership.role !== 'owner' && membership.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Only owners and admins can view invitations', success: false },
+        { status: 403 }
+      )
+    }
 
     // Get all pending invitations for the team
     const { data: invitations, error: invitationsError } = await supabase
