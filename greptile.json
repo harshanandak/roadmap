@@ -3,10 +3,16 @@
   "comment": "",
   "fixWithAI": true,
   "hideFooter": false,
-  "strictness": 3,
+  "strictness": 2,
   "statusCheck": true,
-  "commentTypes": ["syntax", "logic", "style", "security", "performance"],
-  "instructions": "Product Lifecycle Management Platform - Week 7/12 (95% complete). Tech: Next.js 16 + TypeScript + Supabase + shadcn/ui. CRITICAL RULES: 1) IDs = Date.now().toString() (NEVER UUID), 2) All queries MUST filter by team_id, 3) team_id TEXT NOT NULL (NULL breaks RLS), 4) No 'any' type, 5) shadcn/ui only (no custom CSS), 6) RLS on all tables, 7) API routes check auth + team membership, 8) Zod for validation. TWO-LAYER ARCHITECTURE: Workspace (aggregation) → Work Items (phase IS status). Type-specific phases: Feature (design→build→refine→launch), Bug (triage→investigating→fixing→verified), Concept (ideation→research→validated|rejected).",
+  "commentTypes": [
+    "logic",
+    "security",
+    "performance",
+    "syntax",
+    "checks"
+  ],
+  "instructions": "Product Lifecycle Management platform. Stack: Next.js 16 + TypeScript + Supabase + Vercel + shadcn/ui. Review against the canonical repo rules, not generic Next.js patterns. Critical rules: use bun/bunx only (never npm/npx), IDs must be Date.now().toString() (never UUID), every app query must explicitly filter by team_id, tables must use team_id TEXT NOT NULL with RLS, root supabase/ is the only canonical migration tree, API routes must validate auth and active team context, and internal admin/debug routes are internal-only tools rather than customer-facing product pages.",
   "disabledLabels": [],
   "excludeAuthors": [],
   "ignoreKeywords": "WIP,wip,draft",
@@ -35,6 +41,11 @@
     "defaultOpen": true
   },
   "sequenceDiagramSection": {
+    "included": false,
+    "collapsible": true,
+    "defaultOpen": false
+  },
+  "commentsOutsideDiffSection": {
     "included": true,
     "collapsible": true,
     "defaultOpen": false
@@ -43,103 +54,130 @@
   "customContext": {
     "other": [
       {
-        "scope": ["next-app/src/**"],
-        "content": "Multi-tenant app with Supabase RLS. team_id filtering REQUIRED on all queries. IDs are timestamp-based (Date.now().toString()), NEVER UUID. Two-layer architecture: Workspace shows phase DISTRIBUTION, Work Items have individual phases. Phase IS the status for work items (no separate status field)."
+        "scope": [
+          "next-app/src/**"
+        ],
+        "content": "This is a multi-tenant PLM app. Team context must be explicit: queries filter by team_id and authenticated routes resolve one active team context rather than assuming a single membership row. Workspaces belong to teams and are the aggregation layer over work items."
       },
       {
-        "scope": ["next-app/src/lib/ai/**", "next-app/src/app/api/ai/**"],
-        "content": "AI uses capability-based model routing via OpenRouter. Primary models: Strategic Reasoning=GLM 4.7, Agentic Tool Use=GLM 4.7, Coding=MiniMax M2.1, Visual Reasoning=Gemini 3 Flash, Large Context=Grok 4.1 Fast, Default Chat=Kimi K2. AVOID Claude Sonnet (too costly). Tool categories: research (no approval), creation/modification/deletion (requires approval)."
+        "scope": [
+          "next-app/src/app/review/**",
+          "next-app/src/app/api/public/**",
+          "next-app/src/app/(public)/**"
+        ],
+        "content": "Public and review-link flows must still preserve tenant boundaries. Public routes may intentionally avoid auth, but they must only expose minimal public DTOs and must never rely on broad table reads without explicit scope constraints."
       },
       {
-        "scope": ["**/*"],
-        "content": "Project status: Week 7/12 (95% complete). Modules complete: Foundation, Multi-Tenancy, Mind Mapping (XYFlow), Team Management, Work Items UI, Analytics, AI Assistant, Workspace Modes, Strategy Alignment, Knowledge Base, Review & Feedback. Pending: Timeline Visualization, Project Execution, Collaboration, Billing/Testing."
+        "scope": [
+          "next-app/src/app/(dashboard)/admin/**",
+          "next-app/src/app/(dashboard)/debug/**",
+          "next-app/src/app/api/admin/**",
+          "next-app/src/app/api/debug/**"
+        ],
+        "content": "Admin and debug routes are internal tools. They are allowed, but they must be access-controlled, hidden from normal product navigation, and must not become the canonical path for schema/bootstrap changes."
       }
     ],
     "rules": [
       {
-        "scope": ["**/*.ts", "**/*.tsx"],
-        "rule": "TypeScript strict mode. No 'any' type. Use interfaces for data structures. Union types for enums (e.g., 'design' | 'build' | 'refine' | 'launch'). Explicit return types on functions."
+        "scope": [
+          "**/*.ts",
+          "**/*.tsx"
+        ],
+        "rule": "TypeScript is strict. Flag any new any usage, ts-ignore/ts-expect-error, silent catch blocks, or missing error handling."
       },
       {
-        "scope": ["next-app/src/app/api/**/*.ts"],
-        "rule": "API routes must: 1) Check auth with supabase.auth.getUser(), 2) Get team membership from team_members, 3) Filter ALL queries by team_id, 4) Use Zod schemas for validation, 5) Return {data, success: true} or {error, success: false}. HTTP codes: 200/201/204 success, 400 validation, 401 unauth, 403 forbidden, 404 not found, 500 error."
+        "scope": [
+          "next-app/src/app/api/**/*.ts"
+        ],
+        "rule": "API routes must authenticate where required, resolve active team context for team-scoped operations, validate inputs with Zod, and preserve the repo response contract: success responses include success: true and failures include success: false."
       },
       {
-        "scope": ["next-app/src/components/**/*.tsx"],
-        "rule": "Use shadcn/ui components only. NO custom CSS files. Tailwind utility classes for styling. Server Components by default, 'use client' only for interactive components. Lucide React for icons. Mobile-first responsive design."
+        "scope": [
+          "next-app/src/app/api/**/*.ts",
+          "next-app/src/lib/supabase/**/*.ts",
+          "next-app/src/app/**/*.ts",
+          "next-app/src/app/**/*.tsx"
+        ],
+        "rule": "Every team-scoped Supabase query must include an explicit team_id filter in application code. Do not approve code that relies on RLS alone when a team_id predicate should be present."
       },
       {
-        "scope": ["supabase/migrations/**/*.sql"],
-        "rule": "All tables must have: id TEXT PRIMARY KEY (timestamp-based), team_id TEXT NOT NULL (CRITICAL - NULL breaks RLS!), created_at/updated_at TIMESTAMPTZ. Enable RLS with team-based policies. Create index on team_id. Migration naming: YYYYMMDDHHMMSS_[action]_[table].sql."
+        "scope": [
+          "supabase/migrations/**/*.sql"
+        ],
+        "rule": "Root supabase/ is canonical. New schema/RLS changes belong only in root supabase/migrations. Tables should use id TEXT PRIMARY KEY with timestamp-based IDs, team_id TEXT NOT NULL, an index on team_id, and RLS policies scoped to team access."
       },
       {
-        "scope": ["next-app/src/lib/supabase/**"],
-        "rule": "Always filter queries by team_id. Handle errors explicitly, return empty arrays [] instead of null. Log errors with context for debugging."
+        "scope": [
+          "next-app/src/app/**/work-items/**",
+          "next-app/src/app/api/work-items/**/*.ts",
+          "next-app/src/components/**/*.tsx"
+        ],
+        "rule": "Follow the canonical phase model from docs/ARCHITECTURE_CONSOLIDATION.md: Feature = design -> build -> refine -> launch, Bug = triage -> investigating -> fixing -> verified, Concept = ideation -> research -> validated|rejected. Do not enforce the older generic research/planning/execution/review/complete flow."
       },
       {
-        "scope": ["next-app/e2e/**/*.ts"],
-        "rule": "Use data-testid for selectors. Each test must be independent. Use await expect() instead of waitForTimeout(). Cover: auth flows, CRUD operations, RLS enforcement, type-aware phase transitions, form validation."
-      },
-      {
-        "scope": ["next-app/src/**/work-item*/**"],
-        "rule": "Work item types have different phases: Feature/Enhancement (design→build→refine→launch), Bug (triage→investigating→fixing→verified), Concept (ideation→research→validated|rejected). Phase IS the status - no separate status field. Timeline items have separate status for task execution."
+        "scope": [
+          "next-app/src/components/**/*.tsx",
+          "next-app/src/app/**/*.tsx"
+        ],
+        "rule": "UI should use shadcn/ui components and Tailwind utility classes. Flag new custom CSS files or bespoke component primitives that bypass the existing UI system unless there is a clear established pattern in the repo."
       }
     ],
     "files": [
       {
-        "scope": ["CLAUDE.md"],
-        "path": "CLAUDE.md",
-        "description": "Master project guidelines. Contains architecture guardrails, tech stack (Next.js 16 + Supabase + shadcn/ui), AI model routing, slash commands, coding standards, and weekly progression tracking. CANONICAL REFERENCE for all decisions."
+        "scope": [
+          "AGENTS.md"
+        ],
+        "path": "AGENTS.md",
+        "description": "Repo-level operating rules: bun only, timestamp IDs, explicit team_id filters, shadcn/ui only, and links to the canonical rule files."
       },
       {
-        "scope": [".cursorrules"],
-        "path": ".cursorrules",
-        "description": "Cursor AI rules. Contains two-layer architecture (Workspace→Work Items), type-specific phase workflows, coding standards, security checklist, and critical reminders. Synced with CLAUDE.md."
+        "scope": [
+          ".claude/rules/01-core-principles.md"
+        ],
+        "path": ".claude/rules/01-core-principles.md",
+        "description": "Core coding rules for package manager choice, ID format, team isolation, TypeScript strictness, and UI constraints."
       },
       {
-        "scope": [".claude/rules/**"],
-        "path": ".claude/rules/",
-        "description": "Modular coding standards: coding-standards.md (TypeScript, React, multi-tenancy), database-patterns.md (Supabase, RLS, migrations), api-design.md (REST conventions), security-checklist.md (OWASP), naming-conventions.md, testing-standards.md (Playwright), git-workflow.md, ai-patterns.md."
+        "scope": [
+          ".claude/rules/02-architecture.md"
+        ],
+        "path": ".claude/rules/02-architecture.md",
+        "description": "High-level architecture rules for workspace aggregation, work item phases, timeline status, and domain terminology."
       },
       {
-        "scope": ["docs/ARCHITECTURE_CONSOLIDATION.md"],
+        "scope": [
+          ".claude/rules/05-database.md"
+        ],
+        "path": ".claude/rules/05-database.md",
+        "description": "Canonical Supabase migration/query rules: team_id filtering, RLS expectations, and bunx Supabase commands."
+      },
+      {
+        "scope": [
+          "docs/ARCHITECTURE_CONSOLIDATION.md"
+        ],
         "path": "docs/ARCHITECTURE_CONSOLIDATION.md",
-        "description": "CANONICAL source of truth for all architecture decisions. Contains two-layer system (Workspace aggregation, Work Items with phases), type-specific workflows, strategy alignment, and core entities."
+        "description": "Canonical architecture reference. Use this over older docs when evaluating work item phase behavior, workspace aggregation, and type-specific workflows."
       },
       {
-        "scope": ["docs/implementation/**"],
-        "path": "docs/implementation/",
-        "description": "Week-by-week implementation guide. README.md is main entry point. week-X-Y.md files contain completed work with 5-question validation. database-schema.md has schema reference."
-      },
-      {
-        "scope": ["docs/planning/**"],
-        "path": "docs/planning/",
-        "description": "Project management docs. PROGRESS.md has weekly tracker. NEXT_STEPS.md has immediate priorities. MASTER_IMPLEMENTATION_ROADMAP.md has full dependency graph."
-      },
-      {
-        "scope": ["docs/reference/**"],
-        "path": "docs/reference/",
-        "description": "Technical references. API_REFERENCE.md (20+ routes), ARCHITECTURE.md (Mermaid diagrams), CODE_PATTERNS.md (examples), CHANGELOG.md (migrations), PHASE_PERMISSIONS_GUIDE.md."
-      },
-      {
-        "scope": ["next-app/src/lib/supabase/**"],
-        "path": "next-app/src/lib/supabase/",
-        "description": "Supabase client utilities. createClient() for server, createBrowserClient() for client. All queries must filter by team_id. types.ts has generated database types."
-      },
-      {
-        "scope": ["next-app/src/app/api/**"],
+        "scope": [
+          "next-app/src/app/api/**"
+        ],
         "path": "next-app/src/app/api/",
-        "description": "Next.js API routes. Must check auth, validate team membership, use Zod schemas. Response format: {data, success} or {error, success: false}. See docs/reference/API_REFERENCE.md."
+        "description": "API route surface for auth, active team resolution, and request/response conventions."
       },
       {
-        "scope": ["next-app/src/lib/ai/**"],
-        "path": "next-app/src/lib/ai/",
-        "description": "AI integration layer. models-config.ts has capability-based routing. tool-registry.tsx has tool definitions. Approval workflow for creation/modification/deletion tools."
+        "scope": [
+          "next-app/src/lib/teams/**"
+        ],
+        "path": "next-app/src/lib/teams/",
+        "description": "Active team resolution helpers. Team-scoped review should align with this context model rather than assuming one team_members row per user."
       },
       {
-        "scope": ["supabase/migrations/**"],
+        "scope": [
+          "supabase/migrations/**"
+        ],
         "path": "supabase/migrations/",
-        "description": "Database migrations. Every table needs: id TEXT PRIMARY KEY, team_id TEXT NOT NULL, RLS enabled, team-based policies, index on team_id. Apply with: npx supabase db push."
+        "description": "Canonical migration tree. next-app/supabase/ is legacy material, not the source of truth for new schema changes."
       }
     ]
   }
