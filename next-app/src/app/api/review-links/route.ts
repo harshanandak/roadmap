@@ -153,6 +153,7 @@ export async function POST(request: Request) {
     // Create review link
     const reviewLink = {
       id,
+      team_id: workspace.team_id,
       workspace_id,
       token,
       type,

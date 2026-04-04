@@ -23,6 +23,7 @@ export default async function PublicReviewPage({
       require_email,
       workspaces (
         id,
+        team_id,
         name,
         description
       )
@@ -57,7 +58,10 @@ export default async function PublicReviewPage({
     )
   }
 
-  const { data: workItems, error: itemsError } = await supabase
+  const workspace = Array.isArray(reviewLink.workspaces) ? reviewLink.workspaces[0] : reviewLink.workspaces
+  const effectiveTeamId = reviewLink.team_id || workspace?.team_id
+
+  let workItemsQuery = supabase
     .from('work_items')
     .select(`
       id,
@@ -70,8 +74,14 @@ export default async function PublicReviewPage({
       created_at
     `)
     .eq('workspace_id', reviewLink.workspace_id)
-    .eq('team_id', reviewLink.team_id)
-    .order('created_at', { ascending: false })
+
+  if (effectiveTeamId) {
+    workItemsQuery = workItemsQuery.eq('team_id', effectiveTeamId)
+  }
+
+  const { data: workItems, error: itemsError } = await workItemsQuery.order('created_at', {
+    ascending: false,
+  })
 
   if (itemsError) {
     console.error('Error fetching work items for review page:', itemsError)
@@ -81,7 +91,7 @@ export default async function PublicReviewPage({
     <PublicReviewPageClient
       reviewLink={reviewLink}
       workItems={workItems || []}
-      workspace={Array.isArray(reviewLink.workspaces) ? reviewLink.workspaces[0] : reviewLink.workspaces}
+      workspace={workspace}
     />
   )
 }
