@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { requireTeamRouteContext, requireWorkspaceScope } from '@/lib/api/team-route'
+import { requireAnalyticsRouteContext } from '@/lib/api/analytics-route'
 import type {
   TeamPerformanceData,
   PieChartData,
@@ -17,24 +17,11 @@ import { STATUS_COLORS } from '@/lib/types/analytics'
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-
-    const workspaceId = searchParams.get('workspace_id')
-    const requestedTeamId = searchParams.get('team_id')
-    const scope = searchParams.get('scope') || 'workspace'
-    const from = searchParams.get('from')
-    const to = searchParams.get('to')
-
-    const workspaceScopeError = requireWorkspaceScope(scope, workspaceId)
-    if (workspaceScopeError) {
-      return workspaceScopeError
+    const routeContext = await requireAnalyticsRouteContext(req, { includeDateRange: true })
+    if (!routeContext.ok) {
+      return routeContext.response
     }
-
-    const teamContext = await requireTeamRouteContext({ requestedTeamId })
-    if (!teamContext.ok) {
-      return teamContext.response
-    }
-    const { supabase, teamId } = teamContext.context
+    const { from, scope, supabase, teamId, to, workspaceId } = routeContext.context
 
     // Fetch tasks
     let tasksQuery = supabase
