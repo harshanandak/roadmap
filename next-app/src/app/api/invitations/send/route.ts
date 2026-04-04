@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendTeamInvitationEmail } from '@/lib/email/team-invitations'
-import { requireTeamRouteContext } from '@/lib/api/team-route'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 interface InvitationEmailLookup {
   email: string
@@ -21,6 +22,11 @@ interface InvitationEmailLookup {
     | null
 }
 
+interface InvitationReference {
+  id: string
+  team_id: string
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { invitationId, token } = await request.json()
@@ -32,11 +38,60 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const teamContext = await requireTeamRouteContext()
-    if (!teamContext.ok) {
-      return teamContext.response
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', success: false },
+        { status: 401 }
+      )
     }
-    const { supabase, teamId } = teamContext.context
+
+    const adminSupabase = createAdminClient()
+
+    const invitationReferenceQuery = adminSupabase
+      .from('invitations')
+      .select('id, team_id')
+
+    const { data: invitationReference, error: referenceError } = invitationId
+      ? await invitationReferenceQuery.eq('id', invitationId).maybeSingle()
+      : await invitationReferenceQuery.eq('token', token).maybeSingle()
+
+    if (referenceError || !invitationReference) {
+      return NextResponse.json(
+        { error: 'Invitation not found', success: false },
+        { status: 404 }
+      )
+    }
+
+    const invitationRef = invitationReference as InvitationReference
+
+    const { data: membership, error: membershipError } = await supabase
+      .from('team_members')
+      .select('role')
+      .eq('team_id', invitationRef.team_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (membershipError) {
+      console.error('Error checking invitation resend permissions:', membershipError)
+      return NextResponse.json(
+        { error: 'Failed to verify invitation permissions', success: false },
+        { status: 500 }
+      )
+    }
+
+    if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+      return NextResponse.json(
+        { error: 'Only owners and admins can resend invitations', success: false },
+        { status: 403 }
+      )
+    }
 
     const invitationQuery = supabase
       .from('invitations')
@@ -51,11 +106,11 @@ export async function POST(request: NextRequest) {
         inviter:users!invitations_invited_by_fkey(name, email)
       `
       )
-      .eq('team_id', teamId)
+      .eq('team_id', invitationRef.team_id)
 
     const { data: invitation, error: inviteError } = invitationId
-      ? await invitationQuery.eq('id', invitationId).single()
-      : await invitationQuery.eq('token', token).single()
+      ? await invitationQuery.eq('id', invitationId).maybeSingle()
+      : await invitationQuery.eq('token', token).maybeSingle()
 
     if (inviteError || !invitation) {
       return NextResponse.json(

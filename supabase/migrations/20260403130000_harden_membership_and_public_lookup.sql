@@ -99,6 +99,8 @@ BEGIN
   JOIN public.teams t ON t.id = i.team_id
   LEFT JOIN public.users u ON u.id = i.invited_by
   WHERE i.token = p_token
+    AND i.accepted_at IS NULL
+    AND (i.expires_at IS NULL OR i.expires_at > NOW())
   LIMIT 1;
 END;
 $$;

@@ -19,65 +19,31 @@ interface InvitationLookupRow {
   team_id: string
 }
 
-function isPrimaryKeyConflict(error: { code?: string; message?: string } | null): boolean {
-  return (
-    error?.code === '23505' &&
-    typeof error.message === 'string' &&
-    error.message.includes('user_phase_assignments_pkey')
-  )
-}
-
-async function getNextTimestampId(previousId?: string): Promise<string> {
-  let nextId = Date.now().toString()
-
-  while (nextId === previousId) {
-    await new Promise((resolve) => setTimeout(resolve, 1))
-    nextId = Date.now().toString()
-  }
-
-  return nextId
-}
-
 async function upsertPhaseAssignments(
   adminSupabase: ReturnType<typeof createAdminClient>,
   invitationData: InvitationLookupRow,
   userId: string
 ) {
   const assignments = invitationData.phase_assignments || []
-  let previousId: string | undefined
 
   for (const assignment of assignments) {
-    let attempts = 0
+    const { error } = await adminSupabase
+      .from('user_phase_assignments')
+      .upsert(
+        {
+          id: Date.now().toString(),
+          team_id: invitationData.team_id,
+          workspace_id: assignment.workspace_id,
+          user_id: userId,
+          phase: assignment.phase,
+          can_edit: assignment.can_edit || false,
+          assigned_by: invitationData.invited_by || userId,
+          notes: assignment.notes || null,
+        },
+        { onConflict: 'workspace_id,user_id,phase', ignoreDuplicates: true }
+      )
 
-    while (attempts < 5) {
-      attempts += 1
-      const assignmentId = await getNextTimestampId(previousId)
-      previousId = assignmentId
-
-      const { error } = await adminSupabase
-        .from('user_phase_assignments')
-        .upsert(
-          {
-            id: assignmentId,
-            team_id: invitationData.team_id,
-            workspace_id: assignment.workspace_id,
-            user_id: userId,
-            phase: assignment.phase,
-            can_edit: assignment.can_edit || false,
-            assigned_by: invitationData.invited_by || userId,
-            notes: assignment.notes || null,
-          },
-          { onConflict: 'workspace_id,user_id,phase' }
-        )
-
-      if (!error) {
-        break
-      }
-
-      if (isPrimaryKeyConflict(error) && attempts < 5) {
-        continue
-      }
-
+    if (error) {
       throw error
     }
   }
@@ -242,12 +208,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    let phaseAssignmentWarning: string | null = null
+
     // Create phase assignments if specified in invitation
     if (invitationData.phase_assignments && invitationData.phase_assignments.length > 0) {
       try {
         await upsertPhaseAssignments(adminSupabase, invitationData, user.id)
       } catch (assignmentsError) {
         console.error('Error creating phase assignments:', assignmentsError)
+        phaseAssignmentWarning = 'phase_assignments_failed'
       }
     }
 
@@ -286,9 +255,12 @@ export async function POST(request: NextRequest) {
         team_member: teamMember,
         team: team || { id: invitationData.team_id },
         redirect_url: redirectUrl,
-        message: 'Successfully joined team'
+        message: phaseAssignmentWarning
+          ? 'Joined team, but phase access could not be assigned. Contact an admin.'
+          : 'Successfully joined team'
       },
-      success: true
+      success: true,
+      ...(phaseAssignmentWarning ? { warning: phaseAssignmentWarning } : {})
     })
 
     setActiveTeamCookie(response, invitationData.team_id)
