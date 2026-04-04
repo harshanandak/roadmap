@@ -51,4 +51,32 @@ describe('team-route helpers', () => {
       success: false,
     })
   })
+
+  it('returns 400 for empty requested team ids', async () => {
+    createClientMock.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: {
+            user: { id: 'user-1' },
+          },
+          error: null,
+        }),
+      },
+    })
+    resolveActiveTeamMock.mockResolvedValue({ activeTeamId: 'team-1' })
+
+    const { requireTeamRouteContext } = await import('./team-route')
+    const result = await requireTeamRouteContext({ requestedTeamId: '' })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) {
+      throw new Error('Expected empty team id to be rejected')
+    }
+
+    expect(result.response.status).toBe(400)
+    await expect(result.response.json()).resolves.toEqual({
+      error: 'team_id is required',
+      success: false,
+    })
+  })
 })

@@ -22,7 +22,6 @@ interface InvitationData {
   inviter_name: string | null
   inviter_email: string
   expires_at: string
-  accepted_at?: string | null
   is_expired: boolean
 }
 
@@ -55,12 +54,6 @@ export default function AcceptInvitePage() {
 
       if (!response.ok) {
         setError(data.error || 'Invitation not found or already accepted')
-        setLoading(false)
-        return
-      }
-
-      if (data.accepted_at) {
-        setError('This invitation has already been accepted')
         setLoading(false)
         return
       }

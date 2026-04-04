@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-import { resolveActiveTeam } from '@/lib/teams/active-team'
+import { requireTeamRouteContext } from '@/lib/api/team-route'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
@@ -8,39 +7,16 @@ import { NextRequest, NextResponse } from 'next/server'
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    // Get current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Get team_id from query params
     const searchParams = request.nextUrl.searchParams
     const requestedTeamId = searchParams.get('team_id')
-    const { activeTeamId } = await resolveActiveTeam(supabase, user.id)
-    const teamId = requestedTeamId || activeTeamId
-
-    if (!teamId) {
-      return NextResponse.json({ error: 'No active team found' }, { status: 404 })
+    const teamContext = await requireTeamRouteContext({
+      requestedTeamId,
+      teamMissingMessage: 'No active team found',
+    })
+    if (!teamContext.ok) {
+      return teamContext.response
     }
-
-    // Verify user is a member of this team
-    const { data: membership, error: membershipError } = await supabase
-      .from('team_members')
-      .select('id, role')
-      .eq('team_id', teamId)
-      .eq('user_id', user.id)
-      .single()
-
-    if (membershipError || !membership) {
-      return NextResponse.json({ error: 'Not a member of this team' }, { status: 403 })
-    }
+    const { supabase, teamId } = teamContext.context
 
     // Fetch all workspaces for this team
     const { data: workspaces, error: workspacesError } = await supabase
@@ -55,8 +31,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(workspaces || [])
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in GET /api/team/workspaces:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error', success: false }, { status: 500 })
   }
 }

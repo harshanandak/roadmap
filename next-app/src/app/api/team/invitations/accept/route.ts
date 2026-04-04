@@ -5,7 +5,6 @@ import { setActiveTeamCookie } from '@/lib/teams/active-team'
 import { z } from 'zod'
 
 interface InvitationLookupRow {
-  accepted_at: string | null
   email: string
   expires_at: string
   invitation_id: string
@@ -20,38 +19,62 @@ interface InvitationLookupRow {
   team_id: string
 }
 
-async function insertPhaseAssignmentsWithRetries(
+function isPrimaryKeyConflict(error: { code?: string; message?: string } | null): boolean {
+  return (
+    error?.code === '23505' &&
+    typeof error.message === 'string' &&
+    error.message.includes('user_phase_assignments_pkey')
+  )
+}
+
+async function getNextTimestampId(previousId?: string): Promise<string> {
+  let nextId = Date.now().toString()
+
+  while (nextId === previousId) {
+    await new Promise((resolve) => setTimeout(resolve, 1))
+    nextId = Date.now().toString()
+  }
+
+  return nextId
+}
+
+async function upsertPhaseAssignments(
   adminSupabase: ReturnType<typeof createAdminClient>,
   invitationData: InvitationLookupRow,
   userId: string
 ) {
   const assignments = invitationData.phase_assignments || []
+  let previousId: string | undefined
 
   for (const assignment of assignments) {
     let attempts = 0
 
     while (attempts < 5) {
       attempts += 1
+      const assignmentId = await getNextTimestampId(previousId)
+      previousId = assignmentId
+
       const { error } = await adminSupabase
         .from('user_phase_assignments')
-        .insert({
-          id: Date.now().toString(),
-          team_id: invitationData.team_id,
-          workspace_id: assignment.workspace_id,
-          user_id: userId,
-          phase: assignment.phase,
-          can_edit: assignment.can_edit || false,
-          assigned_by: invitationData.invited_by || userId,
-          notes: assignment.notes || null,
-        })
+        .upsert(
+          {
+            id: assignmentId,
+            team_id: invitationData.team_id,
+            workspace_id: assignment.workspace_id,
+            user_id: userId,
+            phase: assignment.phase,
+            can_edit: assignment.can_edit || false,
+            assigned_by: invitationData.invited_by || userId,
+            notes: assignment.notes || null,
+          },
+          { onConflict: 'workspace_id,user_id,phase' }
+        )
 
       if (!error) {
         break
       }
 
-      const isUniqueViolation = error.code === '23505'
-      if (isUniqueViolation && attempts < 5) {
-        await new Promise((resolve) => setTimeout(resolve, 1))
+      if (isPrimaryKeyConflict(error) && attempts < 5) {
         continue
       }
 
@@ -108,14 +131,6 @@ export async function POST(request: NextRequest) {
     }
 
     const invitationData = invitation as InvitationLookupRow
-
-    // Check if invitation is already accepted
-    if (invitationData.accepted_at) {
-      return NextResponse.json(
-        { error: 'This invitation has already been accepted', success: false },
-        { status: 400 }
-      )
-    }
 
     // Check if invitation is expired
     const now = new Date()
@@ -230,7 +245,7 @@ export async function POST(request: NextRequest) {
     // Create phase assignments if specified in invitation
     if (invitationData.phase_assignments && invitationData.phase_assignments.length > 0) {
       try {
-        await insertPhaseAssignmentsWithRetries(adminSupabase, invitationData, user.id)
+        await upsertPhaseAssignments(adminSupabase, invitationData, user.id)
       } catch (assignmentsError) {
         console.error('Error creating phase assignments:', assignmentsError)
       }
